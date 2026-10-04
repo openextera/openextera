@@ -65,6 +65,7 @@ public class VoIPToggleButton extends FrameLayout {
     private boolean drawCross;
 
     private float crossOffset;
+    private float crossOffsetY;
 
     Drawable rippleDrawable;
 
@@ -197,7 +198,7 @@ public class VoIPToggleButton extends FrameLayout {
                     int top = (int) (cy - icon[0].getIntrinsicHeight() / 2f);
 
                     float startX = left + AndroidUtilities.dpf2(8) + crossOffset;
-                    float startY = top + AndroidUtilities.dpf2(8);
+                    float startY = top + AndroidUtilities.dpf2(8) + crossOffsetY;
 
                     float endX = startX - dp(1) + dp(17) * CubicBezierInterpolator.DEFAULT.getInterpolation(crossProgress);
                     float endY = startY + dp(17) * CubicBezierInterpolator.DEFAULT.getInterpolation(crossProgress);
@@ -378,6 +379,10 @@ public class VoIPToggleButton extends FrameLayout {
 
     public View getTextView() {
         return textView[0];
+    }
+
+    public void setCrossOffsetY(float crossOffsetY) {
+        this.crossOffsetY = crossOffsetY;
     }
 
     @Override

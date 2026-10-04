@@ -93,6 +93,7 @@ public class CopyUtilities {
                 TLRPC.TL_messageEntityCustomEmoji entity = new TLRPC.TL_messageEntityCustomEmoji();
                 entity.document_id = ((AnimatedEmojiSpan) span).documentId;
                 entity.document = ((AnimatedEmojiSpan) span).document;
+                entity.local = ((AnimatedEmojiSpan) span).local;
                 entities.add(setEntityStartEnd(entity, start, end));
             }
         }

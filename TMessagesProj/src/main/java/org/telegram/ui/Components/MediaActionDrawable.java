@@ -9,11 +9,14 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.view.animation.DecelerateInterpolator;
+
+import com.exteragram.messenger.plugins.PluginsController;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.MessageDrawable;
@@ -37,6 +40,9 @@ public class MediaActionDrawable extends Drawable {
     public static final int ICON_CANCEL_PERCENT = 13;
     public static final int ICON_CANCEL_FILL = 14;
     public static final int ICON_UPDATE = 15;
+    public static final int ICON_PLUGIN = 16;
+    public static final int ICON_EXTERA = 17;
+    public static final int ICON_ICONS = 18;
 
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -45,6 +51,8 @@ public class MediaActionDrawable extends Drawable {
     private Paint paint3 = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RectF rect = new RectF();
     private ColorFilter colorFilter;
+    private final Paint drawablePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final ColorFilter whiteColorFilter = new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.SRC_IN);
     private float scale = 1.0f;
     private DecelerateInterpolator interpolator = new DecelerateInterpolator();
 
@@ -61,6 +69,10 @@ public class MediaActionDrawable extends Drawable {
     /** When false, the progress circle is drawn by the owner (e.g. Material 3 indicator in RadialProgress2). */
     public boolean drawProgressCircle = true;
     private float downloadIconScale = 1.0f;
+
+    public static boolean isCustomFileIcon(int icon) {
+        return icon == ICON_PLUGIN || icon == ICON_EXTERA || icon == ICON_ICONS || PluginsController.isPluginFileIcon(icon);
+    }
 
     public void setDownloadIconScale(float downloadIconScale) {
         this.downloadIconScale = downloadIconScale;
@@ -136,6 +148,7 @@ public class MediaActionDrawable extends Drawable {
 
     @Override
     public void setColorFilter(ColorFilter colorFilter) {
+        this.colorFilter = colorFilter;
         paint.setColorFilter(colorFilter);
         paint2.setColorFilter(colorFilter);
         paint3.setColorFilter(colorFilter);
@@ -156,6 +169,40 @@ public class MediaActionDrawable extends Drawable {
 
     public int getColor() {
         return paint.getColor();
+    }
+
+    private void drawTintedDrawable(Canvas canvas, Drawable drawable, int cx, int cy, float scale, int alpha) {
+        int w = (int) (drawable.getIntrinsicWidth() * scale) / 2;
+        int h = (int) (drawable.getIntrinsicHeight() * scale) / 2;
+        int left = cx - w;
+        int top = cy - h;
+        int right = cx + w;
+        int bottom = cy + h;
+        applyShaderMatrix(true);
+        int restoreCount = canvas.saveLayer(left, top, right, bottom, null);
+        drawable.setColorFilter(whiteColorFilter);
+        drawable.setAlpha(alpha);
+        drawable.setBounds(left, top, right, bottom);
+        drawable.draw(canvas);
+        drawablePaint.set(paint2);
+        drawablePaint.setAlpha(alpha);
+        drawablePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawRect(left, top, right, bottom, drawablePaint);
+        drawablePaint.setXfermode(null);
+        canvas.restoreToCount(restoreCount);
+    }
+
+    private Drawable getCustomIconDrawable(int icon) {
+        if (icon == ICON_PLUGIN) {
+            return Theme.chat_pluginIcon;
+        }
+        if (icon == ICON_EXTERA) {
+            return Theme.chat_settingsIcon;
+        }
+        if (icon == ICON_ICONS) {
+            return Theme.chat_stickersIcon;
+        }
+        return PluginsController.getPluginFileIconDrawable(icon);
     }
 
     public void setMini(boolean value) {
@@ -695,6 +742,12 @@ public class MediaActionDrawable extends Drawable {
         } else if (currentIcon == ICON_FILE) {
             previousPath = Theme.chat_filePath;
         }
+        if (isCustomFileIcon(nextIcon)) {
+            nextDrawable = getCustomIconDrawable(nextIcon);
+        }
+        if (isCustomFileIcon(currentIcon)) {
+            previousDrawable = getCustomIconDrawable(currentIcon);
+        }
         if (nextIcon == ICON_FIRE) {
             nextDrawable = Theme.chat_flameIcon;
         } else if (currentIcon == ICON_FIRE) {
@@ -872,20 +925,30 @@ public class MediaActionDrawable extends Drawable {
         }
 
         if (previousDrawable != null && previousDrawable != nextDrawable) {
-            int w = (int) (previousDrawable.getIntrinsicWidth() * previowsDrawableScale);
-            int h = (int) (previousDrawable.getIntrinsicHeight() * previowsDrawableScale);
-            previousDrawable.setColorFilter(colorFilter);
-            previousDrawable.setAlpha(currentIcon == nextIcon ? 255 : (int) ((1.0f - transitionProgress) * 255));
-            previousDrawable.setBounds(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
-            previousDrawable.draw(canvas);
+            int previousAlpha = currentIcon == nextIcon ? 255 : (int) ((1.0f - transitionProgress) * 255);
+            if (isCustomFileIcon(currentIcon)) {
+                drawTintedDrawable(canvas, previousDrawable, cx, cy, previowsDrawableScale, previousAlpha);
+            } else {
+                int w = (int) (previousDrawable.getIntrinsicWidth() * previowsDrawableScale);
+                int h = (int) (previousDrawable.getIntrinsicHeight() * previowsDrawableScale);
+                previousDrawable.setColorFilter(colorFilter);
+                previousDrawable.setAlpha(previousAlpha);
+                previousDrawable.setBounds(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
+                previousDrawable.draw(canvas);
+            }
         }
         if (nextDrawable != null) {
-            int w = (int) (nextDrawable.getIntrinsicWidth() * drawableScale);
-            int h = (int) (nextDrawable.getIntrinsicHeight() * drawableScale);
-            nextDrawable.setColorFilter(colorFilter);
-            nextDrawable.setAlpha(currentIcon == nextIcon ? 255 : (int) (transitionProgress * 255));
-            nextDrawable.setBounds(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
-            nextDrawable.draw(canvas);
+            int nextAlpha = currentIcon == nextIcon ? 255 : (int) (transitionProgress * 255);
+            if (isCustomFileIcon(nextIcon)) {
+                drawTintedDrawable(canvas, nextDrawable, cx, cy, drawableScale, nextAlpha);
+            } else {
+                int w = (int) (nextDrawable.getIntrinsicWidth() * drawableScale);
+                int h = (int) (nextDrawable.getIntrinsicHeight() * drawableScale);
+                nextDrawable.setColorFilter(colorFilter);
+                nextDrawable.setAlpha(nextAlpha);
+                nextDrawable.setBounds(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
+                nextDrawable.draw(canvas);
+            }
         }
 
         if (previousPath != null && previousPath != nextPath) {

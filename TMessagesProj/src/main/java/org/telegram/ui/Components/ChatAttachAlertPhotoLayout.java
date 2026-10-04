@@ -150,7 +150,6 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private EmptyTextProgressView progressView;
     private RecyclerViewItemRangeSelector itemRangeSelector;
     private int gridExtraSpace;
-    private boolean shouldSelect;
     private int alertOnlyOnce;
 
     private int currentSelectedCount;
@@ -1079,8 +1078,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
                 return true;
             } else if (view instanceof PhotoAttachPhotoCell) {
-                PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) view;
-                itemRangeSelector.setIsActive(view, true, position, shouldSelect = !cell.isChecked());
+                itemRangeSelector.startSelection(view, position);
             }
             return false;
         });
@@ -1092,11 +1090,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
             @Override
             public void setSelected(View view, int index, boolean selected) {
-                if (selected != shouldSelect || !(view instanceof PhotoAttachPhotoCell)) {
+                if (isSelected(index) == selected) {
                     return;
                 }
-                PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) view;
-                cell.callDelegate();
+                if (view instanceof PhotoAttachPhotoCell) {
+                    PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) view;
+                    cell.callDelegate();
+                } else {
+                    photoViewerProvider.setPhotoChecked(adapter.getPhotoPosition(index), null);
+                }
             }
 
             @Override

@@ -173,7 +173,12 @@ public class PasskeysActivity extends BaseFragment {
                             .show();
                         return;
                     }
-                    BulletinFactory.of(this).showForError(error, true);
+                    final BulletinFactory bulletinFactory = BulletinFactory.of(this);
+                    if (error.startsWith("No create options")) {
+                        PasskeysUtil.showUnsupportedBulletin(bulletinFactory);
+                    } else {
+                        bulletinFactory.showForError(error, true);
+                    }
                 } else if (passkey != null) {
                     MessagesController.getInstance(currentAccount).removeSuggestion(0, "SETUP_PASSKEY");
                     added(passkey);
@@ -374,7 +379,12 @@ public class PasskeysActivity extends BaseFragment {
                 if (fragment == null) return;
 
                 if (error != null) {
-                    BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider()).showForError(error);
+                    final BulletinFactory bulletinFactory = BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider());
+                    if (error.startsWith("No create options")) {
+                        PasskeysUtil.showUnsupportedBulletin(bulletinFactory);
+                    } else {
+                        bulletinFactory.showForError(error);
+                    }
                 } else if (passkey != null) {
                     MessagesController.getInstance(currentAccount).removeSuggestion(0, "SETUP_PASSKEY");
                     if (fragment instanceof PasskeysActivity) {

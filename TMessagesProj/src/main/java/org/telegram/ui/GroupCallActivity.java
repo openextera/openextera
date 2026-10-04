@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import com.exteragram.messenger.IconPackType;
+import com.exteragram.messenger.icons.IconManager;
 import com.exteragram.messenger.ExteraConfig;
 
 import static android.content.Context.AUDIO_SERVICE;
@@ -4355,7 +4357,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         cameraButton.setCheckable(true);
         cameraButton.setTextSize(12);
         cameraButton.showText(false, false);
-        cameraButton.setCrossOffset(-AndroidUtilities.dpf2(3.5f));
+        cameraButton.setCrossOffset(-AndroidUtilities.dpf2((IconManager.INSTANCE.isBasePackOnly(IconPackType.SOLAR) ? 3.5f : 0f) + 3.5f));
+        cameraButton.setCrossOffsetY(-AndroidUtilities.dpf2(IconManager.INSTANCE.isBasePackOnly(IconPackType.SOLAR) ? 3.5f : 0f));
         cameraButton.setData(R.drawable.calls_video, Color.WHITE, 0, 1f, true, getString(R.string.VoipCamera), false, false);
 
 

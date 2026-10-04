@@ -41,6 +41,8 @@ import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.exteragram.messenger.utils.chats.StickerTime;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatMessageSharedResources;
@@ -1581,7 +1583,16 @@ public class MessagePreviewView extends FrameLayout {
 
                     @Override
                     public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat, boolean lastInChatList) {
+                        final boolean preserveStickerTime = StickerTime.shouldPreserveOnPreview(getMessageObject(), messageObject);
+                        float timeAlpha = getTimeAlpha();
                         super.setMessageObject(messageObject, groupedMessages, bottomNear, topNear, firstInChat, lastInChatList);
+                        if (preserveStickerTime) {
+                            getTransitionParams().resetAnimation();
+                            if (timeAlpha == 0) {
+                                timeAlpha = 1f;
+                            }
+                            setTimeAlpha(timeAlpha);
+                        }
                         updateLinkHighlight(this);
                     }
 

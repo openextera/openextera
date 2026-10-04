@@ -166,11 +166,6 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             dayNightCell.imageLeft = 21;
             addView(dayNightCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            browseThemesCell = new TextCell(context);
-            browseThemesCell.setTextAndIcon(LocaleController.getString(R.string.SettingsBrowseThemes), R.drawable.msg_colors, false);
-
-            addView(browseThemesCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
             dayNightCell.setOnClickListener(new OnClickListener() {
                 @SuppressLint("NotifyDataSetChanged")
                 @Override
@@ -282,9 +277,6 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             });
 
             darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
-            browseThemesCell.setOnClickListener(view -> {
-                parentFragment.presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_THEMES_BROWSER));
-            });
 
             if (!Theme.isCurrentThemeDay()) {
                 darkThemeDrawable.setCurrentFrame(darkThemeDrawable.getFramesCount() - 1);

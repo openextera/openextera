@@ -42,7 +42,7 @@ public class InstantCameraVideoEncoderOverlayHelper {
     private final FloatBuffer attributeVertexBuffer;
     private final FloatBuffer attributeTextureBuffer;
 
-    private int logoFrame = 0;
+    private long logoPhaseNs;
 
     private final int[] glFrameBuffers = new int[1];
     private final int[] glTextures = new int[5];
@@ -149,7 +149,8 @@ public class InstantCameraVideoEncoderOverlayHelper {
         GLES20.glViewport(0, 0, videoWidth, videoHeight);
     }
 
-    public void render() {
+    public void render(long frameDeltaNs) {
+        logoPhaseNs += Math.max(0, frameDeltaNs);
         GLES20.glDisable(GLES20.GL_BLEND);
 
         {
@@ -253,8 +254,7 @@ public class InstantCameraVideoEncoderOverlayHelper {
 
                     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, glTextures[TEXTURE_INDEX_WATERMARK_TEXT]);
                 } else {
-                    final int frame = logoFrame % 27;
-                    logoFrame += 1;
+                    final int frame = (int) ((logoPhaseNs / 33333333L) % 27);
 
                     GLES20.glVertexAttribPointer(program.attributePositionHandle, 3, GLES20.GL_FLOAT, false, 12, attributeVertexBuffer.position(VERTEX_BUFFER_WATERMARK_LOGO_POSITION));
                     GLES20.glEnableVertexAttribArray(program.attributePositionHandle);

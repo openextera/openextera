@@ -7117,6 +7117,7 @@ public class MediaDataController extends BaseController {
                     } else {
                         span = new AnimatedEmojiSpan(entity.document_id, fontMetricsInt);
                     }
+                    span.local = entity.local;
                     spannable.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             }
@@ -7443,6 +7444,7 @@ public class MediaDataController extends BaseController {
                             entity.length = Math.min(spannable.getSpanEnd(span), message[0].length()) - entity.offset;
                             entity.document_id = span.getDocumentId();
                             entity.document = span.document;
+                            entity.local = span.local;
                             entities.add(entity);
                         } catch (Exception e) {
                             FileLog.e(e);

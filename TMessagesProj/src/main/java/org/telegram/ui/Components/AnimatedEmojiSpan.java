@@ -71,6 +71,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     float lastDrawnCy;
     private boolean recordPositions = true;
     public boolean fromEmojiKeyboard;
+    public boolean local;
     private boolean isAdded;
     private boolean isRemoved;
     private Runnable removedAction;
@@ -1042,6 +1043,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         if (fontMetricsInt != null) {
             animatedEmojiSpan.size = span.size;
         }
+        animatedEmojiSpan.local = span.local;
         animatedEmojiSpan.fromEmojiKeyboard = span.fromEmojiKeyboard;
         animatedEmojiSpan.isAdded = span.isAdded;
         animatedEmojiSpan.isRemoved = span.isRemoved;

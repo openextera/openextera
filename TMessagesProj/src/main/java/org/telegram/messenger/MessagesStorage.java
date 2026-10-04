@@ -403,6 +403,7 @@ public class MessagesStorage extends BaseController {
                         throw new RuntimeException("malformed");
                     }
                 }
+                ensureDialogFilterEmoticonColumn();
             }
             databaseCreated = true;
         } catch (Exception e) {
@@ -602,7 +603,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE INDEX IF NOT EXISTS folder_id_idx_4_dialogs ON dialogs(folder_id);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS flags_idx_4_dialogs ON dialogs(flags);").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE dialog_filter(id INTEGER PRIMARY KEY, ord INTEGER, unread_count INTEGER, flags INTEGER, title TEXT, color INTEGER DEFAULT -1, entities BLOB, noanimate INTEGER)").stepThis().dispose();
+        database.executeFast("CREATE TABLE dialog_filter(id INTEGER PRIMARY KEY, ord INTEGER, unread_count INTEGER, flags INTEGER, title TEXT, color INTEGER DEFAULT -1, emoticon TEXT, entities BLOB, noanimate INTEGER)").stepThis().dispose();
         database.executeFast("CREATE TABLE dialog_filter_ep(id INTEGER, peer INTEGER, PRIMARY KEY (id, peer))").stepThis().dispose();
         database.executeFast("CREATE TABLE dialog_filter_pin_v2(id INTEGER, peer INTEGER, pin INTEGER, PRIMARY KEY (id, peer))").stepThis().dispose();
 
@@ -798,6 +799,50 @@ public class MessagesStorage extends BaseController {
 
     public boolean isDatabaseMigrationInProgress() {
         return databaseMigrationInProgress;
+    }
+
+    // OpenExtera only: databases created by OpenExtera builds before the folder emoticon port are already at
+    // LAST_DB_VERSION but have the upstream dialog_filter layout (no "emoticon" column). exteraGram never had such
+    // databases, so it has no migration for them. Rebuild the table in exteraGram's column order, keeping the rows.
+    private void ensureDialogFilterEmoticonColumn() {
+        final String createTable = "(id INTEGER PRIMARY KEY, ord INTEGER, unread_count INTEGER, flags INTEGER, title TEXT, color INTEGER DEFAULT -1, emoticon TEXT, entities BLOB, noanimate INTEGER)";
+        SQLiteCursor cursor = null;
+        try {
+            boolean hasTable = false;
+            boolean hasEmoticon = false;
+            cursor = database.queryFinalized("PRAGMA table_info(dialog_filter)");
+            while (cursor.next()) {
+                hasTable = true;
+                if ("emoticon".equals(cursor.stringValue(1))) {
+                    hasEmoticon = true;
+                }
+            }
+            cursor.dispose();
+            cursor = null;
+            if (!hasTable || hasEmoticon) {
+                return;
+            }
+            try {
+                database.executeFast("DROP TABLE IF EXISTS dialog_filter_new").stepThis().dispose();
+                database.executeFast("CREATE TABLE dialog_filter_new" + createTable).stepThis().dispose();
+                database.executeFast("INSERT INTO dialog_filter_new SELECT id, ord, unread_count, flags, title, color, NULL, entities, noanimate FROM dialog_filter").stepThis().dispose();
+                database.executeFast("DROP TABLE dialog_filter").stepThis().dispose();
+                database.executeFast("ALTER TABLE dialog_filter_new RENAME TO dialog_filter").stepThis().dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+                // same as exteraGram's own migration step: drop the cache table, folders reload from the server
+                database.executeFast("DROP TABLE IF EXISTS dialog_filter_new").stepThis().dispose();
+                database.executeFast("DROP TABLE IF EXISTS dialog_filter").stepThis().dispose();
+                database.executeFast("CREATE TABLE dialog_filter" + createTable).stepThis().dispose();
+            }
+            getUserConfig().clearFilters();
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
     }
 
     private void updateDbToLastVersion(int currentVersion) throws Exception {
@@ -2590,7 +2635,7 @@ public class MessagesStorage extends BaseController {
 
                 usersToLoad.add(getUserConfig().getClientUserId());
 
-                filtersCursor = database.queryFinalized("SELECT id, ord, unread_count, flags, title, color, entities, noanimate FROM dialog_filter WHERE 1");
+                filtersCursor = database.queryFinalized("SELECT id, ord, unread_count, flags, title, color, emoticon, entities, noanimate FROM dialog_filter WHERE 1");
 
                 boolean updateCounters = false;
                 boolean hasDefaultFilter = false;
@@ -2602,13 +2647,14 @@ public class MessagesStorage extends BaseController {
                     filter.flags = filtersCursor.intValue(3);
                     filter.name = filtersCursor.stringValue(4);
                     filter.color = filtersCursor.intValue(5);
+                    filter.emoticon = filtersCursor.stringValue(6);
                     filter.entities = new ArrayList<>();
-                    NativeByteBuffer buff = filtersCursor.byteBufferValue(6);
+                    NativeByteBuffer buff = filtersCursor.byteBufferValue(7);
                     if (buff != null) {
                         filter.entities = Vector.deserialize(buff, TLRPC.MessageEntity::TLdeserialize, false);
                         buff.reuse();
                     }
-                    filter.title_noanimate = filtersCursor.intValue(7) == 1;
+                    filter.title_noanimate = filtersCursor.intValue(8) == 1;
                     dialogFilters.add(filter);
                     dialogFiltersMap.put(filter.id, filter);
                     filtersById.put(filter.id, filter);
@@ -2678,18 +2724,19 @@ public class MessagesStorage extends BaseController {
                     dialogFiltersMap.put(filter.id, filter);
                     filtersById.put(filter.id, filter);
 
-                    state = database.executeFast("REPLACE INTO dialog_filter VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
+                    state = database.executeFast("REPLACE INTO dialog_filter VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     state.bindInteger(1, filter.id);
                     state.bindInteger(2, filter.order);
                     state.bindInteger(3, filter.unreadCount);
                     state.bindInteger(4, filter.flags);
                     state.bindString(5, filter.name);
                     state.bindInteger(6, filter.color);
+                    state.bindNull(7);
                     final Vector<TLRPC.MessageEntity> entitiesVector = new Vector<>(TLRPC.MessageEntity::TLdeserialize);
                     final NativeByteBuffer entitiesBuffer = new NativeByteBuffer(entitiesVector.getObjectSize());
                     entitiesVector.serializeToStream(entitiesBuffer);
-                    state.bindByteBuffer(7, entitiesBuffer);
-                    state.bindInteger(8, filter.title_noanimate ? 1 : 0);
+                    state.bindByteBuffer(8, entitiesBuffer);
+                    state.bindInteger(9, filter.title_noanimate ? 1 : 0);
                     state.stepThis().dispose();
                     state = null;
                     entitiesBuffer.reuse();
@@ -3197,19 +3244,24 @@ public class MessagesStorage extends BaseController {
                 dialogFiltersMap.put(filter.id, filter);
             }
 
-            state = database.executeFast("REPLACE INTO dialog_filter VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
+            state = database.executeFast("REPLACE INTO dialog_filter VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
             state.bindInteger(1, filter.id);
             state.bindInteger(2, filter.order);
             state.bindInteger(3, filter.unreadCount);
             state.bindInteger(4, filter.flags);
             state.bindString(5, filter.id == 0 ? "ALL_CHATS" : filter.name);
             state.bindInteger(6, filter.color);
+            if (filter.emoticon != null) {
+                state.bindString(7, filter.emoticon);
+            } else {
+                state.bindNull(7);
+            }
             final Vector<TLRPC.MessageEntity> entitiesVector = new Vector<>(TLRPC.MessageEntity::TLdeserialize);
             entitiesVector.objects.addAll(filter.entities);
             final NativeByteBuffer entitiesBuffer = new NativeByteBuffer(entitiesVector.getObjectSize());
             entitiesVector.serializeToStream(entitiesBuffer);
-            state.bindByteBuffer(7, entitiesBuffer);
-            state.bindInteger(8, filter.title_noanimate ? 1 : 0);
+            state.bindByteBuffer(8, entitiesBuffer);
+            state.bindInteger(9, filter.title_noanimate ? 1 : 0);
             state.step();
             state.dispose();
             entitiesBuffer.reuse();
@@ -3360,6 +3412,10 @@ public class MessagesStorage extends BaseController {
                             filter.color = color;
                             changed = true;
                         }
+                        if (!TextUtils.equals(filter.emoticon, newFilter.emoticon)) {
+                            filter.emoticon = newFilter.emoticon;
+                            changed = true;
+                        }
                         if (filter.flags != newFlags) {
                             filter.flags = newFlags;
                             changed = true;
@@ -3497,6 +3553,7 @@ public class MessagesStorage extends BaseController {
                         filter.entities = newFilter.title.entities;
                         filter.title_noanimate = newFilter.title_noanimate;
                         filter.color = (newFilter.flags & 134217728) != 0 ? newFilter.color : -1;
+                        filter.emoticon = newFilter.emoticon;
                         filter.pendingUnreadCount = -1;
                         for (int c = 0; c < 2; c++) {
                             if (c == 0) {

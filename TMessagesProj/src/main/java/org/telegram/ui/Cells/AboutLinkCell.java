@@ -20,7 +20,9 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.text.Layout;
@@ -77,7 +79,6 @@ public class AboutLinkCell extends FrameLayout {
     private TextView valueTextView;
     private TextView showMoreTextView;
     private FrameLayout showMoreTextBackgroundView;
-    private FrameLayout bottomShadow;
     private Drawable showMoreBackgroundDrawable;
 
     private LinkSpanDrawable pressedLink;
@@ -101,6 +102,7 @@ public class AboutLinkCell extends FrameLayout {
     private Point[] nextLinesLayoutsPositions;
     private boolean needSpace = false;
     private boolean moreButtonDisabled;
+    private boolean needDivider;
 
     private GestureDetectorCompat gestureDetector;
 
@@ -123,6 +125,7 @@ public class AboutLinkCell extends FrameLayout {
         valueTextView.setVisibility(GONE);
         valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        valueTextView.setTypeface(AndroidUtilities.regular());
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
         valueTextView.setSingleLine(true);
@@ -131,28 +134,35 @@ public class AboutLinkCell extends FrameLayout {
         valueTextView.setFocusable(false);
         container.addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, 18, 0, 18, 10));
 
-        bottomShadow = new FrameLayout(context);
-        Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.gradient_bottom).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), PorterDuff.Mode.SRC_ATOP));
-        bottomShadow.setBackground(shadowDrawable);
-        addView(bottomShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 12, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 16, 0, 16, 0));
-
         addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
         showMoreTextView = new TextView(context) {
             private boolean pressed = false;
             @Override
             public boolean onTouchEvent(MotionEvent event) {
+                getParent().requestDisallowInterceptTouchEvent(true);
                 boolean wasPressed = pressed;
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                int action = event.getAction();
+                if (action == MotionEvent.ACTION_DOWN) {
                     pressed = true;
-                } else if (event.getAction() != MotionEvent.ACTION_MOVE) {
+                } else if (action == MotionEvent.ACTION_UP) {
+                    if (pressed) {
+                        updateCollapse(true, true);
+                    }
+                    pressed = false;
+                } else if (action == MotionEvent.ACTION_MOVE) {
+                    float x = event.getX();
+                    float y = event.getY();
+                    if (x < 0 || x >= getWidth() || y < 0 || y >= getHeight()) {
+                        pressed = false;
+                    }
+                } else if (action == MotionEvent.ACTION_CANCEL) {
                     pressed = false;
                 }
                 if (wasPressed != pressed) {
                     invalidate();
                 }
-                return pressed || super.onTouchEvent(event);
+                return true;
             }
 
             @Override
@@ -164,15 +174,14 @@ public class AboutLinkCell extends FrameLayout {
                 super.onDraw(canvas);
             }
         };
+        showMoreTextView.setClickable(true);
         showMoreTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
         showMoreTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        showMoreTextView.setTypeface(AndroidUtilities.regular());
         showMoreTextView.setLines(1);
         showMoreTextView.setMaxLines(1);
         showMoreTextView.setSingleLine(true);
         showMoreTextView.setText(LocaleController.getString(R.string.DescriptionMore));
-        showMoreTextView.setOnClickListener(e -> {
-            updateCollapse(true, true);
-        });
         showMoreTextView.setPadding(dp(2), 0, dp(2), 0);
         showMoreTextBackgroundView = new FrameLayout(context);
         showMoreBackgroundDrawable = context.getResources().getDrawable(R.drawable.gradient_left).mutate();
@@ -196,6 +205,7 @@ public class AboutLinkCell extends FrameLayout {
     }
 
     public void updateColors() {
+        Theme.profile_aboutTextPaint.setColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider)));
         Theme.profile_aboutTextPaint.linkColor = processColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
     }
 
@@ -203,14 +213,6 @@ public class AboutLinkCell extends FrameLayout {
     public boolean onTouchEvent(MotionEvent event) {
         int x = (int) event.getX();
         int y = (int) event.getY();
-
-        if (showMoreTextView.getVisibility() == View.VISIBLE &&
-            x >= showMoreTextBackgroundView.getLeft() && x <= showMoreTextBackgroundView.getRight() &&
-            y >= showMoreTextBackgroundView.getTop() && y <= showMoreTextBackgroundView.getBottom()
-        ) {
-//            event.offsetLocation(showMoreTextBackgroundView.getLeft(), showMoreTextBackgroundView.getTop());
-            return false;
-        }
 
         boolean result = false;
         if (textLayout != null || nextLinesLayouts != null) {
@@ -236,6 +238,9 @@ public class AboutLinkCell extends FrameLayout {
             } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                 resetPressedLink();
             }
+        }
+        if ((event.getActionMasked() == MotionEvent.ACTION_DOWN || event.getActionMasked() == MotionEvent.ACTION_MOVE) && container.getBackground() != null) {
+            container.getBackground().setHotspot(x, y);
         }
         return result || super.onTouchEvent(event);
     }
@@ -272,16 +277,12 @@ public class AboutLinkCell extends FrameLayout {
             showMoreTextBackgroundView.draw(canvas);
             canvas.restore();
         }
-        viewAlpha = bottomShadow.getAlpha();
-        if (viewAlpha > 0) {
-            canvas.save();
-            canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (viewAlpha * 255), Canvas.ALL_SAVE_FLAG);
-            canvas.translate(bottomShadow.getLeft(), bottomShadow.getTop());
-            bottomShadow.draw(canvas);
-            canvas.restore();
-        }
 
         container.draw(canvas);
+
+        if (needDivider) {
+            canvas.drawLine(LocaleController.isRTL ? 0 : dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+        }
     }
 
     final float SPACE = dp(3f);
@@ -295,6 +296,7 @@ public class AboutLinkCell extends FrameLayout {
         canvas.translate(0, textY = dp(8));
 
         try {
+            Theme.profile_aboutTextPaint.setColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider)));
             Theme.profile_aboutTextPaint.linkColor = processColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
             if (firstThreeLinesLayout == null || !shouldExpand) {
                 if (textLayout != null) {
@@ -354,10 +356,10 @@ public class AboutLinkCell extends FrameLayout {
     }
 
     public void setText(String text, boolean parseLinks) {
-        setTextAndValue(text, null, parseLinks);
+        setTextAndValue(text, null, parseLinks, false);
     }
 
-    public void setTextAndValue(String text, String value, boolean parseLinks) {
+    public void setTextAndValue(String text, String value, boolean parseLinks, boolean divider) {
         if (TextUtils.isEmpty(text) || TextUtils.equals(text, oldText)) {
             return;
         }
@@ -382,6 +384,7 @@ public class AboutLinkCell extends FrameLayout {
             valueTextView.setText(value);
             valueTextView.setVisibility(VISIBLE);
         }
+        needDivider = divider;
         if (wasValueVisibility != valueTextView.getVisibility()) {
             checkTextLayout(lastMaxWidth, true);
         }
@@ -438,10 +441,6 @@ public class AboutLinkCell extends FrameLayout {
     };
 
     private LinkSpanDrawable hitLink(int x, int y) {
-        if (x >= showMoreTextView.getLeft() && x <= showMoreTextView.getRight() &&
-            y >= showMoreTextView.getTop() &&  y <= showMoreTextView.getBottom()) {
-            return null;
-        }
         if (getMeasuredWidth() > 0 && x > getMeasuredWidth() - dp(18)) {
             return null;
         }
@@ -618,7 +617,6 @@ public class AboutLinkCell extends FrameLayout {
                     container.setBackground(rippleBackground);
                 }
                 showMoreTextBackgroundView.setAlpha(1f - expandT);
-                bottomShadow.setAlpha((float) Math.pow(1f - expandT, 2f));
 
                 updateHeight();
                 container.invalidate();
@@ -647,7 +645,16 @@ public class AboutLinkCell extends FrameLayout {
     }
 
     private int fromHeight() {
-        return Math.min(COLLAPSED_HEIGHT + (valueTextView.getVisibility() == View.VISIBLE ? dp(20) : 0), textHeight());
+        int height;
+        if (shouldExpand && firstThreeLinesLayout != null) {
+            height = firstThreeLinesLayout.getHeight() + dp(16);
+        } else {
+            height = COLLAPSED_HEIGHT;
+        }
+        if (valueTextView.getVisibility() == View.VISIBLE) {
+            height += dp(23);
+        }
+        return Math.min(height, textHeight());
     }
     private int updateHeight() {
         int textHeight = textHeight();
@@ -705,7 +712,7 @@ public class AboutLinkCell extends FrameLayout {
         }
         if (stringBuilder != null && (maxWidth != lastMaxWidth || force)) {
             textLayout = makeTextLayout(stringBuilder, maxWidth);
-            shouldExpand = textLayout.getLineCount() >= 4; // && valueTextView.getVisibility() != View.VISIBLE;
+            shouldExpand = textLayout.getLineCount() >= 4 && !moreButtonDisabled;
 
             if (textLayout.getLineCount() >= 3 && shouldExpand) {
                 int end = Math.max(textLayout.getLineStart(2), textLayout.getLineEnd(2));
@@ -829,5 +836,37 @@ public class AboutLinkCell extends FrameLayout {
 
     public void setMoreButtonDisabled(boolean moreButtonDisabled) {
         this.moreButtonDisabled = moreButtonDisabled;
+    }
+
+    @Override
+    public void setBackgroundColor(int color) {
+        super.setBackgroundColor(color);
+        updateGradientColor(color);
+    }
+
+    @Override
+    public void setBackground(Drawable background) {
+        super.setBackground(background);
+        int color = 0;
+        if (background instanceof ShapeDrawable) {
+            color = ((ShapeDrawable) background).getPaint().getColor();
+        } else if (background instanceof ColorDrawable) {
+            color = ((ColorDrawable) background).getColor();
+        }
+        if (color != 0) {
+            updateGradientColor(color);
+        }
+    }
+
+    private void updateGradientColor(int color) {
+        if (showMoreBackgroundDrawable != null) {
+            showMoreBackgroundDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        }
+        if (backgroundPaint != null) {
+            backgroundPaint.setColor(color);
+        }
+        if (showMoreTextBackgroundView != null) {
+            showMoreTextBackgroundView.invalidate();
+        }
     }
 }

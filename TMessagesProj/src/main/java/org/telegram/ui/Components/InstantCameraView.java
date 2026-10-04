@@ -51,6 +51,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.Surface;
@@ -126,6 +127,8 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Timer;
@@ -198,7 +201,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     private BackupImageView textureOverlayView;
     private final boolean useCamera2 = ExteraConfig.getCameraType() == CameraType.CAMERA_2;
     private CameraSession cameraSession;
-    private boolean bothCameras;
+    private volatile boolean bothCameras;
     private Camera2Session[] camera2Sessions = new Camera2Session[2];
     private Camera2Session camera2SessionCurrent;
     private CameraXSession.CameraLifecycle camLifecycle;
@@ -260,6 +263,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     private float scaleY;
 
     private Size oldTexturePreviewSize;
+    private final float[] textureCoordsData = new float[8];
 
     private boolean flipAnimationInProgress;
 
@@ -871,19 +875,14 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, true, (int) recordedTime);
                 startAnimation(false, false);
                 MediaController.getInstance().requestRecordAudioFocus(false);
-            } else if (ExteraConfig.getCameraType() == CameraType.CAMERA_X && roundVideoEncoder != null) {
+            } else if (videoEncoder != null) {
                 if (previewFile != null) {
                     previewFile.delete();
                 }
                 previewFile = StoryEntry.makeCacheFile(currentAccount, true);
-                roundVideoEncoder.pause(previewFile);
-            } else {
-                videoEncoder.pause();
+                videoEncoder.pause(previewFile);
             }
-        } else if (videoEncoder != null || roundVideoEncoder != null) {
-            if (videoEncoder != null) {
-                videoEncoder.resume();
-            }
+        } else if (videoEncoder != null) {
             hideCamera(false);
             if (videoPlayer != null) {
                 videoPlayer.releasePlayer(true);
@@ -1194,13 +1193,8 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             videoPlayer = null;
         }
         if (state == 4) {
-            if (roundVideoEncoder != null && recordedTime > 800) {
-                requestRoundEncoderStop(1, new SendOptions(notify, scheduleDate,
-                        scheduleRepeatPeriod, ttl, effectId, stars));
-                return;
-            }
             if (videoEncoder != null && recordedTime > 800) {
-                videoEncoder.stopRecording(VideoRecorder.ENCODER_SEND_SEND, new SendOptions(notify, scheduleDate, scheduleRepeatPeriod, ttl, effectId, stars));
+                requestStopRecording(1, new SendOptions(notify, scheduleDate, scheduleRepeatPeriod, ttl, effectId, stars));
                 return;
             }
             if (BuildVars.DEBUG_VERSION && !cameraFile.exists()) {
@@ -1315,10 +1309,8 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             saveLastCameraBitmap();
             cameraThread.shutdown(0, true, 0, 0, 0, 0);
             cameraThread = null;
-        } else if (roundVideoEncoder != null) {
-            requestRoundEncoderStop(0, new SendOptions(true, 0, 0, 0, 0, 0));
         } else if (videoEncoder != null) {
-            videoEncoder.stopRecording(VideoRecorder.ENCODER_SEND_CANCEL, new SendOptions(true, 0, 0, 0, 0, 0));
+            requestStopRecording(0, new SendOptions(true, 0, 0, 0, 0, 0));
         }
         if (cameraFile != null) {
             if (BuildVars.LOGS_ENABLED) {
@@ -1801,25 +1793,24 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     private int encoderFrameRate = 30;
-    private VideoRecorder videoEncoder;
-    private volatile RoundVideoEncoder roundVideoEncoder;
-    private volatile File roundEncoderFile;
-    private int roundEncoderSend;
-    private SendOptions roundEncoderSendOptions;
-    private volatile boolean roundEncoderFinishRequested;
-    private boolean roundSentMedia;
-    private boolean roundVideoConvertFirstWrite;
-    private final ArrayList<Bitmap> roundKeyframeThumbs = new ArrayList<>();
+    private RoundVideoEncoder videoEncoder;
+    private File encoderFile;
+    private int encoderSend;
+    private SendOptions encoderSendOptions;
+    private boolean encoderFinishRequested;
+    private boolean sentMedia;
+    private boolean videoConvertFirstWrite;
+    private final ArrayList<Bitmap> keyframeThumbs = new ArrayList<>();
+    private DispatchQueue generateKeyframeThumbsQueue;
 
-    private final RoundVideoEncoder.Callback roundEncoderCallback = new RoundVideoEncoder.Callback() {
+    private final RoundVideoEncoder.Callback encoderCallback = new RoundVideoEncoder.Callback() {
         @Override
         public void onRecordingStarted(boolean resumed) {
             if (cancelled) {
                 return;
             }
             try {
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
-                        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignore) {
             }
             AndroidUtilities.lockOrientation(delegate.getParentActivity());
@@ -1828,92 +1819,247 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             recording = true;
             updateFlash();
             invalidate();
-            NotificationCenter.getInstance(currentAccount).postNotificationName(
-                    NotificationCenter.recordStarted, recordingGuid, false);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted, recordingGuid, false);
         }
 
         @Override
         public void onAudioAmplitude(double amplitude) {
-            AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount)
-                    .postNotificationName(NotificationCenter.recordProgressChanged, recordingGuid, amplitude));
+            AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordProgressChanged, recordingGuid, amplitude));
         }
 
         @Override
         public void onWriteData(long availableSize) {
-            File output = roundEncoderFile;
+            File output = encoderFile;
             if (output != null) {
-                didWriteRoundData(output, availableSize, false);
+                didWriteData(output, availableSize, false);
             }
         }
 
         @Override
         public void onPaused(File preview) {
-            handleRoundEncoderPaused(preview);
+            handleEncoderPaused(preview);
         }
 
         @Override
         public void onFinished(RoundVideoEncoder.FinishReason reason) {
-            handleRoundEncoderFinished(reason);
+            handleEncoderFinished(reason);
         }
     };
 
-    private void didWriteRoundData(File output, long availableSize, boolean last) {
-        String path = output.getAbsolutePath();
-        if (roundVideoConvertFirstWrite) {
-            FileLoader.getInstance(currentAccount).uploadFile(path, isSecretChat, false, 1,
-                    ConnectionsManager.FileTypeVideo, false);
-            roundVideoConvertFirstWrite = false;
-        }
-        FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(path, isSecretChat,
-                availableSize, last ? output.length() : 0);
-    }
-
-    private synchronized void requestRoundEncoderStop(int send, SendOptions options) {
-        RoundVideoEncoder encoder = roundVideoEncoder;
-        if (encoder == null || roundEncoderFinishRequested) {
+    private void requestStopRecording(int send, SendOptions sendOptions) {
+        RoundVideoEncoder encoder = videoEncoder;
+        if (encoder == null) {
             return;
         }
-        roundEncoderFinishRequested = true;
-        roundEncoderSend = send;
-        roundEncoderSendOptions = options;
+        if (!encoderFinishRequested) {
+            encoderFinishRequested = true;
+            encoderSend = send;
+            encoderSendOptions = sendOptions;
+            if (send == 1) {
+                AndroidUtilities.runOnUIThread(() -> sendMediaBeforeDone(sendOptions));
+            }
+        }
         if (send == 0) {
             encoder.cancel();
         } else {
             encoder.stop();
         }
-        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance()
-                .postNotificationName(NotificationCenter.startAllHeavyOperations, 512));
+        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512));
     }
 
-    private VideoEditedInfo makeRoundVideoEditedInfo(File output) {
-        VideoEditedInfo info = videoEditedInfo;
-        if (info == null) {
-            info = new VideoEditedInfo();
-            info.startTime = -1;
-            info.endTime = -1;
+    private void sendMediaBeforeDone(SendOptions sendOptions) {
+        File output = encoderFile;
+        if (sentMedia || output == null) {
+            return;
         }
-        info.roundVideo = true;
-        info.file = file;
-        info.encryptedFile = encryptedFile;
-        info.key = key;
-        info.iv = iv;
-        info.estimatedSize = Math.max(1, size);
-        info.framerate = encoderFrameRate;
-        info.resultWidth = info.originalWidth = SystemUtils.getRoundVideoResolution();
-        info.resultHeight = info.originalHeight = SystemUtils.getRoundVideoResolution();
-        info.originalPath = output.getAbsolutePath();
-        info.estimatedDuration = recordedTime;
-        return info;
+        if ((videoEditedInfo == null || !videoEditedInfo.needConvert()) && !delegate.isInScheduleMode()) {
+            sentMedia = true;
+            videoEditedInfo = new VideoEditedInfo();
+            videoEditedInfo.startTime = -1;
+            videoEditedInfo.endTime = -1;
+            videoEditedInfo.estimatedSize = Math.max(1, size);
+            videoEditedInfo.roundVideo = true;
+            videoEditedInfo.file = file;
+            videoEditedInfo.encryptedFile = encryptedFile;
+            videoEditedInfo.key = key;
+            videoEditedInfo.iv = iv;
+            videoEditedInfo.framerate = encoderFrameRate;
+            videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = SystemUtils.getRoundVideoResolution();
+            videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = SystemUtils.getRoundVideoResolution();
+            videoEditedInfo.originalPath = output.getAbsolutePath();
+            videoEditedInfo.notReadyYet = true;
+            videoEditedInfo.thumb = firstFrameThumb;
+            videoEditedInfo.estimatedDuration = recordedTime;
+            firstFrameThumb = null;
+            MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, 0, 0, output.getAbsolutePath(), 0, true, 0, 0, 0);
+            if (sendOptions != null) {
+                photoEntry.ttl = sendOptions.ttl;
+                photoEntry.effectId = sendOptions.effectId;
+            }
+            delegate.sendMedia(photoEntry, videoEditedInfo, sendOptions == null || sendOptions.notify, sendOptions != null ? sendOptions.scheduleDate : 0, sendOptions != null ? sendOptions.scheduleRepeatPeriod : 0, false, sendOptions != null ? sendOptions.stars : 0);
+        }
     }
 
-    private void handleRoundEncoderPaused(File preview) {
+    private void handleEncoderPaused(File preview) {
         if (preview == null || cancelled) {
             return;
         }
-        videoEditedInfo = makeRoundVideoEditedInfo(preview);
+        videoEditedInfo = new VideoEditedInfo();
+        videoEditedInfo.roundVideo = true;
+        videoEditedInfo.startTime = -1;
+        videoEditedInfo.endTime = -1;
+        videoEditedInfo.file = file;
+        videoEditedInfo.encryptedFile = encryptedFile;
+        videoEditedInfo.key = key;
+        videoEditedInfo.iv = iv;
+        videoEditedInfo.estimatedSize = Math.max(1, size);
+        videoEditedInfo.framerate = encoderFrameRate;
+        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = SystemUtils.getRoundVideoResolution();
+        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = SystemUtils.getRoundVideoResolution();
+        videoEditedInfo.originalPath = preview.getAbsolutePath();
         setupVideoPlayer(preview);
-        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent,
-                recordingGuid, videoEditedInfo, preview.getAbsolutePath(), roundKeyframeThumbs);
+        videoEditedInfo.estimatedDuration = recordedTime;
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, videoEditedInfo, preview.getAbsolutePath(), keyframeThumbs);
+    }
+
+    private void handleEncoderFinished(RoundVideoEncoder.FinishReason reason) {
+        videoEncoder = null;
+        int send = reason == RoundVideoEncoder.FinishReason.COMPLETED ? encoderSend : 0;
+        final SendOptions sendOptions = encoderSendOptions;
+        encoderSendOptions = null;
+        if (previewFile != null) {
+            previewFile.delete();
+            previewFile = null;
+        }
+        if (send != 2 && generateKeyframeThumbsQueue != null) {
+            generateKeyframeThumbsQueue.cleanupQueue();
+            generateKeyframeThumbsQueue.recycle();
+            generateKeyframeThumbsQueue = null;
+        }
+        FileLog.d("InstantCamera encoder finished send " + send);
+        final File output = encoderFile;
+        if (send == 0 || output == null) {
+            if (output != null) {
+                FileLoader.getInstance(currentAccount).cancelFileUpload(output.getAbsolutePath(), false);
+            }
+            MediaController.getInstance().requestRecordAudioFocus(false);
+            if (reason == RoundVideoEncoder.FinishReason.FAILED && !cancelled) {
+                handleEncoderFailure();
+            }
+            return;
+        }
+        if (!sentMedia) {
+            sentMedia = true;
+            if (videoEditedInfo == null) {
+                videoEditedInfo = new VideoEditedInfo();
+                videoEditedInfo.startTime = -1;
+                videoEditedInfo.endTime = -1;
+            }
+            if (videoEditedInfo.needConvert()) {
+                file = null;
+                encryptedFile = null;
+                key = null;
+                iv = null;
+                double totalDuration = videoEditedInfo.estimatedDuration;
+                long startTime = videoEditedInfo.startTime >= 0 ? videoEditedInfo.startTime : 0;
+                long endTime = videoEditedInfo.endTime >= 0 ? videoEditedInfo.endTime : videoEditedInfo.estimatedDuration;
+                videoEditedInfo.estimatedDuration = endTime - startTime;
+                videoEditedInfo.estimatedSize = Math.max(1, (long) (size * (videoEditedInfo.estimatedDuration / totalDuration)));
+                videoEditedInfo.bitrate = SystemUtils.getRoundVideoBitrate() * 1024;
+                if (videoEditedInfo.startTime > 0) {
+                    videoEditedInfo.startTime *= 1000;
+                }
+                if (videoEditedInfo.endTime > 0) {
+                    videoEditedInfo.endTime *= 1000;
+                }
+                FileLoader.getInstance(currentAccount).cancelFileUpload(output.getAbsolutePath(), false);
+            } else {
+                videoEditedInfo.estimatedSize = Math.max(1, size);
+            }
+            videoEditedInfo.roundVideo = true;
+            videoEditedInfo.file = file;
+            videoEditedInfo.encryptedFile = encryptedFile;
+            videoEditedInfo.key = key;
+            videoEditedInfo.iv = iv;
+            videoEditedInfo.framerate = encoderFrameRate;
+            videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = SystemUtils.getRoundVideoResolution();
+            videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = SystemUtils.getRoundVideoResolution();
+            videoEditedInfo.originalPath = output.getAbsolutePath();
+            final VideoEditedInfo info = videoEditedInfo;
+            if (send == 1) {
+                if (delegate.isInScheduleMode()) {
+                    AlertsCreator.createScheduleDatePickerDialog(delegate.getParentActivity(), delegate.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> {
+                        MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, 0, 0, output.getAbsolutePath(), 0, true, 0, 0, 0);
+                        if (sendOptions != null) {
+                            photoEntry.ttl = sendOptions.ttl;
+                            photoEntry.effectId = sendOptions.effectId;
+                        }
+                        delegate.sendMedia(photoEntry, info,
+                                notify || sendOptions == null || sendOptions.notify,
+                                scheduleDate != 0 ? scheduleDate : (sendOptions != null ? sendOptions.scheduleDate : 0),
+                                scheduleRepeatPeriod != 0 ? scheduleRepeatPeriod : (sendOptions != null ? sendOptions.scheduleRepeatPeriod : 0),
+                                false, sendOptions != null ? sendOptions.stars : 0);
+                        startAnimation(false, false);
+                    }, () -> startAnimation(false, false), resourcesProvider);
+                } else {
+                    MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, 0, 0, output.getAbsolutePath(), 0, true, 0, 0, 0);
+                    if (sendOptions != null) {
+                        photoEntry.ttl = sendOptions.ttl;
+                        photoEntry.effectId = sendOptions.effectId;
+                    }
+                    delegate.sendMedia(photoEntry, info, sendOptions == null || sendOptions.notify, sendOptions != null ? sendOptions.scheduleDate : 0, sendOptions != null ? sendOptions.scheduleRepeatPeriod : 0, false, sendOptions != null ? sendOptions.stars : 0);
+                }
+                videoEditedInfo = null;
+            } else {
+                setupVideoPlayer(output);
+                info.estimatedDuration = recordedTime;
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, info, output.getAbsolutePath(), keyframeThumbs);
+            }
+        } else if (videoEditedInfo != null) {
+            videoEditedInfo.notReadyYet = false;
+        }
+        didWriteData(output, 0, true);
+        MediaController.getInstance().requestRecordAudioFocus(false);
+    }
+
+    private void handleEncoderFailure() {
+        boolean wasRecording = recording || cameraThread != null;
+        cancelled = true;
+        recording = false;
+        flashing = false;
+        updateFlash();
+        stopProgressTimer();
+        if (videoPlayer != null) {
+            videoPlayer.releasePlayer(true);
+            videoPlayer = null;
+        }
+        if (wasRecording) {
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, 6);
+        }
+        if (cameraThread != null) {
+            cameraThread.shutdown(0, true, 0, 0, 0, 0);
+            cameraThread = null;
+        }
+        if (cameraFile != null) {
+            cameraFile.delete();
+            AutoDeleteMediaTask.unlockFile(cameraFile);
+            cameraFile = null;
+        }
+        encoderFile = null;
+        startAnimation(false, false);
+        invalidate();
+    }
+
+    private void didWriteData(File output, long availableSize, boolean last) {
+        if (videoConvertFirstWrite) {
+            FileLoader.getInstance(currentAccount).uploadFile(output.toString(), isSecretChat, false, 1, ConnectionsManager.FileTypeVideo, false);
+            videoConvertFirstWrite = false;
+            if (last) {
+                FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(output.toString(), isSecretChat, availableSize, last ? output.length() : 0);
+            }
+        } else {
+            FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(output.toString(), isSecretChat, availableSize, last ? output.length() : 0);
+        }
     }
 
     private void setupVideoPlayer(File output) {
@@ -1921,8 +2067,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         videoPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
             @Override
             public void onStateChanged(boolean playWhenReady, int playbackState) {
-                if (videoPlayer != null && videoPlayer.isPlaying()
-                        && playbackState == ExoPlayer.STATE_ENDED && videoEditedInfo != null) {
+                if (videoPlayer != null && videoPlayer.isPlaying() && playbackState == ExoPlayer.STATE_ENDED && videoEditedInfo != null) {
                     videoPlayer.seekTo(videoEditedInfo.startTime > 0 ? videoEditedInfo.startTime : 0);
                 }
             }
@@ -1933,7 +2078,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             }
 
             @Override
-            public void onVideoSizeChanged(int width, int height, int rotation, float pixelRatio) {
+            public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
             }
 
             @Override
@@ -1955,87 +2100,6 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         animation.setDuration(180);
         animation.setInterpolator(new DecelerateInterpolator());
         animation.start();
-    }
-
-    private void handleRoundEncoderFinished(RoundVideoEncoder.FinishReason reason) {
-        roundVideoEncoder = null;
-        int send = reason == RoundVideoEncoder.FinishReason.COMPLETED ? roundEncoderSend : 0;
-        SendOptions options = roundEncoderSendOptions;
-        roundEncoderSendOptions = null;
-        if (previewFile != null) {
-            previewFile.delete();
-            previewFile = null;
-        }
-        File output = roundEncoderFile;
-        roundEncoderFile = null;
-        if (send == 0 || output == null) {
-            if (output != null) {
-                FileLoader.getInstance(currentAccount).cancelFileUpload(output.getAbsolutePath(), false);
-            }
-            MediaController.getInstance().requestRecordAudioFocus(false);
-            if (reason == RoundVideoEncoder.FinishReason.FAILED && !cancelled) {
-                cancel(false);
-            }
-            return;
-        }
-        if (!roundSentMedia) {
-            roundSentMedia = true;
-            VideoEditedInfo info = makeRoundVideoEditedInfo(output);
-            if (info.needConvert()) {
-                file = null;
-                encryptedFile = null;
-                key = null;
-                iv = null;
-                long originalDuration = Math.max(1, info.estimatedDuration);
-                long start = Math.max(0, info.startTime);
-                long end = info.endTime >= 0 ? info.endTime : originalDuration;
-                info.estimatedDuration = end - start;
-                info.estimatedSize = Math.max(1, (long) (size * (info.estimatedDuration / (double) originalDuration)));
-                info.bitrate = SystemUtils.getRoundVideoBitrate() * 1024;
-                if (info.startTime > 0) info.startTime *= 1000;
-                if (info.endTime > 0) info.endTime *= 1000;
-                FileLoader.getInstance(currentAccount).cancelFileUpload(output.getAbsolutePath(), false);
-            }
-            info.file = file;
-            info.encryptedFile = encryptedFile;
-            info.key = key;
-            info.iv = iv;
-            videoEditedInfo = info;
-            if (send == 1) {
-                if (delegate.isInScheduleMode()) {
-                    AlertsCreator.createScheduleDatePickerDialog(delegate.getParentActivity(), delegate.getDialogId(),
-                            (notify, scheduleDate, scheduleRepeatPeriod) -> {
-                                sendRoundMedia(output, info, options, notify, scheduleDate, scheduleRepeatPeriod);
-                                startAnimation(false, false);
-                            }, () -> startAnimation(false, false), resourcesProvider);
-                } else {
-                    sendRoundMedia(output, info, options, options == null || options.notify,
-                            options != null ? options.scheduleDate : 0,
-                            options != null ? options.scheduleRepeatPeriod : 0);
-                }
-                videoEditedInfo = null;
-            } else {
-                setupVideoPlayer(output);
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent,
-                        recordingGuid, info, output.getAbsolutePath(), roundKeyframeThumbs);
-            }
-        } else if (videoEditedInfo != null) {
-            videoEditedInfo.notReadyYet = false;
-        }
-        didWriteRoundData(output, 0, true);
-        MediaController.getInstance().requestRecordAudioFocus(false);
-    }
-
-    private void sendRoundMedia(File output, VideoEditedInfo info, SendOptions options,
-                                boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
-        MediaController.PhotoEntry entry = new MediaController.PhotoEntry(0, 0, 0,
-                output.getAbsolutePath(), 0, true, 0, 0, 0);
-        if (options != null) {
-            entry.ttl = options.ttl;
-            entry.effectId = options.effectId;
-        }
-        delegate.sendMedia(entry, info, notify, scheduleDate, scheduleRepeatPeriod,
-                false, options != null ? options.stars : 0);
     }
 
     private Bitmap firstFrameThumb;
@@ -2062,8 +2126,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         private final int DO_SETSESSION_MESSAGE = 3;
         private final int DO_FLIP = 4;
         private final int DO_SETORIENTATION_MESSAGE = 5;
-        private final int DO_SET_CAMERA_X_PREVIEW_SIZE = 6;
-        private final RoundVideoEncoder.FrameSnapshot frameSnapshot = new RoundVideoEncoder.FrameSnapshot();
+        private final int DO_SET_CAMERAX_PREVIEW_SIZE = 6;
 
         private int drawProgram;
         private int vertexMatrixHandle;
@@ -2078,12 +2141,19 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         private int surfaceWidth;
         private int surfaceHeight;
 
+        private volatile boolean running = true;
+        private final AtomicInteger pendingRenderMask = new AtomicInteger(0);
+        private final int[] surfaceGeneration = new int[2];
+        private final RoundVideoEncoder.FrameSnapshot frameSnapshotScratch = new RoundVideoEncoder.FrameSnapshot();
+
         public CameraGLThread(SurfaceTexture surface, int surfaceWidth, int surfaceHeight) {
-            super("CameraGLThread");
+            super("CameraGLThread", false);
             surfaceTexture = surface;
 
             this.surfaceWidth = surfaceWidth;
             this.surfaceHeight = surfaceHeight;
+            start();
+            postRunnable(() -> initied = initGL());
         }
 
         private void updateScale() {
@@ -2111,7 +2181,49 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 scaleY = 1.0f;
             }
             FileLog.d("InstantCamera camera scaleX = " + scaleX + " scaleY = " + scaleY);
+        }
 
+        private void updateTextureBuffer() {
+            updateScale();
+
+            float tX = 1.0f / scaleX / 2.0f;
+            float tY = 1.0f / scaleY / 2.0f;
+            float[] texData = {
+                    0.5f - tX, 0.5f - tY,
+                    0.5f + tX, 0.5f - tY,
+                    0.5f - tX, 0.5f + tY,
+                    0.5f + tX, 0.5f + tY
+            };
+            System.arraycopy(texData, 0, textureCoordsData, 0, 8);
+            textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+            textureBuffer.put(texData).position(0);
+        }
+
+        private void attachFrameListener(int index) {
+            final SurfaceTexture surface = cameraSurface[index];
+            final int generation = surfaceGeneration[index];
+            surface.setOnFrameAvailableListener(st -> {
+                if (!running || cameraSurface[index] != st || surfaceGeneration[index] != generation) {
+                    return;
+                }
+                cameraTextureAvailable = true;
+                requestRender(index == 0, index == 1);
+            }, getHandler());
+        }
+
+        private void fillFrameSnapshot(RoundVideoEncoder.FrameSnapshot snapshot, int index, int cameraId) {
+            SurfaceTexture surface = cameraSurface[index];
+            snapshot.sourceTimestampNs = surface.getTimestamp();
+            snapshot.arrivalTimeNs = System.nanoTime();
+            snapshot.cameraId = cameraId;
+            snapshot.surfaceIndex = index;
+            snapshot.textureId = cameraTexture[index];
+            surface.getTransformMatrix(snapshot.stMatrix);
+            System.arraycopy(mMVPMatrix, 0, snapshot.mvpMatrix, 0, 16);
+            System.arraycopy(textureCoordsData, 0, snapshot.textureCoords, 0, 8);
+            Size size = previewSize[index];
+            snapshot.previewWidth = size != null ? size.getWidth() : 0;
+            snapshot.previewHeight = size != null ? size.getHeight() : 0;
         }
 
         private boolean initGL() {
@@ -2177,7 +2289,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 return false;
             }
 
-            if (surfaceTexture instanceof SurfaceTexture) {
+            if (surfaceTexture != null) {
                 eglSurface = egl10.eglCreateWindowSurface(eglDisplay, eglConfig, surfaceTexture, null);
             } else {
                 finish();
@@ -2199,32 +2311,16 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 return false;
             }
 
-            updateScale();
-
-            float tX = 1.0f / scaleX / 2.0f;
-            float tY = 1.0f / scaleY / 2.0f;
             float[] verticesData = {
                     -1.0f, -1.0f, 0,
                     1.0f, -1.0f, 0,
                     -1.0f, 1.0f, 0,
                     1.0f, 1.0f, 0
             };
-            float[] texData = {
-                    0.5f - tX, 0.5f - tY,
-                    0.5f + tX, 0.5f - tY,
-                    0.5f - tX, 0.5f + tY,
-                    0.5f + tX, 0.5f + tY
-            };
-
-            if (ExteraConfig.getCameraType() != CameraType.CAMERA_X && videoEncoder == null) {
-                videoEncoder = new VideoRecorder();
-            }
-
             vertexBuffer = ByteBuffer.allocateDirect(verticesData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
             vertexBuffer.put(verticesData).position(0);
 
-            textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-            textureBuffer.put(texData).position(0);
+            updateTextureBuffer();
 
             android.opengl.Matrix.setIdentityM(mSTMatrix, 0);
 
@@ -2268,12 +2364,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
 
                 cameraSurface[a] = new SurfaceTexture(cameraTexture[a]);
-                final int i = a;
-                cameraSurface[a].setOnFrameAvailableListener(surfaceTexture -> {
-                    cameraTextureAvailable = true;
-                    requestRender(i == 0, i == 1);
-                });
-                createCamera(a, cameraSurface[a]);
+                attachFrameListener(a);
+                if (ExteraConfig.getCameraType() != CameraType.CAMERA_X || a == 0 || bothCameras) {
+                    createCamera(a, cameraSurface[a]);
+                }
             }
 
             if (BuildVars.LOGS_ENABLED) {
@@ -2291,6 +2385,9 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         }
 
         public void finish() {
+            surfaceGeneration[0]++;
+            surfaceGeneration[1]++;
+            pendingRenderMask.set(0);
             if (cameraSurface != null) {
                 for (int a = 0; a < 2; ++a) {
                     if (cameraSurface[a] != null) {
@@ -2342,14 +2439,6 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             }
         }
 
-        public void flipSurfaces() {
-            Handler handler = getHandler();
-            if (handler != null) {
-                sendMessage(handler.obtainMessage(DO_FLIP), 0);
-                requestRender(true, true);
-            }
-        }
-
         public void setOrientation() {
             Handler handler = getHandler();
             if (handler != null) {
@@ -2358,15 +2447,27 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         }
 
         public void setCameraXPreviewSize(int index, int width, int height) {
+            if (index < 0 || index >= previewSize.length || width <= 0 || height <= 0) {
+                return;
+            }
             Handler handler = getHandler();
-            if (handler != null && index >= 0 && index < previewSize.length && width > 0 && height > 0) {
-                sendMessage(handler.obtainMessage(DO_SET_CAMERA_X_PREVIEW_SIZE,
-                        index, 0, new Size(width, height)), 0);
+            if (handler != null) {
+                sendMessage(handler.obtainMessage(DO_SET_CAMERAX_PREVIEW_SIZE, index, 0, new Size(width, height)), 0);
+            }
+        }
+
+        public void flipSurfaces() {
+            Handler handler = getHandler();
+            if (handler != null) {
+                sendMessage(handler.obtainMessage(DO_FLIP), 0);
             }
         }
 
         private void onDraw(Integer cameraId, boolean updateTexImage1, boolean updateTexImage2) {
             if (!initied) {
+                return;
+            }
+            if (this.cameraId != null && !this.cameraId.equals(cameraId)) {
                 return;
             }
 
@@ -2379,59 +2480,67 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 }
             }
             if (updateTexImage1) {
-                cameraSurface[0].updateTexImage();
+                try {
+                    cameraSurface[0].updateTexImage();
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                    return;
+                }
             }
             if (updateTexImage2) {
-                cameraSurface[1].updateTexImage();
+                try {
+                    cameraSurface[1].updateTexImage();
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                    return;
+                }
             }
-            boolean useRoundEncoder = ExteraConfig.getCameraType() == CameraType.CAMERA_X;
-            if (useRoundEncoder && bothCameras
-                    && !(surfaceIndex == 0 ? updateTexImage1 : updateTexImage2)) {
+            boolean currentSurfaceUpdated = surfaceIndex == 0 ? updateTexImage1 : updateTexImage2;
+            if (ExteraConfig.getCameraType() == CameraType.CAMERA_X && bothCameras && !currentSurfaceUpdated) {
                 return;
             }
 
-            boolean captureFirstFrameThumb = false;
+            boolean shouldRenderFirstFrameThumb = false;
             if (!recording) {
-                if (useRoundEncoder) {
-                    if (roundVideoEncoder == null) {
-                        encoderFrameRate = resolveEncoderFrameRate();
-                        roundSentMedia = false;
-                        roundVideoConvertFirstWrite = true;
-                        roundEncoderFinishRequested = false;
-                        roundEncoderSend = 0;
-                        roundEncoderSendOptions = null;
-                        roundKeyframeThumbs.clear();
-                        roundVideoEncoder = new RoundVideoEncoder(new CameraXEncoderRenderer(),
-                                roundEncoderCallback, isSecretChat);
+                if (videoEncoder == null) {
+                    sentMedia = false;
+                    videoConvertFirstWrite = true;
+                    encoderFinishRequested = false;
+                    encoderSend = 0;
+                    encoderSendOptions = null;
+                    keyframeThumbs.clear();
+                    if (generateKeyframeThumbsQueue != null) {
+                        generateKeyframeThumbsQueue.cleanupQueue();
+                        generateKeyframeThumbsQueue.recycle();
                     }
-                    captureFirstFrameThumb = !roundVideoEncoder.isStarted();
-                    roundEncoderFile = cameraFile;
-                    roundVideoEncoder.startRecording(cameraFile, EGL14.eglGetCurrentContext(), encoderFrameRate);
-                } else {
-                    if (videoEncoder == null) {
-                        encoderFrameRate = resolveEncoderFrameRate();
-                        videoEncoder = new VideoRecorder();
-                    }
-                    if (videoEncoder.started) {
-                        if (!cameraReady) {
-                            cameraReady = true;
-                            AndroidUtilities.runOnUIThread(() -> textureOverlayView.animate().setDuration(120)
-                                    .alpha(0.0f).setInterpolator(new DecelerateInterpolator()).start());
-                        }
-                    } else {
-                        captureFirstFrameThumb = true;
-                    }
-                    videoEncoder.startRecording(cameraFile, EGL14.eglGetCurrentContext());
+                    generateKeyframeThumbsQueue = new DispatchQueue("keyframes_thumb_queue");
+                    videoEncoder = new RoundVideoEncoder(new EncoderRenderer(), encoderCallback, isSecretChat);
+                    encoderFrameRate = resolveEncoderFrameRate();
                 }
-                int orientation;
-                if (currentSession instanceof CameraSession) {
-                    orientation = ((CameraSession) currentSession).getCurrentOrientation();
-                } else if (currentSession instanceof Camera2Session) {
-                    orientation = ((Camera2Session) currentSession).getCurrentOrientation();
-                } else if (ExteraConfig.getCameraType() == CameraType.CAMERA_X && cameraXSession != null) {
-                    orientation = cameraXSession.getDisplayOrientation();
+                if (videoEncoder.isStarted()) {
+                    if (!cameraReady) {
+                        cameraReady = true;
+                        AndroidUtilities.runOnUIThread(() -> textureOverlayView.animate().setDuration(120).alpha(0.0f).setInterpolator(new DecelerateInterpolator()).start());
+                    }
                 } else {
-                    orientation = 0;
+                    shouldRenderFirstFrameThumb = true;
+                }
+                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512));
+                encoderFile = cameraFile;
+                videoEncoder.startRecording(cameraFile, EGL14.eglGetCurrentContext(), encoderFrameRate);
+                recording = true;
+                int orientation;
+                if (ExteraConfig.getCameraType() != CameraType.CAMERA_X) {
+                    if (currentSession instanceof CameraSession) {
+                        orientation = ((CameraSession) currentSession).getCurrentOrientation();
+                    } else if (currentSession instanceof Camera2Session) {
+                        orientation = ((Camera2Session) currentSession).getCurrentOrientation();
+                    } else {
+                        orientation = 0;
+                    }
+                } else {
+                    CameraXSession session = cameraXSession;
+                    orientation = session != null ? session.getDisplayOrientation() : 0;
                 }
                 if (orientation == 90 || orientation == 270) {
                     float temp = scaleX;
@@ -2442,28 +2551,12 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 updateFlash();
             }
 
-            cameraSurface[surfaceIndex].getTransformMatrix(mSTMatrix);
-            if (surfaceIndex == 0 && updateTexImage1 || surfaceIndex == 1 && updateTexImage2) {
-                if (useRoundEncoder && roundVideoEncoder != null) {
-                    frameSnapshot.sourceTimestampNs = cameraSurface[surfaceIndex].getTimestamp();
-                    frameSnapshot.arrivalTimeNs = System.nanoTime();
-                    frameSnapshot.cameraId = bothCameras ? surfaceIndex : cameraId;
-                    frameSnapshot.surfaceIndex = surfaceIndex;
-                    frameSnapshot.textureId = cameraTexture[surfaceIndex];
-                    Size size = previewSize[surfaceIndex];
-                    frameSnapshot.previewWidth = size != null ? size.getWidth() : 0;
-                    frameSnapshot.previewHeight = size != null ? size.getHeight() : 0;
-                    System.arraycopy(mSTMatrix, 0, frameSnapshot.stMatrix, 0, 16);
-                    System.arraycopy(mMVPMatrix, 0, frameSnapshot.mvpMatrix, 0, 16);
-                    textureBuffer.position(0);
-                    textureBuffer.get(frameSnapshot.textureCoords);
-                    textureBuffer.position(0);
-                    roundVideoEncoder.frameAvailable(frameSnapshot);
-                } else if (videoEncoder != null) {
-                    videoEncoder.frameAvailable(cameraSurface[surfaceIndex],
-                            bothCameras ? surfaceIndex : cameraId, System.nanoTime());
-                }
+            if (videoEncoder != null && (surfaceIndex == 0 && updateTexImage1 || surfaceIndex == 1 && updateTexImage2)) {
+                fillFrameSnapshot(frameSnapshotScratch, surfaceIndex, bothCameras ? surfaceIndex : cameraId);
+                videoEncoder.frameAvailable(frameSnapshotScratch);
             }
+
+            cameraSurface[surfaceIndex].getTransformMatrix(mSTMatrix);
 
             GLES20.glUseProgram(drawProgram);
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -2487,7 +2580,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
 
             egl10.eglSwapBuffers(eglDisplay, eglSurface);
 
-            if (captureFirstFrameThumb) {
+            if (shouldRenderFirstFrameThumb) {
                 AndroidUtilities.runOnUIThread(() -> {
                     if (textureView == null) {
                         return;
@@ -2502,36 +2595,33 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         }
 
         @Override
-        public void run() {
-            initied = initGL();
-            super.run();
-        }
-
-        @Override
         public void handleMessage(Message inputMessage) {
             int what = inputMessage.what;
 
             switch (what) {
-                case DO_RENDER_MESSAGE:
-                    onDraw(inputMessage.arg1, (inputMessage.arg2 & 1) != 0, (inputMessage.arg2 & 2) != 0);
+                case DO_RENDER_MESSAGE: {
+                    int mask = pendingRenderMask.getAndSet(0);
+                    if (mask != 0) {
+                        onDraw(inputMessage.arg1, (mask & 1) != 0, (mask & 2) != 0);
+                    }
                     break;
-                case DO_SHUTDOWN_MESSAGE:
-                    finish();
-                    if (recording && (!(inputMessage.obj instanceof SendOptions)
-                            || ((SendOptions) inputMessage.obj).ttl != -2)) {
-                        SendOptions options = inputMessage.obj instanceof SendOptions
-                                ? (SendOptions) inputMessage.obj : null;
-                        if (ExteraConfig.getCameraType() == CameraType.CAMERA_X) {
-                            requestRoundEncoderStop(inputMessage.arg1, options);
-                        } else if (videoEncoder != null) {
-                            videoEncoder.stopRecording(inputMessage.arg1, options);
+                }
+                case DO_SHUTDOWN_MESSAGE: {
+                    synchronized (this) {
+                        finish();
+                    }
+                    if (recording) {
+                        Object obj = inputMessage.obj;
+                        if ((!(obj instanceof SendOptions) || ((SendOptions) obj).ttl != -2) && videoEncoder != null) {
+                            requestStopRecording(inputMessage.arg1, obj instanceof SendOptions ? (SendOptions) obj : null);
                         }
                     }
                     Looper looper = Looper.myLooper();
                     if (looper != null) {
-                        looper.quit();
+                        looper.quitSafely();
                     }
                     break;
+                }
                 case DO_REINIT_MESSAGE: {
                     if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
                         if (BuildVars.LOGS_ENABLED) {
@@ -2539,6 +2629,13 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                         }
                         return;
                     }
+
+                    surfaceGeneration[0]++;
+                    Handler handler = getHandler();
+                    if (handler != null) {
+                        handler.removeMessages(DO_RENDER_MESSAGE);
+                    }
+                    int pendingMask = pendingRenderMask.getAndSet(0);
 
                     if (cameraSurface[0] != null) {
                         cameraSurface[0].getTransformMatrix(moldSTMatrix);
@@ -2561,23 +2658,13 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                     GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
 
                     cameraSurface[0] = new SurfaceTexture(cameraTexture[0]);
-                    cameraSurface[0].setOnFrameAvailableListener(surfaceTexture -> requestRender(true, false));
+                    attachFrameListener(0);
                     createCamera(0, cameraSurface[0]);
 
-                    updateScale();
-
-                    float tX = 1.0f / scaleX / 2.0f;
-                    float tY = 1.0f / scaleY / 2.0f;
-
-                    float[] texData = {
-                            0.5f - tX, 0.5f - tY,
-                            0.5f + tX, 0.5f - tY,
-                            0.5f - tX, 0.5f + tY,
-                            0.5f + tX, 0.5f + tY
-                    };
-
-                    textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-                    textureBuffer.put(texData).position(0);
+                    updateTextureBuffer();
+                    if ((pendingMask & 2) != 0 && cameraSurface[1] != null) {
+                        requestRender(false, true);
+                    }
                     break;
                 }
                 case DO_SETSESSION_MESSAGE: {
@@ -2605,46 +2692,24 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 }
                 case DO_FLIP: {
                     surfaceIndex = 1 - surfaceIndex;
-
-                    updateScale();
-
-                    float tX = 1.0f / scaleX / 2.0f;
-                    float tY = 1.0f / scaleY / 2.0f;
-
-                    float[] texData = {
-                            0.5f - tX, 0.5f - tY,
-                            0.5f + tX, 0.5f - tY,
-                            0.5f - tX, 0.5f + tY,
-                            0.5f + tX, 0.5f + tY
-                    };
-
-                    textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-                    textureBuffer.put(texData).position(0);
+                    updateTextureBuffer();
+                    requestRender(true, true);
                     break;
                 }
                 case DO_SETORIENTATION_MESSAGE: {
-                    int orientation = cameraXSession != null ? cameraXSession.getDisplayOrientation() : 0;
+                    CameraXSession session = cameraXSession;
+                    int orientation = session != null ? session.getDisplayOrientation() : 0;
                     android.opengl.Matrix.setIdentityM(mMVPMatrix, 0);
                     if (orientation != 0) {
                         android.opengl.Matrix.rotateM(mMVPMatrix, 0, orientation, 0, 0, 1);
                     }
                     break;
                 }
-                case DO_SET_CAMERA_X_PREVIEW_SIZE: {
+                case DO_SET_CAMERAX_PREVIEW_SIZE: {
                     int index = inputMessage.arg1;
                     previewSize[index] = (Size) inputMessage.obj;
                     if (index == surfaceIndex) {
-                        updateScale();
-                        float tx = 1.0f / scaleX / 2.0f;
-                        float ty = 1.0f / scaleY / 2.0f;
-                        float[] coords = {
-                                0.5f - tx, 0.5f - ty,
-                                0.5f + tx, 0.5f - ty,
-                                0.5f - tx, 0.5f + ty,
-                                0.5f + tx, 0.5f + ty
-                        };
-                        textureBuffer.position(0);
-                        textureBuffer.put(coords).position(0);
+                        updateTextureBuffer();
                     }
                     break;
                 }
@@ -2654,182 +2719,41 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         public void shutdown(int send, boolean notify, int scheduleDate, int scheduleRepeatPeriod, int ttl, long effectId) {
             Handler handler = getHandler();
             if (handler != null) {
-                sendMessage(handler.obtainMessage(DO_SHUTDOWN_MESSAGE, send, 0, new SendOptions(notify, scheduleDate, scheduleRepeatPeriod, ttl, effectId, 0)), 0);
+                synchronized (this) {
+                    running = false;
+                    for (SurfaceTexture surface : cameraSurface) {
+                        if (surface != null) {
+                            surface.setOnFrameAvailableListener(null);
+                        }
+                    }
+                    handler.removeMessages(DO_RENDER_MESSAGE);
+                    pendingRenderMask.set(0);
+                    sendMessage(handler.obtainMessage(DO_SHUTDOWN_MESSAGE, send, 0, new SendOptions(notify, scheduleDate, scheduleRepeatPeriod, ttl, effectId, 0)), 0);
+                }
             }
         }
 
         public void requestRender(boolean updateTexImage1, boolean updateTexImage2) {
+            int mask = (updateTexImage1 ? 1 : 0) | (updateTexImage2 ? 2 : 0);
+            if (mask == 0) {
+                return;
+            }
             Handler handler = getHandler();
-            if (handler != null) {
-                sendMessage(handler.obtainMessage(DO_RENDER_MESSAGE, cameraId, (updateTexImage1 ? 1 : 0) + (updateTexImage2 ? 2 : 0)), 0);
-            }
-        }
-    }
-
-    private class CameraXEncoderRenderer implements RoundVideoEncoder.Renderer {
-        private final FloatBuffer frameTextureBuffer = ByteBuffer.allocateDirect(8 * 4)
-                .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        private int program;
-        private int positionHandle;
-        private int textureHandle;
-        private int textureMatrixHandle;
-        private int vertexMatrixHandle;
-        private InstantCameraVideoEncoderOverlayHelper overlayHelper;
-
-        @Override
-        public void onEncoderSurfaceCreated(int width, int height) {
-            overlayHelper = new InstantCameraVideoEncoderOverlayHelper(width, height);
-            String fragmentShader = "#extension GL_OES_EGL_image_external : require\n"
-                    + "precision highp float;\n"
-                    + "varying vec2 vTextureCoord;\n"
-                    + "uniform samplerExternalOES sTexture;\n"
-                    + "void main() { gl_FragColor = texture2D(sTexture, vTextureCoord); }\n";
-            int vertex = loadShader(GLES20.GL_VERTEX_SHADER, VERTEX_SHADER);
-            int fragment = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShader);
-            if (vertex == 0 || fragment == 0) {
+            if (handler == null) {
                 return;
             }
-            program = GLES20.glCreateProgram();
-            GLES20.glAttachShader(program, vertex);
-            GLES20.glAttachShader(program, fragment);
-            GLES20.glLinkProgram(program);
-            int[] linked = new int[1];
-            GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linked, 0);
-            if (linked[0] == 0) {
-                GLES20.glDeleteProgram(program);
-                program = 0;
-                return;
-            }
-            positionHandle = GLES20.glGetAttribLocation(program, "aPosition");
-            textureHandle = GLES20.glGetAttribLocation(program, "aTextureCoord");
-            textureMatrixHandle = GLES20.glGetUniformLocation(program, "uSTMatrix");
-            vertexMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix");
-        }
-
-        @Override
-        public boolean onDrawEncoderFrame(long frameDeltaNs, RoundVideoEncoder.FrameSnapshot frame) {
-            if (!cameraTextureAvailable || program == 0 || vertexBuffer == null
-                    || frame.textureId == Integer.MIN_VALUE) {
-                return false;
-            }
-            frameTextureBuffer.clear();
-            frameTextureBuffer.put(frame.textureCoords).position(0);
-            if (overlayHelper != null) {
-                overlayHelper.bind();
-            }
-            GLES20.glUseProgram(program);
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, frame.textureId);
-            vertexBuffer.position(0);
-            GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 12, vertexBuffer);
-            GLES20.glEnableVertexAttribArray(positionHandle);
-            GLES20.glVertexAttribPointer(textureHandle, 2, GLES20.GL_FLOAT, false, 8, frameTextureBuffer);
-            GLES20.glEnableVertexAttribArray(textureHandle);
-            GLES20.glUniformMatrix4fv(textureMatrixHandle, 1, false, frame.stMatrix, 0);
-            GLES20.glUniformMatrix4fv(vertexMatrixHandle, 1, false, frame.mvpMatrix, 0);
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-            GLES20.glDisableVertexAttribArray(positionHandle);
-            GLES20.glDisableVertexAttribArray(textureHandle);
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0);
-            GLES20.glUseProgram(0);
-            if (overlayHelper != null) {
-                overlayHelper.render();
-            }
-            if (!cameraReady) {
-                cameraReady = true;
-                AndroidUtilities.runOnUIThread(() -> textureOverlayView.animate().setDuration(120)
-                        .alpha(0.0f).setInterpolator(new DecelerateInterpolator()).start());
-            }
-            return true;
-        }
-
-        @Override
-        public void onEncoderSurfaceDestroyed() {
-            if (overlayHelper != null) {
-                overlayHelper.destroy();
-                overlayHelper = null;
-            }
-            if (program != 0) {
-                GLES20.glDeleteProgram(program);
-                program = 0;
-            }
-        }
-    }
-
-    private static final int MSG_START_RECORDING = 0;
-    private static final int MSG_STOP_RECORDING = 1;
-    private static final int MSG_VIDEOFRAME_AVAILABLE = 2;
-    private static final int MSG_AUDIOFRAME_AVAILABLE = 3;
-    private static final int MSG_PAUSE_RECORDING = 4;
-    private static final int MSG_RESUME_RECORDING = 5;
-
-    private static class EncoderHandler extends Handler {
-        private WeakReference<VideoRecorder> mWeakEncoder;
-
-        public EncoderHandler(VideoRecorder encoder) {
-            mWeakEncoder = new WeakReference<>(encoder);
-        }
-
-        @Override
-        public void handleMessage(Message inputMessage) {
-            int what = inputMessage.what;
-            Object obj = inputMessage.obj;
-
-            VideoRecorder encoder = mWeakEncoder.get();
-            if (encoder == null) {
-                return;
-            }
-
-            switch (what) {
-                case MSG_START_RECORDING: {
-                    try {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("InstantCamera start encoder");
-                        }
-                        encoder.prepareEncoder(inputMessage.arg1 == 1);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                        encoder.handleStopRecording(0, null);
-                        Looper.myLooper().quit();
-                    }
-                    break;
+            synchronized (this) {
+                if (!running) {
+                    return;
                 }
-                case MSG_STOP_RECORDING: {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("InstantCamera stop encoder");
-                    }
-                    encoder.handleStopRecording(inputMessage.arg1, (SendOptions) inputMessage.obj);
-                    break;
-                }
-                case MSG_PAUSE_RECORDING: {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("InstantCamera pause encoder");
-                    }
-                    encoder.handlePauseRecording();
-                    break;
-                }
-                case MSG_RESUME_RECORDING: {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("InstantCamera resume encoder");
-                    }
-                    encoder.handleResumeRecording();
-                    break;
-                }
-                case MSG_VIDEOFRAME_AVAILABLE: {
-                    long timestamp = (((long) inputMessage.arg1) << 32) | (((long) inputMessage.arg2) & 0xffffffffL);
-                    Integer cameraId = (Integer) inputMessage.obj;
-                    encoder.handleVideoFrameAvailable(timestamp, cameraId);
-                    break;
-                }
-                case MSG_AUDIOFRAME_AVAILABLE: {
-                    encoder.handleAudioFrameAvailable((AudioBufferInfo) inputMessage.obj);
-                    break;
+                int previous;
+                do {
+                    previous = pendingRenderMask.get();
+                } while (!pendingRenderMask.compareAndSet(previous, previous | mask));
+                if (previous == 0) {
+                    sendMessage(handler.obtainMessage(DO_RENDER_MESSAGE, cameraId, 0), 0);
                 }
             }
-        }
-
-        public void exit() {
-            Looper.myLooper().quit();
         }
     }
 
@@ -2868,70 +2792,43 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         }
     }
 
-    private class VideoRecorder implements Runnable {
+    private class GenerateKeyframeThumbTask implements Runnable {
+        private final AtomicBoolean inFlight;
 
-        private static final String VIDEO_MIME_TYPE = "video/avc";
-        private static final String AUDIO_MIME_TYPE = "audio/mp4a-latm";
-        private static final int IFRAME_INTERVAL = 1;
+        public GenerateKeyframeThumbTask(AtomicBoolean inFlight) {
+            this.inFlight = inFlight;
+        }
 
-        private File videoFile;
-        private File fileToWrite;
-        private boolean writingToDifferentFile;
+        @Override
+        public void run() {
+            try {
+                final TextureView textureView = InstantCameraView.this.textureView;
+                if (textureView != null) {
+                    try {
+                        final Bitmap bitmap = textureView.getBitmap(dp(56), dp(56));
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if ((bitmap == null || bitmap.getPixel(0, 0) == 0) && keyframeThumbs.size() > 1) {
+                                keyframeThumbs.add(keyframeThumbs.get(keyframeThumbs.size() - 1));
+                            } else {
+                                keyframeThumbs.add(bitmap);
+                            }
+                        });
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+            } finally {
+                inFlight.set(false);
+            }
+        }
+    }
+
+    private class EncoderRenderer implements RoundVideoEncoder.Renderer {
+        private final FloatBuffer frameTextureBuffer = ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        private InstantCameraVideoEncoderOverlayHelper overlayHelper;
         private int videoWidth;
         private int videoHeight;
-        private int videoBitrate;
-        private boolean videoConvertFirstWrite = true;
         private boolean blendEnabled;
-
-        private Surface surface;
-        private android.opengl.EGLDisplay eglDisplay = EGL14.EGL_NO_DISPLAY;
-        private android.opengl.EGLContext eglContext = EGL14.EGL_NO_CONTEXT;
-        private android.opengl.EGLContext sharedEglContext;
-        private android.opengl.EGLConfig eglConfig;
-        private android.opengl.EGLSurface eglSurface = EGL14.EGL_NO_SURFACE;
-
-        private MediaCodec videoEncoder;
-        private MediaCodec audioEncoder;
-
-        private int prependHeaderSize;
-        private boolean firstEncode;
-
-        private MediaCodec.BufferInfo videoBufferInfo;
-        private MediaCodec.BufferInfo audioBufferInfo;
-        private MP4Builder mediaMuxer;
-        private ArrayList<AudioBufferInfo> buffersToWrite = new ArrayList<>();
-        private int videoTrackIndex = -5;
-        private int audioTrackIndex = -5;
-
-        private long lastCommitedFrameTime;
-        private long audioStartTime = -1;
-        private boolean firstVideoFrameSincePause;
-
-        private long currentTimestamp = 0;
-        private long lastTimestamp = -1;
-
-        private volatile EncoderHandler handler;
-
-        private final Object sync = new Object();
-        public volatile boolean ready;
-        private volatile boolean running;
-        private volatile int sendWhenDone;
-        private volatile SendOptions sendWhenDoneOptions;
-        private long skippedTime;
-        private boolean skippedFirst;
-
-        private long desyncTime;
-        private long videoFirst = -1;
-        private long videoLast;
-        private long videoLastDt;
-        private long videoDiff;
-        private long prevVideoLast = -1;
-        private long audioFirst = -1;
-        private long audioLast = -1;
-        private long audioLastDt = 0;
-        private long prevAudioLast = -1;
-        private long audioDiff;
-        private boolean audioStopedByTime;
 
         private int drawProgram;
         private int vertexMatrixHandle;
@@ -2942,440 +2839,77 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         private int previewSizeHandle;
         private int texelSizeHandle;
         private int alphaHandle;
-        private int zeroTimeStamps;
-        private Integer lastCameraId = 0;
-        private InstantCameraVideoEncoderOverlayHelper overlayHelper;
 
-        private AudioRecord audioRecorder;
+        private boolean firstThumbPending = true;
+        private long thumbActiveTimeNs;
+        private long nextThumbActiveTimeNs;
+        private final AtomicBoolean thumbTaskInFlight = new AtomicBoolean();
 
-        private ArrayBlockingQueue<AudioBufferInfo> buffers = new ArrayBlockingQueue<>(10);
-        private ArrayList<Bitmap> keyframeThumbs = new ArrayList<>();
-        private DispatchQueue generateKeyframeThumbsQueue;
-        private int frameCount;
-
-        DispatchQueue fileWriteQueue;
-
-        private volatile boolean pauseRecorder;
-        private Runnable recorderRunnable = new Runnable() {
-
-            @RequiresApi(api = Build.VERSION_CODES.N)
-            @Override
-            public void run() {
-                long audioPresentationTimeUs = -1;
-                int readResult;
-                boolean done = false;
-                AudioTimestamp audioTimestamp = new AudioTimestamp();
-                boolean shouldUseTimestamp = true;
-
-                while (!done) {
-                    if ((!running || pauseRecorder) && audioRecorder.getRecordingState() != AudioRecord.RECORDSTATE_STOPPED) {
-                        try {
-                            audioRecorder.stop();
-                        } catch (Exception e) {
-                            done = true;
-                        }
-                        if (sendWhenDone == 0) {
-                            break;
-                        }
-                    }
-                    AudioBufferInfo buffer;
-                    if (buffers.isEmpty()) {
-                        try {
-                            buffer = new AudioBufferInfo();
-                        } catch (OutOfMemoryError error) {
-                            System.gc();
-                            buffer = new AudioBufferInfo();
-                        }
-                    } else {
-                        buffer = buffers.poll();
-                    }
-                    buffer.lastWroteBuffer = 0;
-                    buffer.results = AudioBufferInfo.MAX_SAMPLES;
-                    for (int a = 0; a < AudioBufferInfo.MAX_SAMPLES; a++) {
-                        if (audioPresentationTimeUs == -1 && !shouldUseTimestamp) {
-                            audioPresentationTimeUs = System.nanoTime() / 1000;
-                        }
-
-                        ByteBuffer byteBuffer = buffer.buffer[a];
-                        byteBuffer.rewind();
-                        readResult = audioRecorder.read(byteBuffer, 2048);
-                        if (readResult > 0 && a % 2 == 0) {
-                            byteBuffer.limit(readResult);
-                            double s = 0;
-                            for (int i = 0; i < readResult / 2; i++) {
-                                short p = byteBuffer.getShort();
-                                s += p * p;
-                            }
-                            double amplitude = Math.sqrt(s / readResult / 2);
-                            AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordProgressChanged, recordingGuid, amplitude));
-                            byteBuffer.position(0);
-                        }
-                        if (readResult <= 0) {
-                            buffer.results = a;
-                            if (!running) {
-                                buffer.last = true;
-                            }
-                            break;
-                        }
-                        long timestamp;
-                        if (shouldUseTimestamp) {
-                            try {
-                                audioRecorder.getTimestamp(audioTimestamp, AudioTimestamp.TIMEBASE_MONOTONIC);
-                                timestamp = audioTimestamp.nanoTime / 1000;
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                                shouldUseTimestamp = false;
-                                timestamp = audioPresentationTimeUs = System.nanoTime() / 1000;
-                            }
-                        } else {
-                            timestamp = audioPresentationTimeUs;
-                        }
-                        buffer.offset[a] = timestamp;
-
-                        buffer.read[a] = readResult;
-                        int bufferDurationUs = 1000000 * readResult / audioSampleRate / 2;
-                        if (!shouldUseTimestamp) {
-                            audioPresentationTimeUs += bufferDurationUs;
-                        }
-                    }
-                    if (buffer.results >= 0 || buffer.last) {
-                        if (!running && buffer.results < AudioBufferInfo.MAX_SAMPLES) {
-                            done = true;
-                        }
-                        handler.sendMessage(handler.obtainMessage(MSG_AUDIOFRAME_AVAILABLE, buffer));
-                    } else {
-                        if (!running) {
-                            done = true;
-                        } else {
-                            try {
-                                buffers.put(buffer);
-                            } catch (Exception ignore) {
-
-                            }
-                        }
-                    }
-                }
-                try {
-                    audioRecorder.release();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                if (!pauseRecorder) {
-                    handler.sendMessage(handler.obtainMessage(MSG_STOP_RECORDING, sendWhenDone, 0, sendWhenDoneOptions));
-                }
+        @Override
+        public void onEncoderSurfaceCreated(int width, int height) {
+            videoWidth = width;
+            videoHeight = height;
+            blendEnabled = false;
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+            if (overlayHelper != null) {
+                overlayHelper.destroy();
             }
-        };
+            overlayHelper = new InstantCameraVideoEncoderOverlayHelper(videoWidth, videoHeight);
 
-        private boolean started;
-
-        public void startRecording(File outputFile, android.opengl.EGLContext sharedContext) {
-            if (started && (handler != null && handler.getLooper() != null && handler.getLooper().getThread() != null && handler.getLooper().getThread().isAlive())) {
-                sharedEglContext = sharedContext;
-                handler.sendMessage(handler.obtainMessage(MSG_START_RECORDING, 1, 0));
-            }
-
-            started = true;
-            int resolution = SystemUtils.getRoundVideoResolution();
-            int bitrate = SystemUtils.getRoundVideoBitrate() * 1024;
-            AndroidUtilities.runOnUIThread(() -> {
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
-            });
-
-            videoFile = outputFile;
-            videoWidth = resolution;
-            videoHeight = resolution;
-            videoBitrate = bitrate;
-            sharedEglContext = sharedContext;
-
-            synchronized (sync) {
-                if (running) {
-                    return;
-                }
-                running = true;
-                Thread thread = new Thread(this, "TextureMovieEncoder");
-                thread.setPriority(Thread.MAX_PRIORITY);
-                thread.start();
-                while (!ready) {
-                    try {
-                        sync.wait();
-                    } catch (InterruptedException ie) {
-                        // ignore
-                    }
-                }
-            }
-
-            if (WRITE_TO_FILE_IN_BACKGROUND) {
-                fileWriteQueue = new DispatchQueue("IVR_FileWriteQueue");
-                fileWriteQueue.setPriority(Thread.MAX_PRIORITY);
-            }
-
-            keyframeThumbs.clear();
-            frameCount = 0;
-            if (generateKeyframeThumbsQueue != null) {
-                generateKeyframeThumbsQueue.cleanupQueue();
-                generateKeyframeThumbsQueue.recycle();
-            }
-            generateKeyframeThumbsQueue = new DispatchQueue("keyframes_thumb_queue");
-            handler.sendMessage(handler.obtainMessage(MSG_START_RECORDING));
-        }
-
-        public void stopRecording(int send, SendOptions options) {
-            handler.sendMessage(handler.obtainMessage(MSG_STOP_RECORDING, send, 0, options));
-            AndroidUtilities.runOnUIThread(() -> {
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
-            });
-        }
-
-        public void pause() {
-            handler.sendMessage(handler.obtainMessage(MSG_PAUSE_RECORDING));
-        }
-
-        public void resume() {
-            handler.sendMessage(handler.obtainMessage(MSG_RESUME_RECORDING));
-        }
-
-        long prevTimestamp;
-        public void frameAvailable(SurfaceTexture st, Integer cameraId, long timestampInternal) {
-            synchronized (sync) {
-                if (!ready) {
-                    return;
-                }
-            }
-
-            long timestamp = st.getTimestamp();
-            if (timestamp == 0) {
-                zeroTimeStamps++;
-                if (zeroTimeStamps > 1) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("InstantCamera fix timestamp enabled");
-                    }
-                    timestamp = timestampInternal;
-                } else {
-                    return;
-                }
+            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, VERTEX_SHADER);
+            String fragmentShaderSource;
+            if (ExteraConfig.getCameraType() == CameraType.CAMERA_X) {
+                fragmentShaderSource = "#extension GL_OES_EGL_image_external : require\n" +
+                        "precision highp float;\n" +
+                        "varying vec2 vTextureCoord;\n" +
+                        "uniform float alpha;\n" +
+                        "uniform samplerExternalOES sTexture;\n" +
+                        "void main() {\n" +
+                        "   vec4 color = texture2D(sTexture, vTextureCoord);\n" +
+                        "   gl_FragColor = vec4(color.rgb * alpha, alpha);\n" +
+                        "}\n";
             } else {
-                zeroTimeStamps = 0;
+                fragmentShaderSource = createFragmentShaderV2(previewSize[0]);
             }
-            prevTimestamp = timestamp;
-            handler.sendMessage(handler.obtainMessage(MSG_VIDEOFRAME_AVAILABLE, (int) (timestamp >> 32), (int) timestamp, cameraId));
+            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderSource);
+            if (vertexShader == 0 || fragmentShader == 0) {
+                return;
+            }
+            drawProgram = GLES20.glCreateProgram();
+            GLES20.glAttachShader(drawProgram, vertexShader);
+            GLES20.glAttachShader(drawProgram, fragmentShader);
+            GLES20.glLinkProgram(drawProgram);
+            int[] linkStatus = new int[1];
+            GLES20.glGetProgramiv(drawProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
+            if (linkStatus[0] == 0) {
+                GLES20.glDeleteProgram(drawProgram);
+                drawProgram = 0;
+                return;
+            }
+            positionHandle = GLES20.glGetAttribLocation(drawProgram, "aPosition");
+            textureHandle = GLES20.glGetAttribLocation(drawProgram, "aTextureCoord");
+            previewSizeHandle = GLES20.glGetUniformLocation(drawProgram, "preview");
+            resolutionHandle = GLES20.glGetUniformLocation(drawProgram, "resolution");
+            alphaHandle = GLES20.glGetUniformLocation(drawProgram, "alpha");
+            vertexMatrixHandle = GLES20.glGetUniformLocation(drawProgram, "uMVPMatrix");
+            textureMatrixHandle = GLES20.glGetUniformLocation(drawProgram, "uSTMatrix");
+            texelSizeHandle = GLES20.glGetUniformLocation(drawProgram, "texelSize");
         }
 
         @Override
-        public void run() {
-            Looper.prepare();
-            synchronized (sync) {
-                handler = new EncoderHandler(this);
-                ready = true;
-                sync.notify();
+        public boolean onDrawEncoderFrame(long frameDeltaNs, RoundVideoEncoder.FrameSnapshot frame) {
+            if (!cameraTextureAvailable || drawProgram == 0) {
+                return false;
             }
-            Looper.loop();
-
-            synchronized (sync) {
-                ready = false;
-            }
-        }
-
-        private void handleAudioFrameAvailable(AudioBufferInfo input) {
-            if (pauseRecorder) {
-                return;
-            }
-            if (audioStopedByTime) {
-                return;
-            }
-            buffersToWrite.add(input);
-            if (audioFirst == -1) {
-                if (videoFirst == -1) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("InstantCamera video record not yet started");
-                    }
-                    return;
-                }
-                while (true) {
-                    boolean ok = false;
-                    for (int a = 0; a < input.results; a++) {
-                        if (a == 0 && Math.abs(videoFirst - input.offset[a]) > 10_000_000L) {
-                            desyncTime = videoFirst - input.offset[a];
-                            audioFirst = input.offset[a];
-                            ok = true;
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("InstantCamera detected desync between audio and video " + desyncTime);
-                            }
-                            break;
-                        }
-                        if (input.offset[a] >= videoFirst) {
-                            input.lastWroteBuffer = a;
-                            audioFirst = input.offset[a];
-                            ok = true;
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("InstantCamera found first audio frame at " + a + " timestamp = " + input.offset[a]);
-                            }
-                            break;
-                        } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("InstantCamera ignore first audio frame at " + a + " timestamp = " + input.offset[a]);
-                            }
-                        }
-                    }
-                    if (!ok) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("InstantCamera first audio frame not found, removing buffers " + input.results);
-                        }
-                        buffersToWrite.remove(input);
-                    } else {
-                        break;
-                    }
-                    if (!buffersToWrite.isEmpty()) {
-                        input = buffersToWrite.get(0);
-                    } else {
-                        return;
-                    }
-                }
-            }
-
-            if (audioStartTime == -1) {
-                audioStartTime = input.offset[input.lastWroteBuffer];
-            }
-            if (buffersToWrite.size() > 1) {
-                input = buffersToWrite.get(0);
-            }
-            try {
-                drainEncoder(false);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            try {
-                boolean isLast = false;
-                while (input != null) {
-                    int inputBufferIndex = audioEncoder.dequeueInputBuffer(0);
-                    if (inputBufferIndex >= 0) {
-                        ByteBuffer inputBuffer;
-                        inputBuffer = audioEncoder.getInputBuffer(inputBufferIndex);
-                        long startWriteTime = input.offset[input.lastWroteBuffer];
-                        for (int a = input.lastWroteBuffer; a <= input.results; a++) {
-                            if (a < input.results) {
-                                long totalTime = input.offset[a] - audioStartTime;
-                                if (!running && (input.offset[a] >= videoLast - desyncTime || totalTime >= 60_000000)) {
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        if (totalTime >= 60_000000) {
-                                            FileLog.d("InstantCamera stop audio encoding because recorded time more than 60s");
-                                        } else {
-                                            FileLog.d("InstantCamera stop audio encoding because of stoped video recording at " + input.offset[a] + " last video " + videoLast);
-                                        }
-
-                                    }
-                                    audioStopedByTime = true;
-                                    isLast = true;
-                                    input = null;
-                                    buffersToWrite.clear();
-                                    break;
-                                }
-                                if (inputBuffer.remaining() < input.read[a]) {
-                                    input.lastWroteBuffer = a;
-                                    input = null;
-                                    break;
-                                }
-                                inputBuffer.put(input.buffer[a]);
-                            }
-                            if (a >= input.results - 1) {
-                                buffersToWrite.remove(input);
-                                if (running) {
-                                    buffers.put(input);
-                                }
-                                if (!buffersToWrite.isEmpty()) {
-                                    input = buffersToWrite.get(0);
-                                } else {
-                                    isLast = input.last;
-                                    input = null;
-                                    break;
-                                }
-                            }
-                        }
-                        long time = startWriteTime == 0 ? 0 : startWriteTime - audioStartTime;
-                        long realtime = time;
-                        if (prevAudioLast >= 0) {
-                            time += prevAudioLast;
-                        }
-                        audioLastDt = time - audioLast;
-                        audioLast = time;
-                        audioEncoder.queueInputBuffer(inputBufferIndex, 0, inputBuffer.position(), time, isLast ? MediaCodec.BUFFER_FLAG_END_OF_STREAM : 0);
-                    }
-                }
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-        }
-
-        private void handleVideoFrameAvailable(long timestampNanos, Integer cameraId) {
-            if (pauseRecorder || !cameraTextureAvailable) {
-                return;
-            }
-            try {
-                drainEncoder(false);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            long dt, alphaDt;
-            boolean cameraChanged = false;
-            if (!lastCameraId.equals(cameraId)) {
-                cameraChanged = true;
-                lastCameraId = cameraId;
-            }
-            if (prevVideoLast >= 0) {
-                if (videoDiff == -1) {
-                    videoDiff = timestampNanos - prevVideoLast;
-                }
-                timestampNanos -= videoDiff;
-            }
-            if (cameraChanged || lastTimestamp == -1) {
-                if (currentTimestamp != 0 && !firstVideoFrameSincePause) {
-                    //real dt lead to asynchron aduio and video
-                    //surface may return wrong measured timestamp so big or negative
-                    // `\_(._.)_/`
-                    long dtTimestamps = (timestampNanos - lastTimestamp);
-                    long dtReal = (System.currentTimeMillis() - lastCommitedFrameTime) * 1000000;
-                    if (dtTimestamps < 0 || Math.abs(dtReal - dtTimestamps) > 100_000_000) {
-                        dt = dtReal;
-                    } else {
-                        dt = dtTimestamps;
-                    }
-                    if (dt < 0) {
-                        dt = 0;
-                    }
-                    alphaDt = 0;
-                } else {
-                    alphaDt = dt = 0;
-                }
-                lastTimestamp = timestampNanos;
-            } else {
-                alphaDt = dt = (timestampNanos - lastTimestamp);
-                lastTimestamp = timestampNanos;
-            }
-            firstVideoFrameSincePause = false;
-            lastCommitedFrameTime = System.currentTimeMillis();
-            if (!skippedFirst) {
-                skippedTime += dt;
-                if (skippedTime < 200000000) {
-                    return;
-                }
-                skippedFirst = true;
-            }
-            currentTimestamp += dt;
-            if (videoFirst == -1) {
-                videoFirst = timestampNanos / 1000;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("InstantCamera first video frame was at " + videoFirst);
-                }
-            }
-            videoLastDt = timestampNanos - videoLast;
-            videoLast = timestampNanos;
-
-            FloatBuffer textureBuffer = InstantCameraView.this.textureBuffer;
-            FloatBuffer vertexBuffer = InstantCameraView.this.vertexBuffer;
+            FloatBuffer vertices = vertexBuffer;
             FloatBuffer oldTextureBuffer = oldTextureTextureBuffer;
-            if (textureBuffer == null || vertexBuffer == null) {
-                FileLog.d("InstantCamera handleVideoFrameAvailable skip frame " + textureBuffer + " " + vertexBuffer);
-                return;
+            if (vertices == null) {
+                FileLog.d("InstantCamera encoder skip frame, no vertex buffer");
+                return false;
             }
+            frameTextureBuffer.clear();
+            frameTextureBuffer.put(frame.textureCoords);
+            frameTextureBuffer.position(0);
 
             if (overlayHelper != null) {
                 overlayHelper.bind();
@@ -3383,12 +2917,12 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
 
             GLES20.glUseProgram(drawProgram);
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 12, vertexBuffer);
-            GLES20.glEnableVertexAttribArray(positionHandle);
-            GLES20.glVertexAttribPointer(textureHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
-            GLES20.glEnableVertexAttribArray(textureHandle);
-            GLES20.glUniformMatrix4fv(vertexMatrixHandle, 1, false, mMVPMatrix, 0);
 
+            GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 12, vertices);
+            GLES20.glEnableVertexAttribArray(positionHandle);
+            GLES20.glVertexAttribPointer(textureHandle, 2, GLES20.GL_FLOAT, false, 8, frameTextureBuffer);
+            GLES20.glEnableVertexAttribArray(textureHandle);
+            GLES20.glUniformMatrix4fv(vertexMatrixHandle, 1, false, frame.mvpMatrix, 0);
             GLES20.glUniform2f(resolutionHandle, videoWidth, videoHeight);
 
             if (oldCameraTexture[0] != 0 && oldTextureBuffer != null && !bothCameras) {
@@ -3400,23 +2934,21 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                     GLES20.glUniform2f(previewSizeHandle, oldTexturePreviewSize.getWidth(), oldTexturePreviewSize.getHeight());
                 }
                 GLES20.glVertexAttribPointer(textureHandle, 2, GLES20.GL_FLOAT, false, 8, oldTextureBuffer);
-
                 GLES20.glUniformMatrix4fv(textureMatrixHandle, 1, false, moldSTMatrix, 0);
                 GLES20.glUniform1f(alphaHandle, 1.0f);
                 GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, oldCameraTexture[0]);
                 GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
             }
 
-            if (previewSize != null) {
-                GLES20.glUniform2f(previewSizeHandle, previewSize[surfaceIndex].getWidth(), previewSize[surfaceIndex].getHeight());
-                GLES20.glUniform2f(texelSizeHandle, (float) 1f / previewSize[surfaceIndex].getWidth() / 2f, (float) 1f / previewSize[surfaceIndex].getHeight() / 2f);
+            if (frame.previewWidth > 0 && frame.previewHeight > 0) {
+                GLES20.glUniform2f(previewSizeHandle, frame.previewWidth, frame.previewHeight);
+                GLES20.glUniform2f(texelSizeHandle, 1.0f / frame.previewWidth / 2.0f, 1.0f / frame.previewHeight / 2.0f);
             }
 
-            final int tex = cameraTexture[surfaceIndex];
-            if (tex != Integer.MIN_VALUE) {
-                GLES20.glUniformMatrix4fv(textureMatrixHandle, 1, false, mSTMatrix, 0);
+            if (frame.textureId != Integer.MIN_VALUE) {
+                GLES20.glUniformMatrix4fv(textureMatrixHandle, 1, false, frame.stMatrix, 0);
                 GLES20.glUniform1f(alphaHandle, cameraTextureAlpha);
-                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, tex);
+                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, frame.textureId);
                 GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
             }
 
@@ -3426,20 +2958,17 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             GLES20.glUseProgram(0);
 
             if (overlayHelper != null) {
-                overlayHelper.render();
+                overlayHelper.render(frameDeltaNs);
                 if (blendEnabled) {
                     GLES20.glEnable(GLES20.GL_BLEND);
                 }
             }
 
-            EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, currentTimestamp);
-            EGL14.eglSwapBuffers(eglDisplay, eglSurface);
-
-            createKeyframeThumb();
-            frameCount++;
+            thumbActiveTimeNs += frameDeltaNs;
+            maybeScheduleKeyframeThumb();
 
             if (oldCameraTexture[0] != 0 && cameraTextureAlpha < 1.0f && !bothCameras) {
-                cameraTextureAlpha += alphaDt / 200000000.0f;
+                cameraTextureAlpha += frameDeltaNs / 200000000.0f;
                 if (cameraTextureAlpha > 1) {
                     GLES20.glDisable(GLES20.GL_BLEND);
                     blendEnabled = false;
@@ -3455,950 +2984,35 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 cameraReady = true;
                 AndroidUtilities.runOnUIThread(() -> textureOverlayView.animate().setDuration(120).alpha(0.0f).setInterpolator(new DecelerateInterpolator()).start());
             }
+            return true;
         }
-
-        private void createKeyframeThumb() {
-            if (generateKeyframeThumbsQueue != null && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH && frameCount % 33 == 0) {
-                GenerateKeyframeThumbTask task = new GenerateKeyframeThumbTask();
-                generateKeyframeThumbsQueue.postRunnable(task);
-            }
-        }
-
-        private class GenerateKeyframeThumbTask implements Runnable {
-            @Override
-            public void run() {
-                final TextureView textureView = InstantCameraView.this.textureView;
-                if (textureView != null) {
-                    try {
-                        final Bitmap bitmap = textureView.getBitmap(dp(56), dp(56));
-                        AndroidUtilities.runOnUIThread(() -> {
-                            if ((bitmap == null || bitmap.getPixel(0, 0) == 0) && keyframeThumbs.size() > 1) {
-                                keyframeThumbs.add(keyframeThumbs.get(keyframeThumbs.size() - 1));
-                            } else {
-                                keyframeThumbs.add(bitmap);
-                            }
-                        });
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-
-                }
-            }
-        }
-
-        private void handlePauseRecording() {
-            pauseRecorder = true;
-            if (previewFile != null) {
-                previewFile.delete();
-                previewFile = null;
-            }
-            previewFile = StoryEntry.makeCacheFile(currentAccount, true);
-            try {
-                FileLog.d("InstantCamera handlePauseRecording drain encoders");
-                drainEncoder(false);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-//            if (videoEncoder != null) {
-//                try {
-//                    videoEncoder.stop();
-//                    videoEncoder.release();
-//                    videoEncoder = null;
-//                } catch (Exception e) {
-//                    FileLog.e(e);
-//                }
-//            }
-//            if (audioEncoder != null) {
-//                try {
-//                    audioEncoder.stop();
-//                    audioEncoder.release();
-//                    audioEncoder = null;
-//
-//                    setBluetoothScoOn(false);
-//                } catch (Exception e) {
-//                    FileLog.e(e);
-//                }
-//            }
-            if (mediaMuxer != null) {
-                if (WRITE_TO_FILE_IN_BACKGROUND) {
-                    CountDownLatch countDownLatch = new CountDownLatch(1);
-                    fileWriteQueue.postRunnable(() -> {
-                        try {
-                            mediaMuxer.finishMovie(previewFile);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        countDownLatch.countDown();
-                    });
-                    try {
-                        countDownLatch.await();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    try {
-                        mediaMuxer.finishMovie(previewFile);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                }
-            }
-//            FileLoader.getInstance(currentAccount).cancelFileUpload(videoFile.getAbsolutePath(), false);
-            AndroidUtilities.runOnUIThread(() -> {
-                videoEditedInfo = new VideoEditedInfo();
-                videoEditedInfo.roundVideo = true;
-                videoEditedInfo.startTime = -1;
-                videoEditedInfo.endTime = -1;
-                videoEditedInfo.file = file;
-                videoEditedInfo.encryptedFile = encryptedFile;
-                videoEditedInfo.key = key;
-                videoEditedInfo.iv = iv;
-                videoEditedInfo.estimatedSize = Math.max(1, size);
-                videoEditedInfo.framerate = encoderFrameRate;
-                videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = SystemUtils.getRoundVideoResolution();
-                videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = SystemUtils.getRoundVideoResolution();
-                videoEditedInfo.originalPath = previewFile.getAbsolutePath();
-                setupVideoPlayer(previewFile);
-                videoEditedInfo.estimatedDuration = recordedTime;
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, videoEditedInfo, previewFile.getAbsolutePath(), keyframeThumbs);
-            });
-        }
-
-        private void handleResumeRecording() {
-            pauseRecorder = false;
-        }
-
-        private void setupVideoPlayer(File file) {
-            videoPlayer = new VideoPlayer();
-            videoPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
-                @Override
-                public void onStateChanged(boolean playWhenReady, int playbackState) {
-                    if (videoPlayer == null) {
-                        return;
-                    }
-                    if (videoPlayer.isPlaying() && playbackState == ExoPlayer.STATE_ENDED && videoEditedInfo != null) {
-                        videoPlayer.seekTo(videoEditedInfo.startTime > 0 ? videoEditedInfo.startTime : 0);
-                    }
-                }
-
-                @Override
-                public void onError(VideoPlayer player, Exception e) {
-                    FileLog.e(e);
-                }
-
-                @Override
-                public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-
-                }
-
-                @Override
-                public void onRenderedFirstFrame() {
-
-                }
-            });
-            videoPlayer.setTextureView(textureView);
-            videoPlayer.preparePlayer(Uri.fromFile(file), "other");
-            videoPlayer.play();
-            videoPlayer.setMute(true);
-            startProgressTimer();
-
-            AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(buttonsLayout, View.ALPHA, 0.0f),
-                    ObjectAnimator.ofInt(paint, AnimationProperties.PAINT_ALPHA, 0),
-                    ObjectAnimator.ofFloat(muteImageView, View.ALPHA, 1.0f));
-            animatorSet.setDuration(180);
-            animatorSet.setInterpolator(new DecelerateInterpolator());
-            animatorSet.start();
-
-            EGL14.eglDestroySurface(eglDisplay, eglSurface);
-            eglSurface = EGL14.EGL_NO_SURFACE;
-            if (surface != null) {
-                surface.release();
-                surface = null;
-            }
-            if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
-                EGL14.eglMakeCurrent(eglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
-                EGL14.eglDestroyContext(eglDisplay, eglContext);
-                EGL14.eglReleaseThread();
-                EGL14.eglTerminate(eglDisplay);
-            }
-            eglDisplay = EGL14.EGL_NO_DISPLAY;
-            eglContext = EGL14.EGL_NO_CONTEXT;
-            eglConfig = null;
-        }
-
-        public static final int ENCODER_SEND_CANCEL = 0;
-        public static final int ENCODER_SEND_SEND = 1;
-        public static final int ENCODER_SEND_PLAYER = 2;
-
-        private boolean sentMedia;
-
-        private void handleStopRecording(final int send, final SendOptions sendOptions) {
-            final boolean runDone;
-            if (send == ENCODER_SEND_SEND && (videoEditedInfo == null || !videoEditedInfo.needConvert()) && !delegate.isInScheduleMode()) {
-                runDone = false;
-                if (!sentMedia) {
-                    sentMedia = true;
-                    AndroidUtilities.runOnUIThread(() -> {
-                        videoEditedInfo = new VideoEditedInfo();
-                        videoEditedInfo.startTime = -1;
-                        videoEditedInfo.endTime = -1;
-                        videoEditedInfo.estimatedSize = Math.max(1, size);
-                        videoEditedInfo.roundVideo = true;
-                        videoEditedInfo.file = file;
-                        videoEditedInfo.encryptedFile = encryptedFile;
-                        videoEditedInfo.key = key;
-                        videoEditedInfo.iv = iv;
-                        videoEditedInfo.framerate = encoderFrameRate;
-                        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = SystemUtils.getRoundVideoResolution();
-                        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = SystemUtils.getRoundVideoResolution();
-                        videoEditedInfo.originalPath = videoFile.getAbsolutePath();
-                        videoEditedInfo.notReadyYet = true;
-                        videoEditedInfo.thumb = firstFrameThumb;
-                        videoEditedInfo.estimatedDuration = recordedTime;
-                        firstFrameThumb = null;
-                        MediaController.PhotoEntry entry = new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0);
-                        if (sendOptions != null) {
-                            entry.ttl = sendOptions.ttl;
-                            entry.effectId = sendOptions.effectId;
-                        }
-                        delegate.sendMedia(entry, videoEditedInfo, sendOptions == null || sendOptions.notify, sendOptions != null ? sendOptions.scheduleDate : 0, sendOptions != null ? sendOptions.scheduleRepeatPeriod : 0, false, sendOptions != null ? sendOptions.stars : 0);
-                    });
-                }
-            } else {
-                runDone = true;
-            }
-            if (running && !pauseRecorder) {
-                FileLog.d("InstantCamera handleStopRecording running=false");
-                sendWhenDone = send;
-                sendWhenDoneOptions = sendOptions;
-                running = false;
-                return;
-            }
-            try {
-                FileLog.d("InstantCamera handleStopRecording drain encoders");
-                drainEncoder(true);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            if (videoEncoder != null) {
-                try {
-                    videoEncoder.stop();
-                    videoEncoder.release();
-                    videoEncoder = null;
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            }
-            if (audioEncoder != null) {
-                try {
-                    audioEncoder.stop();
-                    audioEncoder.release();
-                    audioEncoder = null;
-
-                    setBluetoothScoOn(false);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            }
-            if (previewFile != null) {
-                previewFile.delete();
-                previewFile = null;
-            }
-            if (mediaMuxer != null) {
-                if (WRITE_TO_FILE_IN_BACKGROUND) {
-                    CountDownLatch countDownLatch = new CountDownLatch(1);
-                    fileWriteQueue.postRunnable(() -> {
-                        try {
-                            mediaMuxer.finishMovie();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        countDownLatch.countDown();
-                    });
-                    try {
-                        countDownLatch.await();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    try {
-                        mediaMuxer.finishMovie();
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                }
-                FileLog.d("InstantCamera handleStopRecording finish muxer");
-                if (writingToDifferentFile) {
-                    if (videoFile.exists()) {
-                        try {
-                            videoFile.delete();
-                        } catch (Exception e) {
-                            FileLog.e("InstantCamera copying fileToWrite to videoFile, deleting videoFile error " + videoFile);
-                            FileLog.e(e);
-                        }
-                    }
-                    if (!fileToWrite.renameTo(videoFile)) {
-                        FileLog.e("InstantCamera unable to rename file, try move file");
-                        try {
-                            AndroidUtilities.copyFile(fileToWrite, videoFile);
-                            fileToWrite.delete();
-                        } catch (IOException e) {
-                            FileLog.e(e);
-                            FileLog.e("InstantCamera unable to move file");
-                        }
-                    }
-                }
-            }
-            if (send != 2) {
-                if (generateKeyframeThumbsQueue != null) {
-                    generateKeyframeThumbsQueue.cleanupQueue();
-                    generateKeyframeThumbsQueue.recycle();
-                    generateKeyframeThumbsQueue = null;
-                }
-            }
-            FileLog.d("InstantCamera handleStopRecording send " + send);
-            if (send == ENCODER_SEND_CANCEL) {
-                FileLoader.getInstance(currentAccount).cancelFileUpload(videoFile.getAbsolutePath(), false);
-                try {
-                    fileToWrite.delete();
-                } catch (Throwable ignore) {}
-                try {
-                    videoFile.delete();
-                } catch (Throwable ignore) {}
-            } else {
-                if (runDone && (send != ENCODER_SEND_SEND || !sentMedia)) {
-                    sentMedia = true;
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (videoEditedInfo == null) {
-                            videoEditedInfo = new VideoEditedInfo();
-                            videoEditedInfo.startTime = -1;
-                            videoEditedInfo.endTime = -1;
-                        }
-                        if (videoEditedInfo.needConvert()) {
-                            file = null;
-                            encryptedFile = null;
-                            key = null;
-                            iv = null;
-                            double totalDuration = videoEditedInfo.estimatedDuration;
-                            long startTime = videoEditedInfo.startTime >= 0 ? videoEditedInfo.startTime : 0;
-                            long endTime = videoEditedInfo.endTime >= 0 ? videoEditedInfo.endTime : videoEditedInfo.estimatedDuration;
-                            videoEditedInfo.estimatedDuration = endTime - startTime;
-                            videoEditedInfo.estimatedSize = Math.max(1, (long) (size * (videoEditedInfo.estimatedDuration / totalDuration)));
-                            videoEditedInfo.bitrate = SystemUtils.getRoundVideoBitrate() * 1024;
-                            if (videoEditedInfo.startTime > 0) {
-                                videoEditedInfo.startTime *= 1000;
-                            }
-                            if (videoEditedInfo.endTime > 0) {
-                                videoEditedInfo.endTime *= 1000;
-                            }
-                            FileLoader.getInstance(currentAccount).cancelFileUpload(cameraFile.getAbsolutePath(), false);
-                        } else {
-                            videoEditedInfo.estimatedSize = Math.max(1, size);
-                        }
-                        videoEditedInfo.roundVideo = true;
-                        videoEditedInfo.file = file;
-                        videoEditedInfo.encryptedFile = encryptedFile;
-                        videoEditedInfo.key = key;
-                        videoEditedInfo.iv = iv;
-                        videoEditedInfo.framerate = encoderFrameRate;
-                        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = SystemUtils.getRoundVideoResolution();
-                        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = SystemUtils.getRoundVideoResolution();
-                        videoEditedInfo.originalPath = videoFile.getAbsolutePath();
-                        final VideoEditedInfo info = videoEditedInfo;
-                        if (send == ENCODER_SEND_SEND) {
-                            if (delegate.isInScheduleMode()) {
-                                AlertsCreator.createScheduleDatePickerDialog(delegate.getParentActivity(), delegate.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> {
-                                    MediaController.PhotoEntry entry = new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0);
-                                    if (sendOptions != null) {
-                                        entry.ttl = sendOptions.ttl;
-                                        entry.effectId = sendOptions.effectId;
-                                    }
-                                    delegate.sendMedia(entry, info, notify || sendOptions == null || sendOptions.notify, scheduleDate != 0 ? scheduleDate : sendOptions != null ? sendOptions.scheduleDate : 0, scheduleRepeatPeriod != 0 ? scheduleRepeatPeriod : sendOptions != null ? sendOptions.scheduleRepeatPeriod : 0, false, sendOptions != null ? sendOptions.stars : 0);
-                                    startAnimation(false, false);
-                                }, () -> {
-                                    startAnimation(false, false);
-                                }, resourcesProvider);
-                            } else {
-                                MediaController.PhotoEntry entry = new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0);
-                                if (sendOptions != null) {
-                                    entry.ttl = sendOptions.ttl;
-                                    entry.effectId = sendOptions.effectId;
-                                }
-                                delegate.sendMedia(entry, info, sendOptions == null || sendOptions.notify, sendOptions != null ? sendOptions.scheduleDate : 0, sendOptions != null ? sendOptions.scheduleRepeatPeriod : 0, false, sendOptions != null ? sendOptions.stars : 0);
-                            }
-                            videoEditedInfo = null;
-                        } else {
-                            setupVideoPlayer(videoFile);
-                            info.estimatedDuration = recordedTime;
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, info, videoFile.getAbsolutePath(), keyframeThumbs);
-                        }
-                    });
-                }
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (sentMedia && videoEditedInfo != null) {
-                        videoEditedInfo.notReadyYet = false;
-                    }
-                    didWriteData(videoFile, 0, true);
-                    MediaController.getInstance().requestRecordAudioFocus(false);
-                });
-            }
-            EGL14.eglDestroySurface(eglDisplay, eglSurface);
-            eglSurface = EGL14.EGL_NO_SURFACE;
-            if (surface != null) {
-                surface.release();
-                surface = null;
-            }
-            if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
-                EGL14.eglMakeCurrent(eglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
-                EGL14.eglDestroyContext(eglDisplay, eglContext);
-                EGL14.eglReleaseThread();
-                EGL14.eglTerminate(eglDisplay);
-            }
-            eglDisplay = EGL14.EGL_NO_DISPLAY;
-            eglContext = EGL14.EGL_NO_CONTEXT;
-            eglConfig = null;
-            handler.exit();
-            if (overlayHelper != null) {
-                overlayHelper.destroy();
-                overlayHelper = null;
-            }
-            AndroidUtilities.runOnUIThread(() -> {
-                InstantCameraView.this.videoEncoder = null;
-            });
-        }
-
-        private void setBluetoothScoOn(boolean scoOn) {
-            AudioManager am = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
-            if (SharedConfig.recordViaSco && !PermissionRequest.hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-                SharedConfig.recordViaSco = false;
-                SharedConfig.saveConfig();
-            }
-            if (am.isBluetoothScoAvailableOffCall() && SharedConfig.recordViaSco || !scoOn) {
-                BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
-                try {
-                    if (btAdapter != null && btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) == BluetoothProfile.STATE_CONNECTED || !scoOn) {
-                        if (scoOn && !am.isBluetoothScoOn()) {
-                            am.startBluetoothSco();
-                        } else if (!scoOn && am.isBluetoothScoOn()) {
-                            am.stopBluetoothSco();
-                        }
-                    }
-                } catch (SecurityException ignored) {
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                    try {
-                        if (!scoOn && am.isBluetoothScoOn()) {
-                            am.stopBluetoothSco();
-                        }
-                    } catch (Exception e2) {
-                        FileLog.e(e2);
-                    }
-                }
-            }
-        }
-
-        private void prepareEncoder(boolean fromPause) {
-            setBluetoothScoOn(true);
-
-            try {
-                int recordBufferSize = AudioRecord.getMinBufferSize(audioSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-                if (recordBufferSize <= 0) {
-                    recordBufferSize = 3584;
-                }
-                int bufferSize = 2048 * 24;
-                if (bufferSize < recordBufferSize) {
-                    bufferSize = ((recordBufferSize / 2048) + 1) * 2048 * 2;
-                }
-                buffers.clear();
-                for (int a = 0; a < 3; a++) {
-                    buffers.add(new AudioBufferInfo());
-                }
-
-                if (fromPause) {
-                    prevVideoLast = videoLast + videoLastDt;
-                    prevAudioLast = audioLast + audioLastDt;
-                    firstVideoFrameSincePause = true;
-                } else {
-                    prevVideoLast = -1;
-                    prevAudioLast = -1;
-                    currentTimestamp = 0;
-                }
-                lastTimestamp = -1;
-                lastCommitedFrameTime = 0;
-                audioStartTime = -1;
-                audioFirst = -1;
-                videoFirst = -1;
-                videoLast = -1;
-                videoDiff = -1;
-                audioLast = -1;
-                audioDiff = -1;
-                skippedFirst = false;
-                skippedTime = 0;
-
-                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, audioSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-                audioRecorder.startRecording();
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("InstantCamera initied audio record with channels " + audioRecorder.getChannelCount() + " sample rate = " + audioRecorder.getSampleRate() + " bufferSize = " + bufferSize);
-                }
-                pauseRecorder = false;
-                Thread thread = new Thread(recorderRunnable);
-                thread.setPriority(Thread.MAX_PRIORITY);
-                thread.start();
-
-                audioBufferInfo = new MediaCodec.BufferInfo();
-                videoBufferInfo = new MediaCodec.BufferInfo();
-
-                MediaFormat audioFormat = new MediaFormat();
-                audioFormat.setString(MediaFormat.KEY_MIME, AUDIO_MIME_TYPE);
-                audioFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, audioSampleRate);
-                audioFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
-                audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, SystemUtils.getRoundAudioBitrate() * 1024);
-                audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 2048 * AudioBufferInfo.MAX_SAMPLES);
-
-                audioEncoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
-                audioEncoder.configure(audioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-                audioEncoder.start();
-
-                videoEncoder = MediaCodec.createEncoderByType(VIDEO_MIME_TYPE);
-                firstEncode = true;
-
-                MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, videoWidth, videoHeight);
-
-                format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
-                format.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
-                format.setInteger(MediaFormat.KEY_FRAME_RATE, encoderFrameRate);
-                format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
-
-                videoEncoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-                surface = videoEncoder.createInputSurface();
-                videoEncoder.start();
-
-                if (!fromPause) {
-                    boolean isSdCard = ImageLoader.isSdCardPath(videoFile);
-                    fileToWrite = videoFile;
-                    if (isSdCard) {
-                        try {
-                            fileToWrite = new File(ApplicationLoader.getFilesDirFixed(), "camera_tmp.mp4");
-                            if (fileToWrite.exists()) {
-                                fileToWrite.delete();
-                            }
-                            writingToDifferentFile = true;
-                        } catch (Throwable e) {
-                            FileLog.e(e);
-                            fileToWrite = videoFile;
-                            writingToDifferentFile = false;
-                        }
-                    }
-                    Mp4Movie movie = new Mp4Movie();
-                    movie.setCacheFile(fileToWrite);
-                    movie.setRotation(0);
-                    movie.setSize(videoWidth, videoHeight);
-                    mediaMuxer = new MP4Builder().createMovie(movie, isSecretChat, false);
-                    mediaMuxer.setAllowSyncFiles(allowSendingWhileRecording = SharedConfig.deviceIsHigh());
-                }
-
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (cancelled) {
-                        return;
-                    }
-                    try {
-                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                    } catch (Exception ignore) {}
-                    AndroidUtilities.lockOrientation(delegate.getParentActivity());
-                    recordPlusTime = fromPause ? recordedTime : 0;
-                    recordStartTime = System.currentTimeMillis();
-                    recording = true;
-                    updateFlash();
-                    invalidate();
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted, recordingGuid, false);
-                });
-            } catch (Exception ioe) {
-                throw new RuntimeException(ioe);
-            }
-
-            if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
-                throw new RuntimeException("EGL already set up");
-            }
-
-            eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
-            if (eglDisplay == EGL14.EGL_NO_DISPLAY) {
-                throw new RuntimeException("unable to get EGL14 display");
-            }
-            int[] version = new int[2];
-            if (!EGL14.eglInitialize(eglDisplay, version, 0, version, 1)) {
-                eglDisplay = null;
-                throw new RuntimeException("unable to initialize EGL14");
-            }
-
-            if (eglContext == EGL14.EGL_NO_CONTEXT) {
-                int renderableType = EGL14.EGL_OPENGL_ES2_BIT;
-
-                int[] attribList = {
-                        EGL14.EGL_RED_SIZE, 8,
-                        EGL14.EGL_GREEN_SIZE, 8,
-                        EGL14.EGL_BLUE_SIZE, 8,
-                        EGL14.EGL_ALPHA_SIZE, 8,
-                        EGL14.EGL_RENDERABLE_TYPE, renderableType,
-                        0x3142, 1,
-                        EGL14.EGL_NONE
-                };
-                android.opengl.EGLConfig[] configs = new android.opengl.EGLConfig[1];
-                int[] numConfigs = new int[1];
-                if (!EGL14.eglChooseConfig(eglDisplay, attribList, 0, configs, 0, configs.length, numConfigs, 0)) {
-                    throw new RuntimeException("Unable to find a suitable EGLConfig");
-                }
-
-                int[] attrib2_list = {
-                        EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
-                        EGL14.EGL_NONE
-                };
-                eglContext = EGL14.eglCreateContext(eglDisplay, configs[0], sharedEglContext, attrib2_list, 0);
-                eglConfig = configs[0];
-            }
-
-            int[] values = new int[1];
-            EGL14.eglQueryContext(eglDisplay, eglContext, EGL14.EGL_CONTEXT_CLIENT_VERSION, values, 0);
-
-            if (eglSurface != EGL14.EGL_NO_SURFACE) {
-                throw new IllegalStateException("surface already created");
-            }
-
-            int[] surfaceAttribs = {
-                    EGL14.EGL_NONE
-            };
-            eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, surfaceAttribs, 0);
-            if (eglSurface == null) {
-                throw new RuntimeException("surface was null");
-            }
-
-            if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(EGL14.eglGetError()));
-                }
-                throw new RuntimeException("eglMakeCurrent failed");
-            }
-            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-
-            if (overlayHelper != null) {
-                overlayHelper.destroy();
-                overlayHelper = null;
-            }
-            overlayHelper = new InstantCameraVideoEncoderOverlayHelper(videoWidth, videoHeight);
-
-            String vertexShaderSource, fragmentShaderSource;
-            if (overlayHelper != null) {
-                vertexShaderSource = VERTEX_SHADER;
-                fragmentShaderSource = createFragmentShaderV2(previewSize[0]);
-            } else if (useCamera2) {
-                vertexShaderSource = AndroidUtilities.readRes(R.raw.instant_lanczos_vert);
-                fragmentShaderSource = AndroidUtilities.readRes(R.raw.instant_lanczos_frag_oes);
-            } else {
-                vertexShaderSource = VERTEX_SHADER;
-                fragmentShaderSource = createFragmentShader(previewSize[0]);
-            }
-            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderSource);
-            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderSource);
-            if (vertexShader != 0 && fragmentShader != 0) {
-                drawProgram = GLES20.glCreateProgram();
-                GLES20.glAttachShader(drawProgram, vertexShader);
-                GLES20.glAttachShader(drawProgram, fragmentShader);
-                GLES20.glLinkProgram(drawProgram);
-                int[] linkStatus = new int[1];
-                GLES20.glGetProgramiv(drawProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
-                if (linkStatus[0] == 0) {
-                    GLES20.glDeleteProgram(drawProgram);
-                    drawProgram = 0;
-                } else {
-                    positionHandle = GLES20.glGetAttribLocation(drawProgram, "aPosition");
-                    textureHandle = GLES20.glGetAttribLocation(drawProgram, "aTextureCoord");
-                    previewSizeHandle = GLES20.glGetUniformLocation(drawProgram, "preview");
-                    resolutionHandle = GLES20.glGetUniformLocation(drawProgram, "resolution");
-                    alphaHandle = GLES20.glGetUniformLocation(drawProgram, "alpha");
-                    vertexMatrixHandle = GLES20.glGetUniformLocation(drawProgram, "uMVPMatrix");
-                    textureMatrixHandle = GLES20.glGetUniformLocation(drawProgram, "uSTMatrix");
-                    texelSizeHandle = GLES20.glGetUniformLocation(drawProgram, "texelSize");
-                }
-            }
-        }
-
-        public Surface getInputSurface() {
-            return surface;
-        }
-
-        private void didWriteData(File file, long availableSize, boolean last) {
-            if (videoConvertFirstWrite) {
-                FileLoader.getInstance(currentAccount).uploadFile(file.toString(), isSecretChat, false, 1, ConnectionsManager.FileTypeVideo, false);
-                videoConvertFirstWrite = false;
-                if (last) {
-                    FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(file.toString(), isSecretChat, availableSize, last ? file.length() : 0);
-                }
-            } else {
-                FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(file.toString(), isSecretChat, availableSize, last ? file.length() : 0);
-            }
-        }
-
-        public void drainEncoder(boolean endOfStream) throws Exception {
-            if (endOfStream) {
-                videoEncoder.signalEndOfInputStream();
-            }
-
-            ByteBuffer[] encoderOutputBuffers = null;
-            while (true) {
-                int encoderStatus = videoEncoder.dequeueOutputBuffer(videoBufferInfo, 10000);
-                if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
-                    if (!endOfStream || pauseRecorder) {
-                        break;
-                    }
-                } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                    MediaFormat newFormat = videoEncoder.getOutputFormat();
-                    if (videoTrackIndex == -5) {
-                        videoTrackIndex = mediaMuxer.addTrack(newFormat, false);
-                        if (newFormat.containsKey(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) && newFormat.getInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) == 1) {
-                            ByteBuffer spsBuff = newFormat.getByteBuffer("csd-0");
-                            ByteBuffer ppsBuff = newFormat.getByteBuffer("csd-1");
-                            prependHeaderSize = spsBuff.limit() + ppsBuff.limit();
-                        }
-                    }
-                } else if (encoderStatus >= 0) {
-                    ByteBuffer encodedData;
-                    encodedData = videoEncoder.getOutputBuffer(encoderStatus);
-                    if (encodedData == null) {
-                        throw new RuntimeException("encoderOutputBuffer " + encoderStatus + " was null");
-                    }
-                    if (videoBufferInfo.size > 1) {
-                        if ((videoBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-                            if (prependHeaderSize != 0 && (videoBufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
-                                videoBufferInfo.offset += prependHeaderSize;
-                                videoBufferInfo.size -= prependHeaderSize;
-                            }
-                            if (firstEncode && (videoBufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
-                                if (videoBufferInfo.size > 100) {
-                                    encodedData.position(videoBufferInfo.offset);
-                                    byte[] temp = new byte[100];
-                                    encodedData.get(temp);
-                                    int nalCount = 0;
-                                    for (int a = 0; a < temp.length - 4; a++) {
-                                        if (temp[a] == 0 && temp[a + 1] == 0 && temp[a + 2] == 0 && temp[a + 3] == 1) {
-                                            nalCount++;
-                                            if (nalCount > 1) {
-                                                videoBufferInfo.offset += a;
-                                                videoBufferInfo.size -= a;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                firstEncode = false;
-                            }
-                            if (WRITE_TO_FILE_IN_BACKGROUND) {
-                                MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-                                bufferInfo.size = videoBufferInfo.size;
-                                bufferInfo.offset = videoBufferInfo.offset;
-                                bufferInfo.flags = videoBufferInfo.flags;
-                                bufferInfo.presentationTimeUs = videoBufferInfo.presentationTimeUs;
-                                ByteBuffer byteBuffer = AndroidUtilities.cloneByteBuffer(encodedData);
-                                fileWriteQueue.postRunnable(() -> {
-                                    long availableSize = 0;
-                                    try {
-                                        availableSize = mediaMuxer.writeSampleData(videoTrackIndex, byteBuffer, bufferInfo, true);
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
-                                    if (availableSize != 0 && !writingToDifferentFile && allowSendingWhileRecording) {
-                                        didWriteData(videoFile, availableSize, false);
-                                    }
-                                });
-                            } else {
-                                long availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, videoBufferInfo, true);
-                                if (availableSize != 0 && !writingToDifferentFile && allowSendingWhileRecording) {
-                                    didWriteData(videoFile, availableSize, false);
-                                }
-                            }
-                        } else if (videoTrackIndex == -5) {
-                            byte[] csd = new byte[videoBufferInfo.size];
-                            encodedData.limit(videoBufferInfo.offset + videoBufferInfo.size);
-                            encodedData.position(videoBufferInfo.offset);
-                            encodedData.get(csd);
-                            ByteBuffer sps = null;
-                            ByteBuffer pps = null;
-                            for (int a = videoBufferInfo.size - 1; a >= 0; a--) {
-                                if (a > 3) {
-                                    if (csd[a] == 1 && csd[a - 1] == 0 && csd[a - 2] == 0 && csd[a - 3] == 0) {
-                                        sps = ByteBuffer.allocate(a - 3);
-                                        pps = ByteBuffer.allocate(videoBufferInfo.size - (a - 3));
-                                        sps.put(csd, 0, a - 3).position(0);
-                                        pps.put(csd, a - 3, videoBufferInfo.size - (a - 3)).position(0);
-                                        break;
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
-
-                            MediaFormat newFormat = MediaFormat.createVideoFormat("video/avc", videoWidth, videoHeight);
-                            if (sps != null && pps != null) {
-                                newFormat.setByteBuffer("csd-0", sps);
-                                newFormat.setByteBuffer("csd-1", pps);
-                            }
-                            videoTrackIndex = mediaMuxer.addTrack(newFormat, false);
-                        }
-                    }
-                    videoEncoder.releaseOutputBuffer(encoderStatus, false);
-                    if ((videoBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                        break;
-                    }
-                }
-            }
-
-            while (true) {
-                int encoderStatus = audioEncoder.dequeueOutputBuffer(audioBufferInfo, 0);
-                if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
-                    if (!endOfStream || !running && sendWhenDone == ENCODER_SEND_CANCEL || pauseRecorder) {
-                        break;
-                    }
-                } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                    MediaFormat newFormat = audioEncoder.getOutputFormat();
-                    if (audioTrackIndex == -5) {
-                        audioTrackIndex = mediaMuxer.addTrack(newFormat, true);
-                    }
-                } else if (encoderStatus >= 0) {
-                    ByteBuffer encodedData = audioEncoder.getOutputBuffer(encoderStatus);
-                    if (encodedData == null) {
-                        throw new RuntimeException("encoderOutputBuffer " + encoderStatus + " was null");
-                    }
-                    if ((audioBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                        audioBufferInfo.size = 0;
-                    }
-                    if (audioBufferInfo.size != 0) {
-                        if (WRITE_TO_FILE_IN_BACKGROUND) {
-                            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-                            bufferInfo.size = audioBufferInfo.size;
-                            bufferInfo.offset = audioBufferInfo.offset;
-                            bufferInfo.flags = audioBufferInfo.flags;
-                            bufferInfo.presentationTimeUs = audioBufferInfo.presentationTimeUs;
-                            ByteBuffer byteBuffer = AndroidUtilities.cloneByteBuffer(encodedData);
-                            fileWriteQueue.postRunnable(() -> {
-                                long availableSize = 0;
-                                try {
-                                    availableSize = mediaMuxer.writeSampleData(audioTrackIndex, byteBuffer, bufferInfo, false);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                if (availableSize != 0 && !writingToDifferentFile && allowSendingWhileRecording) {
-                                    didWriteData(videoFile, availableSize, false);
-                                }
-                            });
-                            if (audioEncoder != null) {
-                                audioEncoder.releaseOutputBuffer(encoderStatus, false);
-                            }
-                        } else {
-                            long availableSize = mediaMuxer.writeSampleData(audioTrackIndex, encodedData, audioBufferInfo, false);
-                            if (availableSize != 0 && !writingToDifferentFile && allowSendingWhileRecording) {
-                                didWriteData(videoFile, availableSize, false);
-                            }
-                            if (audioEncoder != null) {
-                                audioEncoder.releaseOutputBuffer(encoderStatus, false);
-                            }
-                        }
-                    } else if (audioEncoder != null) {
-                        audioEncoder.releaseOutputBuffer(encoderStatus, false);
-                    }
-                    if ((audioBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                        break;
-                    }
-                }
-            }
-        }
-
 
         @Override
-        protected void finalize() throws Throwable {
-            if (fileWriteQueue != null) {
-                fileWriteQueue.recycle();
-                fileWriteQueue = null;
-            }
+        public void onEncoderSurfaceDestroyed() {
             if (overlayHelper != null) {
                 overlayHelper.destroy();
                 overlayHelper = null;
             }
-            try {
-                if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
-                    EGL14.eglMakeCurrent(eglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
-                    EGL14.eglDestroyContext(eglDisplay, eglContext);
-                    EGL14.eglReleaseThread();
-                    EGL14.eglTerminate(eglDisplay);
-                    eglDisplay = EGL14.EGL_NO_DISPLAY;
-                    eglContext = EGL14.EGL_NO_CONTEXT;
-                    eglConfig = null;
-                }
-            } finally {
-                super.finalize();
+            if (drawProgram != 0) {
+                GLES20.glDeleteProgram(drawProgram);
+                drawProgram = 0;
             }
         }
-    }
 
-    private String createFragmentShader(Size previewSize) {
-        if (SharedConfig.deviceIsLow() || !allowBigSizeCamera() || previewSize != null && Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < SystemUtils.getRoundVideoResolution()) {
-            return "#extension GL_OES_EGL_image_external : require\n" +
-                    "precision highp float;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "uniform float alpha;\n" +
-                    "uniform vec2 preview;\n" +
-                    "uniform vec2 resolution;\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
-                    "void main() {\n" +
-                    "   vec4 textColor = texture2D(sTexture, vTextureCoord);\n" +
-                    "   vec2 coord = resolution * 0.5;\n" +
-                    "   float radius = 0.51 * resolution.x;\n" +
-                    "   float d = length(coord - gl_FragCoord.xy) - radius;\n" +
-                    "   float t = clamp(d, 0.0, 1.0);\n" +
-                    "   vec3 color = mix(textColor.rgb, vec3(1, 1, 1), t);\n" +
-                    "   gl_FragColor = vec4(color * alpha, alpha);\n" +
-                    "}\n";
+        private void maybeScheduleKeyframeThumb() {
+            if (generateKeyframeThumbsQueue == null || SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH) {
+                return;
+            }
+            if ((firstThumbPending || thumbActiveTimeNs >= nextThumbActiveTimeNs) && thumbTaskInFlight.compareAndSet(false, true)) {
+                firstThumbPending = false;
+                nextThumbActiveTimeNs = thumbActiveTimeNs + 1100000000L;
+                generateKeyframeThumbsQueue.postRunnable(new GenerateKeyframeThumbTask(thumbTaskInFlight));
+            }
         }
-        //apply bilinear filtering
-        return "#extension GL_OES_EGL_image_external : require\n" +
-                "precision highp float;\n" +
-                "varying vec2 vTextureCoord;\n" + //uv
-                "uniform vec2 resolution;\n" + //rendering texture
-                "uniform vec2 preview;\n" + //original texture size
-                "uniform float alpha;\n" +
-
-                "uniform samplerExternalOES sTexture;\n" +
-                "void main() {\n" +
-                "   vec2 coord = resolution * 0.5;\n" +
-                "   float radius = 0.51 * resolution.x;\n" +
-                "   float d = length(coord - gl_FragCoord.xy) - radius;\n" +
-                "   float t = clamp(d, 0.0, 1.0);\n" +
-                "   if (t == 0.0) {\n" +
-                "       vec2 c_textureSize = preview;\n" +
-                "       vec2 c_onePixel = (1.0 / c_textureSize);\n" +
-                "       vec2 uv = vTextureCoord;\n" +
-                "       vec2 pixel = uv * c_textureSize + 0.5;\n" +
-
-                "       vec2 frac = fract(pixel);\n" +
-                "       pixel = (floor(pixel) / c_textureSize) - vec2(c_onePixel);\n" +
-
-                "       vec4 tl = texture2D(sTexture, pixel + vec2(0.0         , 0.0));\n" +
-                "       vec4 tr = texture2D(sTexture, pixel + vec2(c_onePixel.x, 0.0));\n" +
-                "       vec4 bl = texture2D(sTexture, pixel + vec2(0.0         , c_onePixel.y));\n" +
-                "       vec4 br = texture2D(sTexture, pixel + vec2(c_onePixel.x, c_onePixel.y));\n" +
-
-                "       vec4 x1 = mix(tl, tr, frac.x);\n" +
-                "       vec4 x2 = mix(bl, br, frac.x);\n" +
-                "       gl_FragColor = mix(x1, x2, frac.y) * alpha;" +
-                "   } else {\n" +
-                "       gl_FragColor = vec4(1, 1, 1, alpha);\n" +
-                "   }\n" +
-                "}\n";
     }
 
     private String createFragmentShaderV2(Size previewSize) {
-        if (SharedConfig.deviceIsLow() || !allowBigSizeCamera() || previewSize != null && Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < SystemUtils.getRoundVideoResolution()) {
+        if (SharedConfig.deviceIsLow() || !allowBigSizeCamera() || previewSize != null && Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < MessagesController.getInstance(currentAccount).roundVideoSize) {
             return "#extension GL_OES_EGL_image_external : require\n" +
                     "precision highp float;\n" +
                     "varying vec2 vTextureCoord;\n" +
@@ -4585,8 +3199,13 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     ValueAnimator finishZoomTransition;
+    private ValueAnimator zoomAnimator;
 
     private void cancelZoomAnimations() {
+        if (zoomAnimator != null) {
+            zoomAnimator.cancel();
+            zoomAnimator = null;
+        }
         if (finishZoomTransition != null) {
             finishZoomTransition.cancel();
             finishZoomTransition = null;
@@ -4657,6 +3276,110 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             finishZoomTransition.setInterpolator(CubicBezierInterpolator.DEFAULT);
             finishZoomTransition.start();
         }
+    }
+
+    private void adjustZoom(boolean zoomIn) {
+        if (!isCameraReady()) {
+            return;
+        }
+        if (zoomAnimator != null && zoomAnimator.isRunning()) {
+            return;
+        }
+        cancelZoomAnimations();
+        zoomSlider.beginSteppedZoomGesture();
+
+        if (ExteraConfig.getCameraType() == CameraType.CAMERA_X) {
+            float zoom = zoomSlider.getZoom();
+            float minZoom = zoomSlider.getMinimumZoom();
+            float maxZoom = zoomSlider.getMaximumZoom();
+            float oneZoom = Utilities.clamp(zoomSlider.getDisplayOneZoom(), maxZoom, minZoom);
+            double range = maxZoom / oneZoom;
+            int steps = (int) Math.round(Math.log(range) / Math.log(1.75));
+            if (steps < 1) {
+                steps = 1;
+            }
+            float step = (float) Math.pow(range, 1.0 / steps);
+            float targetZoom;
+            if (zoomIn) {
+                targetZoom = zoom < oneZoom ? oneZoom : zoom * step;
+            } else if (zoom > oneZoom) {
+                targetZoom = zoom / step;
+                if (targetZoom < oneZoom) {
+                    targetZoom = oneZoom;
+                }
+            } else {
+                targetZoom = minZoom;
+            }
+            targetZoom = Utilities.clamp(targetZoom, maxZoom, minZoom);
+            zoomAnimator = ValueAnimator.ofFloat(zoom, targetZoom);
+            zoomAnimator.setDuration(175);
+            zoomAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            zoomAnimator.addUpdateListener(animation -> {
+                if (cameraXSession != null) {
+                    zoomSlider.setCameraXZoomRatio((float) animation.getAnimatedValue());
+                    cameraZoom = cameraXSession.getLinearZoom();
+                }
+            });
+            zoomAnimator.start();
+            return;
+        }
+
+        float targetZoom;
+        if (useCamera2) {
+            if (camera2SessionCurrent == null) {
+                return;
+            }
+            float minZoom = camera2SessionCurrent.getMinZoom();
+            float maxZoom = camera2SessionCurrent.getMaxZoom();
+            int steps = (int) Math.round(Math.log(maxZoom) / Math.log(1.75));
+            if (steps < 1) {
+                steps = 1;
+            }
+            float step = (float) Math.pow(maxZoom, 1.0 / steps);
+            if (zoomIn) {
+                targetZoom = cameraZoom * step;
+            } else {
+                targetZoom = cameraZoom / step;
+                if (targetZoom < 1.0f) {
+                    targetZoom = 1.0f;
+                }
+            }
+            targetZoom = Utilities.clamp(targetZoom, maxZoom, minZoom);
+        } else {
+            targetZoom = Utilities.clamp(cameraZoom + (zoomIn ? 1 : -1) * 0.125f, 1.0f, 0.0f);
+        }
+        if (cameraZoom == targetZoom) {
+            return;
+        }
+        zoomAnimator = ValueAnimator.ofFloat(cameraZoom, targetZoom);
+        zoomAnimator.setDuration(175);
+        zoomAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        zoomAnimator.addUpdateListener(animation -> {
+            cameraZoom = (float) animation.getAnimatedValue();
+            if (useCamera2) {
+                if (camera2SessionCurrent != null) {
+                    camera2SessionCurrent.setZoom(cameraZoom);
+                }
+            } else {
+                if (cameraSession != null) {
+                    cameraSession.setZoom(cameraZoom);
+                }
+            }
+            zoomSlider.syncZoom(cameraZoom);
+        });
+        zoomAnimator.start();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            adjustZoom(true);
+            return true;
+        } else if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            adjustZoom(false);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     public interface Delegate {

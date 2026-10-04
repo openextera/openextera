@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -1284,6 +1285,45 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
 
         optionsView = options.getLayout();
         containerView.addView(optionsView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+    }
+
+    public void dispatchCapturedTouchEvent(MotionEvent event, ItemOptions options) {
+        if (event.getAction() == MotionEvent.ACTION_UP && performEffectClickAt(event.getRawX(), event.getRawY())) {
+            if (options != null) {
+                MotionEvent cancel = MotionEvent.obtain(event);
+                cancel.setAction(MotionEvent.ACTION_CANCEL);
+                options.dispatchCapturedTouchEvent(cancel);
+                cancel.recycle();
+            }
+            return;
+        }
+        if (options != null) {
+            options.dispatchCapturedTouchEvent(event);
+        }
+    }
+
+    private boolean performEffectClickAt(float rawX, float rawY) {
+        if (effectSelector == null || !effectSelectorShown || effectSelector.getAlpha() < 0.5f) {
+            return false;
+        }
+        RecyclerListView listView = effectSelector.recyclerListView;
+        int[] location = new int[2];
+        listView.getLocationOnScreen(location);
+        float x = rawX - location[0];
+        float y = rawY - location[1];
+        if (x < 0 || x > listView.getWidth() || y < 0 || y > listView.getHeight()) {
+            return false;
+        }
+        View child = listView.findChildViewUnder(x, y);
+        if (child == null || child.getVisibility() != View.VISIBLE) {
+            return false;
+        }
+        int position = listView.getChildAdapterPosition(child);
+        if (position == RecyclerView.NO_POSITION) {
+            return false;
+        }
+        listView.clickItem(child, position);
+        return true;
     }
 
     public void allowEffectSelector(BaseFragment fragment) {

@@ -168,7 +168,6 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     private ChatActivity chatActivity;
     private RecyclerViewItemRangeSelector itemRangeSelector;
     private int alertOnlyOnce;
-    private boolean shouldSelect;
 
     private boolean listSort;
 
@@ -867,8 +866,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     return true;
                 } else {
                     if (view instanceof PhotoAttachPhotoCell) {
-                        PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) view;
-                        itemRangeSelector.setIsActive(view, true, position, shouldSelect = !cell.isChecked());
+                        itemRangeSelector.startSelection(view, position);
                     }
                 }
                 return false;
@@ -882,11 +880,15 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
             @Override
             public void setSelected(View view, int index, boolean selected) {
-                if (selected != shouldSelect || !(view instanceof PhotoAttachPhotoCell)) {
+                if (isSelected(index) == selected) {
                     return;
                 }
-                PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) view;
-                cell.callDelegate();
+                if (view instanceof PhotoAttachPhotoCell) {
+                    PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) view;
+                    cell.callDelegate();
+                } else {
+                    provider.setPhotoChecked(index, null);
+                }
             }
 
             @Override

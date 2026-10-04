@@ -15284,7 +15284,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.dialogPhotosUpdate, dialogPhotos);
             }
         }
-        if (currentMessageObject != null && currentMessageObject.isVideo() || currentBotInlineResult != null && (currentBotInlineResult.type.equals("video") || MessageObject.isVideoDocument(currentBotInlineResult.document)) || (pageBlocksAdapter != null && (pageBlocksAdapter.isVideo(index) || pageBlocksAdapter.isHardwarePlayer(index))) || (sendPhotoType == SELECT_TYPE_NO_SELECT && ((MediaController.PhotoEntry)imagesArrLocals.get(index)).isVideo)) {
+        if (currentMessageObject != null && (currentMessageObject.isGif() || currentMessageObject.isVideo()) || currentBotInlineResult != null && (currentBotInlineResult.type.equals("video") || MessageObject.isVideoDocument(currentBotInlineResult.document)) || (pageBlocksAdapter != null && (pageBlocksAdapter.isVideo(index) || pageBlocksAdapter.isHardwarePlayer(index))) || (sendPhotoType == SELECT_TYPE_NO_SELECT && ((MediaController.PhotoEntry)imagesArrLocals.get(index)).isVideo)) {
             playerAutoStarted = true;
             onActionClick(false);
         } else if (!imagesArrLocals.isEmpty()) {
@@ -15404,7 +15404,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             boolean isInvoice = newMessageObject.isInvoice();
             boolean noforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || (newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards) || newMessageObject.hasRevealedExtendedMedia();
-            if (isVideo && !isLivePhoto) {
+            if (isVideo && !isLivePhoto || newMessageObject.isGif()) {
                 bottomLayout.setVisibility(View.VISIBLE);
                 bottomLayout.setTag(1);
             } else {
@@ -18210,6 +18210,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (file == null) {
                 file = FileLoader.getInstance(currentAccount).getPathToMessage(currentMessageObject.messageOwner);
             }
+        } else if (currentFileLocationVideo != null) {
+            file = FileLoader.getInstance(currentAccount).getPathToAttach(getFileLocation(currentFileLocationVideo), getFileLocationExt(currentFileLocationVideo), !Objects.equals(getFileLocationExt(currentFileLocationVideo), "mp4") && avatarsDialogId != 0 || isEvent);
+        } else if (pageBlocksAdapter != null) {
+            file = pageBlocksAdapter.getFile(currentIndex);
+            isVideo = pageBlocksAdapter.isVideo(currentIndex);
         }
 
         if (file != null && file.exists()) {
@@ -20518,7 +20523,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private boolean shouldMessageObjectAutoPlayed(MessageObject messageObject) {
-        return messageObject != null && messageObject.isVideo() && (messageObject.mediaExists || messageObject.attachPathExists || messageObject.hasVideoQualities() || messageObject.canStreamVideo() && SharedConfig.streamMedia) && SharedConfig.isAutoplayVideo();
+        if (messageObject == null) {
+            return false;
+        }
+        if (messageObject.isVideo() && SharedConfig.isAutoplayVideo() || messageObject.isGif() && SharedConfig.isAutoplayGifs()) {
+            return (messageObject.mediaExists || messageObject.attachPathExists || messageObject.hasVideoQualities() || messageObject.canStreamVideo() && SharedConfig.streamMedia) && SharedConfig.isAutoplayVideo();
+        }
+        return false;
     }
 
     private boolean shouldIndexAutoPlayed(int index) {
@@ -21665,7 +21676,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 if (file == null || !file.exists()) {
                     file = null;
-                    if (currentMessageObject.isVideo() && (currentMessageObject.hasVideoQualities() || SharedConfig.streamMedia) && !DialogObject.isEncryptedDialog(currentMessageObject.getDialogId()) && currentMessageObject.canStreamVideo()) {
+                    if ((currentMessageObject.isVideo() || currentMessageObject.isGif()) && (currentMessageObject.hasVideoQualities() || SharedConfig.streamMedia) && !DialogObject.isEncryptedDialog(currentMessageObject.getDialogId()) && currentMessageObject.canStreamVideo()) {
                         final int reference = FileLoader.getInstance(currentMessageObject.currentAccount).getFileReference(currentMessageObject);
 
                         videoUrises = new ArrayList<>();
@@ -21754,7 +21765,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     @Override
     public boolean onDown(MotionEvent e) {
-        if (!doubleTap && checkImageView.getVisibility() != View.VISIBLE && !drawPressedDrawable[0] && !drawPressedDrawable[1]) {
+        if (SharedConfig.nextMediaTap && !doubleTap && checkImageView.getVisibility() != View.VISIBLE && !drawPressedDrawable[0] && !drawPressedDrawable[1]) {
             float x = e.getX();
             int side = Math.min(135, containerView.getMeasuredWidth() / 8);
             if (x < side) {
@@ -21774,11 +21785,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     @Override
     public boolean canDoubleTap(MotionEvent e) {
-        if (checkImageView.getVisibility() != View.VISIBLE && !drawPressedDrawable[0] && !drawPressedDrawable[1]) {
+        if (SharedConfig.nextMediaTap && checkImageView.getVisibility() != View.VISIBLE && !drawPressedDrawable[0] && !drawPressedDrawable[1]) {
             float x = e.getX();
             int side = Math.min(135, containerView.getMeasuredWidth() / 8);
             if (x < side || x > containerView.getMeasuredWidth() - side) {
-                return currentMessageObject == null || (currentMessageObject.isVideo() || photoViewerWebView != null && photoViewerWebView.isControllable()) && (SystemClock.elapsedRealtime() - lastPhotoSetTime) >= 500 && canDoubleTapSeekVideo(e);
+                return currentMessageObject == null || (currentMessageObject.isGif() || currentMessageObject.isVideo() || photoViewerWebView != null && photoViewerWebView.isControllable()) && (SystemClock.elapsedRealtime() - lastPhotoSetTime) >= 500 && canDoubleTapSeekVideo(e);
             }
         }
         return true;

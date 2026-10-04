@@ -19,11 +19,12 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
-public class SwipeGestureSettingsView extends FrameLayout {
+public class SwipeGestureSettingsView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     public static final int SWIPE_GESTURE_PIN = 0;
     public static final int SWIPE_GESTURE_READ = 1;
@@ -48,7 +49,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
     int currentIconIndex;
     RLottieImageView[] iconViews = new RLottieImageView[2];
 
-    boolean hasTabs;
+    private final int currentAccount;
     float progressToSwipeFolders;
     float colorProgress = 1f;
     int fromColor;
@@ -57,13 +58,14 @@ public class SwipeGestureSettingsView extends FrameLayout {
 
     public SwipeGestureSettingsView(Context context, int currentAccount) {
         super(context);
+        this.currentAccount = currentAccount;
 
         strings[SWIPE_GESTURE_PIN] = LocaleController.getString(R.string.SwipeSettingsPin);
         strings[SWIPE_GESTURE_READ] = LocaleController.getString(R.string.SwipeSettingsRead);
         strings[SWIPE_GESTURE_ARCHIVE] = LocaleController.getString(R.string.SwipeSettingsArchive);
         strings[SWIPE_GESTURE_MUTE] = LocaleController.getString(R.string.SwipeSettingsMute);
         strings[SWIPE_GESTURE_DELETE] = LocaleController.getString(R.string.SwipeSettingsDelete);
-        strings[SWIPE_GESTURE_FOLDERS] = LocaleController.getString(R.string.SwipeSettingsFolders);
+        updateFoldersState();
 
         backgroundKeys[SWIPE_GESTURE_PIN] = Theme.key_chats_archiveBackground;
         backgroundKeys[SWIPE_GESTURE_READ] = Theme.key_chats_archiveBackground;
@@ -97,9 +99,8 @@ public class SwipeGestureSettingsView extends FrameLayout {
         };
         picker.setMinValue(0);
         picker.setDrawDividers(false);
-        hasTabs = !MessagesController.getInstance(currentAccount).dialogFilters.isEmpty();
-        picker.setMaxValue(hasTabs ? strings.length - 1 : strings.length - 2);
-        picker.setAllItemsCount(hasTabs ? strings.length : strings.length - 1);
+        picker.setMaxValue(strings.length - 1);
+        picker.setAllItemsCount(strings.length);
         picker.setWrapSelectorWheel(true);
         picker.setFormatter(value -> strings[value]);
         picker.setOnValueChangedListener((picker, oldVal, newVal) -> {
@@ -135,6 +136,40 @@ public class SwipeGestureSettingsView extends FrameLayout {
         progressToSwipeFolders = picker.getValue() == SWIPE_GESTURE_FOLDERS ? 1f : 0;
         currentIconValue = picker.getValue();
 
+    }
+
+    private void updateFoldersState() {
+        strings[SWIPE_GESTURE_FOLDERS] = LocaleController.getString(MessagesController.getInstance(currentAccount).getDialogFilters().size() > 1 ? R.string.SwipeSettingsFolders : R.string.Disable);
+        if (picker != null) {
+            int oldValue = picker.getValue();
+            picker.setFormatter(null);
+            picker.setFormatter(value -> strings[value]);
+            picker.setValue(SharedConfig.getChatSwipeAction(currentAccount));
+            if (oldValue != picker.getValue()) {
+                swapIcons();
+            }
+            picker.invalidate();
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogFiltersUpdated);
+        updateFoldersState();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogFiltersUpdated);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.dialogFiltersUpdated && account == currentAccount) {
+            updateFoldersState();
+        }
     }
 
     int currentIconValue;

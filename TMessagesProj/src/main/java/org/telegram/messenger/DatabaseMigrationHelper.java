@@ -1433,8 +1433,11 @@ public class DatabaseMigrationHelper {
         }
 
         if (version == 143) {
-            database.executeFast("ALTER TABLE dialog_filter ADD COLUMN color INTEGER default -1").stepThis().dispose();
+            database.executeFast("DROP TABLE IF EXISTS dialog_filter_extera;").stepThis().dispose();
+            database.executeFast("DROP TABLE IF EXISTS dialog_filter;").stepThis().dispose();
+            database.executeFast("CREATE TABLE dialog_filter(id INTEGER PRIMARY KEY, ord INTEGER, unread_count INTEGER, flags INTEGER, title TEXT, color INTEGER DEFAULT -1, emoticon TEXT)").stepThis().dispose();
             database.executeFast("PRAGMA user_version = 144").stepThis().dispose();
+            messagesStorage.getUserConfig().clearFilters();
             version = 144;
         }
 

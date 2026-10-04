@@ -1313,7 +1313,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                                 IMapsProvider.IMapStyleOptions style = ApplicationLoader.getMapsProvider().loadRawResourceStyle(ApplicationLoader.applicationContext, themeResId);
                                 this.map.setMapStyle(style);
                             }
-                            this.map.setPadding(dp(70), 0, dp(70), dp(10));
+                            IMapsProvider.IMap.Padding fragmentPadding = this.map.getFragmentPadding(dp(10));
+                            this.map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
                             onMapInit();
                         });
                         mapsInitialized = true;
@@ -1786,7 +1787,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             return true;
         }, () -> {
             if (map != null) {
-                map.setPadding(dp(70), 0, dp(70), dp(10));
+                IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(dp(10));
+                map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
             }
             if (!proximitySheet.getRadiusSet()) {
                 if (previousRadius > 0) {
@@ -2413,9 +2415,13 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (layoutParams != null && layoutParams.height != overScrollHeight + dp(10)) {
                     layoutParams.height = overScrollHeight + dp(10);
                     if (map != null) {
-                        map.setPadding(dp(70), 0, dp(70), dp(10));
+                        IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(dp(10));
+                        map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
                     }
                     mapView.getView().setLayoutParams(layoutParams);
+                }
+                if (map != null) {
+                    map.setLogoPadding(0, Math.max(0, -top / 2) + dp(10));
                 }
                 if (overlayView != null) {
                     layoutParams = (FrameLayout.LayoutParams) overlayView.getLayoutParams();
@@ -2464,7 +2470,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             if (layoutParams != null) {
                 layoutParams.height = overScrollHeight + dp(10);
                 if (map != null) {
-                    map.setPadding(dp(70), 0, dp(70), dp(10));
+                    IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(dp(10));
+                    map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
                 }
                 mapView.getView().setLayoutParams(layoutParams);
             }
@@ -2672,7 +2679,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 bounds = builder.build();
                 try {
                     int height = (int) (proximitySheet.getCustomView().getMeasuredHeight() - dp(40) + mapViewClip.getTranslationY());
-                    map.setPadding(dp(70), 0, dp(70), height);
+                    IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(height);
+                    map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
                     if (animated) {
                         map.animateCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLngBounds(bounds, 0), 500, null);
                     } else {
@@ -2703,7 +2711,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 bounds = builder.build();
                 try {
                     int height = proximitySheet.getCustomView().getMeasuredHeight() - dp(100);
-                    map.setPadding(dp(70), 0, dp(70), height);
+                    IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(height);
+                    map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
                     map.moveCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLngBounds(bounds, 0));
                 } catch (Exception e) {
                     FileLog.e(e);

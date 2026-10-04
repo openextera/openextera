@@ -1476,6 +1476,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             mapViewClip.setTranslationY(top - nonClipSize);
             if (map != null) {
                 map.setPadding(0, AndroidUtilities.dp(6), 0, clipSize + AndroidUtilities.dp(6));
+                map.setLogoPadding(0, Math.max(0, -(top - nonClipSize) / 2) + AndroidUtilities.dp(6));
             }
             if (overlayView != null) {
                 overlayView.setTranslationY(trY);

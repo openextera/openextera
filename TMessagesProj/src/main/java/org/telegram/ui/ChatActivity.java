@@ -13750,16 +13750,49 @@ public class ChatActivity extends BaseFragment implements
         if (selectionReactionsOverlay != null && selectionReactionsOverlay.isVisible()) {
             selectionReactionsOverlay.setHiddenByScroll(true);
         }
-        Bundle args = new Bundle();
-        args.putBoolean("onlySelect", true);
-        args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
-        args.putInt("messagesCount", canForwardMessagesCount);
-        args.putInt("hasPoll", hasPoll);
-        args.putBoolean("hasInvoice", hasInvoice);
-        args.putBoolean("canSelectTopics", true);
-        DialogsActivity fragment = new DialogsActivity(args);
-        fragment.setDelegate(ChatActivity.this);
-        presentFragment(fragment);
+        if (fromActionBar) {
+            Bundle args = new Bundle();
+            args.putBoolean("onlySelect", true);
+            args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
+            args.putInt("messagesCount", canForwardMessagesCount);
+            args.putInt("hasPoll", hasPoll);
+            args.putBoolean("hasInvoice", hasInvoice);
+            args.putBoolean("canSelectTopics", true);
+            DialogsActivity fragment = new DialogsActivity(args);
+            fragment.setDelegate(ChatActivity.this);
+            presentFragment(fragment);
+            return;
+        }
+        ShareAlert shareAlert = new ShareAlert(getParentActivity(), this, getForwardingMessages(), null, null, null, ChatObject.isChannel(currentChat), null, null, false, false, false, null, themeDelegate) {
+            @Override
+            public void dismissInternal() {
+                super.dismissInternal();
+                AndroidUtilities.requestAdjustResize(ChatActivity.this.getParentActivity(), ChatActivity.this.getClassGuid());
+                if (ChatActivity.this.getChatActivityEnterView().getVisibility() == View.VISIBLE) {
+                    ChatActivity.this.getFragmentView().requestLayout();
+                }
+            }
+
+            @Override
+            protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
+                if (showToast) {
+                    createUndoView();
+                    if (undoView == null) {
+                        return;
+                    }
+                    if (dids.size() == 1) {
+                        if (dids.valueAt(0).id != getUserConfig().getClientUserId() || !BulletinFactory.of(ChatActivity.this).showForwardedBulletinWithTag(dids.valueAt(0).id, count)) {
+                            undoView.showWithAction(dids.valueAt(0).id, UndoView.ACTION_FWD_MESSAGES, count, topic, null, null);
+                        }
+                    } else {
+                        undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, count, dids.size(), null, null);
+                    }
+                }
+                ChatActivity.this.clearSelectionMode();
+            }
+        };
+        showDialog(shareAlert);
+        shareAlert.setCalcMandatoryInsets(isKeyboardVisible());
     }
 
     public void showBottomOverlayProgress(boolean show, boolean animated) {
@@ -24856,7 +24889,7 @@ public class ChatActivity extends BaseFragment implements
                                 if (child instanceof ChatMessageCell && ((ChatMessageCell) child).getMessageObject() == messageObject) {
                                     int top = child.getTop() - (int) chatListViewPaddingTop;
                                     int halfHeight = (int) ((chatListView.getMeasuredHeight() - chatListViewPaddingTop) / 2);
-                                    if (messageObject.measureVoiceTranscriptionHeight() > halfHeight * .4f) {
+                                    if (messageObject.measureVoiceTranscriptionHeight(((ChatMessageCell) child).needDrawAvatarOutside()) > halfHeight * .4f) {
                                         chatLayoutManager.scrollToPositionWithOffset(position, (top > halfHeight * .6f && messageObject.isVoiceTranscriptionOpen() ? (int) (halfHeight * .6f) : top), false);
                                     }
                                     break;
@@ -31934,6 +31967,7 @@ public class ChatActivity extends BaseFragment implements
                             } else {
                                 span = new AnimatedEmojiSpan(e.document_id, fontMetrics);
                             }
+                            span.local = e.local;
                             stringBuilder.setSpan(span, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                     }

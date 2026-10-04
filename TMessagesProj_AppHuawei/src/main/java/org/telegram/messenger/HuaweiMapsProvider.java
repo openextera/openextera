@@ -183,6 +183,11 @@ public class HuaweiMapsProvider implements IMapsProvider {
         }
 
         @Override
+        public Padding getFragmentPadding(int bottom) {
+            return new Padding(AndroidUtilities.dp(70), 0, AndroidUtilities.dp(70), bottom);
+        }
+
+        @Override
         public void setPadding(int left, int top, int right, int bottom) {
             huaweiMap.setPadding(left, top, right, bottom);
         }

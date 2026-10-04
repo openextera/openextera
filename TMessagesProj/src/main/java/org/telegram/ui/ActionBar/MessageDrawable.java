@@ -356,9 +356,7 @@ public class MessageDrawable extends Drawable {
             color = getColor(isOut ? Theme.key_chat_outBubble : Theme.key_chat_inBubble);
         }
 
-        boolean drawWithShadow = gradientShader == null && !isSelected && !isCrossfadeBackground;
-        int shadowColor = getColor(isOut ? Theme.key_chat_outBubbleShadow : Theme.key_chat_inBubbleShadow);
-        if (lastDrawWithShadow != drawWithShadow || currentBackgroundDrawableRadius[idx2][idx] != newRad || (drawWithShadow && shadowDrawableColor[idx] != shadowColor) || backgroundDrawableColor[idx2][idx] != color) {
+        if (lastDrawWithShadow || currentBackgroundDrawableRadius[idx2][idx] != newRad || backgroundDrawableColor[idx2][idx] != color) {
             currentBackgroundDrawableRadius[idx2][idx] = newRad;
             try {
                 Bitmap bitmap = Bitmap.createBitmap(dp(50), dp(40), Bitmap.Config.ARGB_8888);
@@ -366,36 +364,10 @@ public class MessageDrawable extends Drawable {
 
                 backupRect.set(getBounds());
 
-                if (drawWithShadow) {
-                    shadowDrawableColor[idx] = shadowColor;
-
-                    Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-                    LinearGradient gradientShader = new LinearGradient(0, 0, 0, dp(40), new int[]{0x155F6569, 0x295F6569}, null, Shader.TileMode.CLAMP);
-                    shadowPaint.setShader(gradientShader);
-                    shadowPaint.setColorFilter(new PorterDuffColorFilter(shadowColor, PorterDuff.Mode.MULTIPLY));
-
-                    shadowPaint.setShadowLayer(2, 0, 1, 0xffffffff);
-                    if (AndroidUtilities.density > 1) {
-                        setBounds(-1, -1, bitmap.getWidth() + 1, bitmap.getHeight() + 1);
-                    } else {
-                        setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                    }
-                    draw(canvas, shadowPaint);
-
-                    if (AndroidUtilities.density > 1) {
-                        shadowPaint.setColor(0);
-                        shadowPaint.setShadowLayer(0, 0, 0, 0);
-                        shadowPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-                        setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                        draw(canvas, shadowPaint);
-                    }
-                }
-
-                Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                shadowPaint.setColor(color);
+                Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                backgroundPaint.setColor(color);
                 setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                draw(canvas, shadowPaint);
+                draw(canvas, backgroundPaint);
 
                 backgroundDrawable[idx2][idx] = new NinePatchDrawable(bitmap, getByteBuffer(bitmap.getWidth() / 2 - 1, bitmap.getWidth() / 2 + 1, bitmap.getHeight() / 2 - 1, bitmap.getHeight() / 2 + 1, color).array(), new Rect(), null);
                 setBounds(backupRect);
@@ -403,7 +375,7 @@ public class MessageDrawable extends Drawable {
 
             }
         }
-        lastDrawWithShadow = drawWithShadow;
+        lastDrawWithShadow = false;
         backgroundDrawableColor[idx2][idx] = color;
         return backgroundDrawable[idx2][idx];
     }
@@ -439,69 +411,7 @@ public class MessageDrawable extends Drawable {
     }
 
     public Drawable getShadowDrawable() {
-        if (isCrossfadeBackground) {
-            return null;
-        }
-        if (gradientShader == null && !isSelected && crossfadeFromDrawable == null) {
-            return null;
-        }
-        int newRad = dp(SharedConfig.bubbleRadius);
-        int idx;
-        if (isTopNear && isBottomNear) {
-            idx = 3;
-        } else if (isTopNear) {
-            idx = 2;
-        } else if (isBottomNear) {
-            idx = 1;
-        } else {
-            idx = 0;
-        }
-        boolean forceSetColor = false;
-        if (currentShadowDrawableRadius[idx] != newRad) {
-            currentShadowDrawableRadius[idx] = newRad;
-            if (shadowDrawableBitmap[idx] != null) {
-                shadowDrawableBitmap[idx].recycle();
-            }
-            try {
-                Bitmap bitmap = Bitmap.createBitmap(dp(50), dp(40), Bitmap.Config.ARGB_8888);
-                Canvas canvas = new Canvas(bitmap);
-
-                Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-                LinearGradient gradientShader = new LinearGradient(0, 0, 0, dp(40), new int[]{0x155F6569, 0x295F6569}, null, Shader.TileMode.CLAMP);
-                shadowPaint.setShader(gradientShader);
-
-                shadowPaint.setShadowLayer(2, 0, 1, 0xffffffff);
-                if (AndroidUtilities.density > 1) {
-                    setBounds(-1, -1, bitmap.getWidth() + 1, bitmap.getHeight() + 1);
-                } else {
-                    setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                }
-                draw(canvas, shadowPaint);
-
-                int centralColorHint = NinePatchBuilder.NO_COLOR;
-                if (AndroidUtilities.density > 1) {
-                    centralColorHint = NinePatchBuilder.TRANSPARENT_COLOR;
-                    shadowPaint.setColor(0);
-                    shadowPaint.setShadowLayer(0, 0, 0, 0);
-                    shadowPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-                    setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                    draw(canvas, shadowPaint);
-                }
-
-                shadowDrawableBitmap[idx] = bitmap;
-                shadowDrawable[idx] = new NinePatchDrawable(bitmap, getByteBuffer(bitmap.getWidth() / 2 - 1, bitmap.getWidth() / 2 + 1, bitmap.getHeight() / 2 - 1, bitmap.getHeight() / 2 + 1, centralColorHint).array(), new Rect(), null);
-                forceSetColor = true;
-            } catch (Throwable ignore) {
-
-            }
-        }
-        int color = getColor(isOut ? Theme.key_chat_outBubbleShadow : Theme.key_chat_inBubbleShadow);
-        if (shadowDrawable[idx] != null && (shadowDrawableColor[idx] != color || forceSetColor)) {
-            shadowDrawable[idx].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
-            shadowDrawableColor[idx] = color;
-        }
-        return shadowDrawable[idx];
+        return null;
     }
 
     @Override

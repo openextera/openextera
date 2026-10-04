@@ -15,6 +15,7 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -34,6 +35,13 @@ public class CrossOutDrawable extends Drawable {
     private float xOffset;
     private float lenOffsetTop;
     private float lenOffsetBottom;
+
+    private float startXPadding;
+    private float stopXPadding;
+    private float startYPadding;
+    private float stopYPadding;
+
+    private float inversionProgress = 0f;
 
     public CrossOutDrawable(Context context, int iconRes, int colorKey) {
         iconDrawable = ContextCompat.getDrawable(context, iconRes);
@@ -74,7 +82,7 @@ public class CrossOutDrawable extends Drawable {
                 progress = 0;
             }
         }
-        int newColor = colorKey < 0 ? Color.WHITE : Theme.getColor(colorKey);
+        int newColor = colorKey < 0 ? ColorUtils.blendARGB(Color.WHITE, Color.BLACK, inversionProgress) : Theme.getColor(colorKey);
         if (color != newColor) {
             color = newColor;
             paint.setColor(newColor);
@@ -88,10 +96,10 @@ public class CrossOutDrawable extends Drawable {
         canvas.saveLayerAlpha(rectF, 255, Canvas.ALL_SAVE_FLAG);
         iconDrawable.draw(canvas);
 
-        float startX = rectF.left + AndroidUtilities.dpf2(4.5f) + xOffset + lenOffsetTop;
-        float startY = rectF.top + AndroidUtilities.dpf2(4.5f) - AndroidUtilities.dp(1) + lenOffsetTop;
-        float stopX = rectF.right - AndroidUtilities.dp(3) + xOffset - lenOffsetBottom;
-        float stopY = rectF.bottom - AndroidUtilities.dp(1) - AndroidUtilities.dp(3) - lenOffsetBottom;
+        float startX = rectF.left + AndroidUtilities.dpf2(4.5f) + xOffset + lenOffsetTop + startXPadding;
+        float startY = rectF.top + AndroidUtilities.dpf2(4.5f) - AndroidUtilities.dp(1) + lenOffsetTop + startYPadding;
+        float stopX = rectF.right - AndroidUtilities.dp(3) + xOffset - lenOffsetBottom - stopXPadding;
+        float stopY = rectF.bottom - AndroidUtilities.dp(1) - AndroidUtilities.dp(3) - lenOffsetBottom - stopYPadding;
         if (cross) {
             stopX = startX + (stopX - startX) * progress;
             stopY = startY + (stopY - startY) * progress;
@@ -144,6 +152,19 @@ public class CrossOutDrawable extends Drawable {
         this.xOffset = xOffset;
         this.lenOffsetTop = lenOffsetTop;
         this.lenOffsetBottom = lenOffsetBottom;
+        invalidateSelf();
+    }
+
+    public void setPaddings(float startXPadding, float stopXPadding, float startYPadding, float stopYPadding) {
+        this.startXPadding = startXPadding;
+        this.stopXPadding = stopXPadding;
+        this.startYPadding = startYPadding;
+        this.stopYPadding = stopYPadding;
+        invalidateSelf();
+    }
+
+    public void setInversionProgress(float inversionProgress) {
+        this.inversionProgress = inversionProgress;
         invalidateSelf();
     }
 

@@ -26,6 +26,8 @@ import androidx.credentials.exceptions.GetCredentialException;
 import androidx.credentials.exceptions.GetCredentialInterruptedException;
 import androidx.credentials.exceptions.NoCredentialException;
 
+import com.exteragram.messenger.utils.PasskeysUtil;
+
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.telegram.messenger.browser.Browser;
@@ -73,19 +75,20 @@ public class PasskeysController {
                     return;
                 }
 
-                final String requestJson;
+                final String clientDataJSON;
+                final CreatePublicKeyCredentialRequest credentialRequest;
                 try {
                     final JSONObject obj = new JSONObject(res.options.data);
                     final JSONObject publicKeyObj = obj.getJSONObject("publicKey");
-                    requestJson = publicKeyObj.toString();
+                    final String requestJson = publicKeyObj.toString();
+                    final String origin = "https://" + publicKeyObj.getJSONObject("rp").getString("id");
+                    clientDataJSON = PasskeysUtil.generateClientDataJSONRaw(false, publicKeyObj.getString("challenge"), origin);
+                    credentialRequest = new CreatePublicKeyCredentialRequest(requestJson, PasskeysUtil.computeClientDataHash(clientDataJSON), false, origin);
                 } catch (Exception e) {
                     FileLog.e(e);
                     done.run(null, e.getMessage());
                     return;
                 }
-
-                final CreatePublicKeyCredentialRequest credentialRequest =
-                    new CreatePublicKeyCredentialRequest(requestJson);
 
                 try {
                     credentialManager.createCredential(context, credentialRequest, ktxCallback((res2, err2) -> {
@@ -120,7 +123,7 @@ public class PasskeysController {
                             final JSONObject response = json.getJSONObject("response");
                             final TL_account.inputPasskeyResponseRegister passkeyResponse = new TL_account.inputPasskeyResponseRegister();
                             passkeyResponse.client_data = new TLRPC.TL_dataJSON();
-                            passkeyResponse.client_data.data = new String(Base64.decode(response.getString("clientDataJSON"), Base64.URL_SAFE));
+                            passkeyResponse.client_data.data = clientDataJSON;
                             passkeyResponse.attestation_object = Base64.decode(response.getString("attestationObject"), Base64.URL_SAFE);
 
                             FileLog.d("AAGUID: " + bytesToHex(Arrays.copyOfRange(passkeyResponse.attestation_object, 67, 67 + 16)));
@@ -171,8 +174,8 @@ public class PasskeysController {
         final Runnable[] cancel = new Runnable[1];
 
         final TL_account.initPasskeyLogin req = new TL_account.initPasskeyLogin();
-        req.api_id = BuildVars.APP_ID;
-        req.api_hash = BuildVars.APP_HASH;
+        req.api_id = BuildVars.getExteraAppId();
+        req.api_hash = BuildVars.getExteraAppHash();
         final int requestId = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
             if (cancelled[0]) return;
             if (err != null) {
@@ -180,22 +183,26 @@ public class PasskeysController {
                 return;
             }
 
-            final String requestJson;
+            final String clientDataJSON;
+            final GetCredentialRequest request;
             try {
                 final JSONObject obj = new JSONObject(res.options.data);
                 final JSONObject publicKeyObj = obj.getJSONObject("publicKey");
-                requestJson = publicKeyObj.toString();
+                final String requestJson = publicKeyObj.toString();
+                final String origin = "https://" + publicKeyObj.getString("rpId");
+                clientDataJSON = PasskeysUtil.generateClientDataJSONRaw(true, publicKeyObj.getString("challenge"), origin);
+
+                final GetPublicKeyCredentialOption passkeyOption = new GetPublicKeyCredentialOption(requestJson, PasskeysUtil.computeClientDataHash(clientDataJSON));
+                request = new GetCredentialRequest.Builder()
+                        .addCredentialOption(passkeyOption)
+                        .setPreferImmediatelyAvailableCredentials(!clickedButton)
+                        .setOrigin(origin)
+                        .build();
             } catch (Exception e) {
                 FileLog.e(e);
                 done.run(0L, null, e.getMessage());
                 return;
             }
-
-            final GetPublicKeyCredentialOption passkeyOption = new GetPublicKeyCredentialOption(requestJson);
-            final GetCredentialRequest request = new GetCredentialRequest.Builder()
-                    .addCredentialOption(passkeyOption)
-                    .setPreferImmediatelyAvailableCredentials(!clickedButton)
-                    .build();
 
             try {
                 final CancellationSignal cancellationSignal = new CancellationSignal();
@@ -220,7 +227,7 @@ public class PasskeysController {
                             final JSONObject response = json.getJSONObject("response");
                             final TL_account.inputPasskeyResponseLogin passkeyResponse = new TL_account.inputPasskeyResponseLogin();
                             passkeyResponse.client_data = new TLRPC.TL_dataJSON();
-                            passkeyResponse.client_data.data = new String(Base64.decode(response.getString("clientDataJSON"), Base64.URL_SAFE));
+                            passkeyResponse.client_data.data = clientDataJSON;
 
                             passkeyResponse.authenticator_data = Base64.decode(response.getString("authenticatorData"), Base64.URL_SAFE);
                             passkeyResponse.signature = Base64.decode(response.getString("signature"), Base64.URL_SAFE);

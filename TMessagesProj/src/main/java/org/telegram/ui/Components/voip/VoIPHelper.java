@@ -74,12 +74,23 @@ public class VoIPHelper {
 	private static final int VOIP_SUPPORT_ID = 4244000;
 
 	public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance) {
+		startCall(user, videoCall, canVideoCall, activity, userFull, accountInstance, false);
+	}
+
+	public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance, boolean skipConfirm) {
 		if (accountInstance == null ? MessagesController.getInstance(UserConfig.selectedAccount).isFrozen() : accountInstance.getMessagesController().isFrozen()) {
 			AccountFrozenAlert.show(accountInstance == null ? UserConfig.selectedAccount : accountInstance.getCurrentAccount());
 			return;
 		}
 		if (userFull != null && userFull.phone_calls_private) {
 			AlertsCreator.showCallsForbidden(activity, accountInstance.getCurrentAccount(), user.id, null);
+			return;
+		}
+		if (!skipConfirm) {
+			BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+			if (fragment != null) {
+				AlertsCreator.createCallDialogAlert(fragment, fragment.getMessagesController().getUser(user.id), videoCall);
+			}
 			return;
 		}
 		if (ConnectionsManager.getInstance(UserConfig.selectedAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected) {

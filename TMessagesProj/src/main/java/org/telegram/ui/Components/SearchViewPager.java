@@ -125,6 +125,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     public final static int gotoItemId = 200;
     public final static int forwardItemId = 201;
+    public final static int forwardNoQuoteItemId = 204;
     public final static int deleteItemId = 202;
     public final static int speedItemId = 203;
 
@@ -876,6 +877,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             speedItem.getIconView().setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.SRC_IN));
             gotoItem = actionMode.addItemWithWidth(gotoItemId, R.drawable.msg_message, AndroidUtilities.dp(54), getString(R.string.AccDescrGoToMessage));
             forwardItem = actionMode.addItemWithWidth(forwardItemId, R.drawable.msg_forward, AndroidUtilities.dp(54), getString(R.string.Forward));
+            forwardItem.setOnLongClickListener(v -> {
+                onActionBarItemClick(forwardNoQuoteItemId);
+                return true;
+            });
             deleteItem = actionMode.addItemWithWidth(deleteItemId, R.drawable.msg_delete, AndroidUtilities.dp(54), getString(R.string.Delete));
         }
         if (selectedMessagesCountTextView != null) {
@@ -973,10 +978,12 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             }
             MessageObject messageObject = selectedFiles.values().iterator().next();
             goToMessage(messageObject);
-        } else if (id == forwardItemId) {
+        } else if (id == forwardItemId || id == forwardNoQuoteItemId) {
+            final boolean noQuote = id == forwardNoQuoteItemId;
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
+            args.putBoolean("forward_noquote", noQuote);
             DialogsActivity fragment = new DialogsActivity(args);
             fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                 ArrayList<MessageObject> fmessages = new ArrayList<>();
@@ -995,7 +1002,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                         if (message != null) {
                             AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, true, 0, 0, null, false));
                         }
-                        AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(fmessages, did, false,false, true, 0, 0);
+                        AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(fmessages, did, noQuote, false, true, 0, 0);
                     }
                     fragment1.finishFragment();
                 } else {
@@ -1014,8 +1021,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                             return true;
                         }
                     }
+                    args1.putBoolean("forward_noquote", noQuote);
                     ChatActivity chatActivity = new ChatActivity(args1);
                     fragment1.presentFragment(chatActivity, true);
+                    chatActivity.setForwardParams(noQuote);
                     chatActivity.showFieldPanelForForward(true, fmessages);
                 }
                 return true;

@@ -7,8 +7,10 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -41,6 +43,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     public MainTabsLayout(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        dividerPaint.setStrokeWidth(1f);
     }
 
     private static final float[] PASS_TEXT_SIZES_DP = {12f, 12f, 10f};
@@ -145,6 +148,40 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 totalWidth += tabsTextWidthWithMargin[a];
                 totalWeight += tabsWeight[a];
             }
+
+            if (visibleChildCount > 0) {
+                final float equalTabWidth = biggestTabTextWidth + dp(16) * 2;
+                final float minEqualTabWidth = minTotalWidthForTabs / (float) visibleChildCount;
+                if (equalTabWidth < minEqualTabWidth) {
+                    totalWidth = 0;
+                    for (int a = 0, N = getChildCount(); a < N; a++) {
+                        if (!isViewVisible(getChildAt(a))) continue;
+                        tabsTextWidthWithMargin[a] = equalTabWidth;
+                        totalWidth += equalTabWidth;
+                        tabsWeight[a] = 0;
+                    }
+                    totalWeight = -1;
+                } else {
+                    boolean allTabsFit = true;
+                    for (int a = 0, N = getChildCount(); a < N; a++) {
+                        if (!isViewVisible(getChildAt(a))) continue;
+                        if (tabsTextWidth[a] + dp(13) * 2 > minEqualTabWidth) {
+                            allTabsFit = false;
+                            break;
+                        }
+                    }
+                    if (allTabsFit) {
+                        totalWidth = 0;
+                        for (int a = 0, N = getChildCount(); a < N; a++) {
+                            if (!isViewVisible(getChildAt(a))) continue;
+                            tabsTextWidthWithMargin[a] = minEqualTabWidth;
+                            totalWidth += minEqualTabWidth;
+                            tabsWeight[a] = 0;
+                        }
+                        totalWeight = 0;
+                    }
+                }
+            }
         }
 
         if (totalWeight == 0) {
@@ -159,7 +196,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             for (int a = 0, N = getChildCount(); a < N; a++) {
                 tabsTextWidthWithMargin[a] *= m;
             }
-        } else if (totalWidth < minTotalWidthForTabs) {
+        } else if (totalWidth < minTotalWidthForTabs && totalWeight > 0) {
             final float growW = minTotalWidthForTabs - totalWidth;
             final float growP = growW / totalWeight;
 
@@ -412,6 +449,11 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private float animatedLongSelectedViewOffsetX;
 
     private boolean isInLongPress;
+    private boolean manuallyStartedLongMove;
+    private float touchStartX;
+    private float touchStartY;
+    private long touchStartTime;
+    private View touchStartView;
     private float lastLongSelectedViewCenterX;
     private float lastLongSelectedViewWidth;
     private View lastLongSelectedView;
@@ -492,7 +534,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         @Override
         public boolean needLongPress(float x, float y) {
-            return true;
+            return false;
         }
 
         @Override
@@ -500,19 +542,9 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             return false;
         }
 
-
         @Override
         public boolean onLongPressRequestedAt(View view, float x, float y) {
-            if (!swipeSelectionEnabled) {
-                return false;
-            }
-            checkPivot(view, x, y);
-            isInLongPress = true;
-            AndroidUtilities.cancelRunOnUIThread(restoreDrawSelector);
-            setSkipDrawSelector(true);
-            checkLongMove(x, y, true, false);
-            invalidate();
-            longTouchStart();
+            startTabsLongMove(x, y);
             return true;
         }
 
@@ -524,61 +556,49 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         }
 
         @Override
-        public long getLongPressDuration() {
-            return ClickHelper.Delegate.super.getLongPressDuration() * 750 / 1000;
-        }
-
-        @Override
         public void onLongPressFinish(View view, float x, float y) {
-            checkPivot(view, x, y);
-            checkLongMove(x, y, false, true);
-            isInLongPress = false;
-            AndroidUtilities.runOnUIThread(restoreDrawSelector, 450);
-            if (lastLongSelectedView != null) {
-                lastLongSelectedView.performClick();
-            }
-            lastLongSelectedView = null;
-            invalidate();
-            longTouchEnd();
+            finishTabsLongMove(x, y, true);
         }
 
         @Override
         public void onLongPressCancelled(View view, float x, float y) {
-            checkPivot(view, x, y);
-            checkLongMove(x, y, false, true);
-            isInLongPress = false;
-            AndroidUtilities.runOnUIThread(restoreDrawSelector, 450);
-            lastLongSelectedView = null;
-            invalidate();
-            longTouchEnd();
+            finishTabsLongMove(x, y, false);
         }
 
-        private void longTouchStart() {
-            animatorIsScaled.setValue(true, true);
-
-            /*
-            if (!scaleX.isRunning()) {
-                scaleX.setStartVelocity(-0.45f);
-                scaleY.setStartVelocity(-0.45f);
+        @Override
+        public void onClickTouchMove(View view, float x, float y) {
+            if (isInLongPress) {
+                checkPivot(view, x, y);
             }
-            scaleX.animateToFinalPosition(1.012f);
-            scaleY.animateToFinalPosition(1.012f);
-            */
-        }
-
-        private void longTouchEnd() {
-            animatorIsScaled.setValue(false, true);
-
-            /*
-            if (!scaleX.isRunning()) {
-                scaleX.setStartVelocity(0.25f);
-                scaleY.setStartVelocity(0.25f);
-            }
-            scaleX.animateToFinalPosition(1f);
-            scaleY.animateToFinalPosition(1f);
-            */
         }
     });
+
+    private void startTabsLongMove(float x, float y) {
+        if (!swipeSelectionEnabled) {
+            return;
+        }
+        checkPivot(this, x, y);
+        isInLongPress = true;
+        AndroidUtilities.cancelRunOnUIThread(restoreDrawSelector);
+        setSkipDrawSelector(true);
+        checkLongMove(x, y, true, false);
+        invalidate();
+        animatorIsScaled.setValue(true, true);
+    }
+
+    private void finishTabsLongMove(float x, float y, boolean performClick) {
+        checkPivot(this, x, y);
+        checkLongMove(x, y, false, true);
+        isInLongPress = false;
+        manuallyStartedLongMove = false;
+        AndroidUtilities.runOnUIThread(restoreDrawSelector, 450);
+        if (performClick && lastLongSelectedView != null) {
+            lastLongSelectedView.performClick();
+        }
+        lastLongSelectedView = null;
+        invalidate();
+        animatorIsScaled.setValue(false, true);
+    }
 
     @Override
     public void setScaleY(float scaleY) {
@@ -648,6 +668,44 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (swipeSelectionEnabled) {
+            final int action = ev.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                touchStartX = ev.getX();
+                touchStartY = ev.getY();
+                touchStartTime = ev.getEventTime();
+                touchStartView = findChildUnder(this, touchStartX, touchStartY);
+                manuallyStartedLongMove = false;
+            } else if (action == MotionEvent.ACTION_MOVE) {
+                if (manuallyStartedLongMove) {
+                    checkPivot(this, ev.getX(), ev.getY());
+                    checkLongMove(ev.getX(), ev.getY(), false, false);
+                    invalidate();
+                    return true;
+                }
+                if (touchStartView instanceof GlassTabView && ((GlassTabView) touchStartView).isTabSelected() && ev.getEventTime() - touchStartTime < ViewConfiguration.getLongPressTimeout()) {
+                    final float dx = ev.getX() - touchStartX;
+                    final float dy = ev.getY() - touchStartY;
+                    if (Math.abs(dx) > Math.max(dp(24), AndroidUtilities.getPixelsInCM(0.3f, true)) && Math.abs(dx) > Math.abs(dy)) {
+                        clickHelper.cancel(this, ev.getX(), ev.getY());
+                        touchStartView.cancelLongPress();
+                        touchStartView.setPressed(false);
+                        if (getParent() != null) {
+                            getParent().requestDisallowInterceptTouchEvent(true);
+                        }
+                        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                        manuallyStartedLongMove = true;
+                        startTabsLongMove(touchStartX, touchStartY);
+                        checkPivot(this, ev.getX(), ev.getY());
+                        checkLongMove(ev.getX(), ev.getY(), false, false);
+                        return true;
+                    }
+                }
+            } else if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) && manuallyStartedLongMove) {
+                finishTabsLongMove(ev.getX(), ev.getY(), action == MotionEvent.ACTION_UP);
+                return true;
+            }
+        }
         clickHelper.onTouchEvent(this, ev);
         return super.dispatchTouchEvent(ev);
     }

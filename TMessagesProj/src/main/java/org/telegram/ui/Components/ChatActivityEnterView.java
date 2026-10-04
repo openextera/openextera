@@ -66,9 +66,11 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
+import android.util.Pair;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.ActionMode;
+import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -103,6 +105,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 import androidx.core.os.BuildCompat;
+import androidx.core.view.ContentInfoCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.core.view.inputmethod.EditorInfoCompat;
@@ -621,6 +624,7 @@ public class ChatActivityEnterView extends FrameLayout implements
     private int sendButtonBackgroundColor;
     public MessageSendPreview messageSendPreview;
     private long sentFromPreview;
+    private ItemOptions sendButtonItemOptions;
     private ActionBarPopupWindow sendPopupWindow;
     private ActionBarPopupWindow.ActionBarPopupWindowLayout sendPopupLayout;
     private ImageView cancelBotButton;
@@ -2802,21 +2806,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, DEFAULT_HEIGHT, 0));
 
         if (IconManager.INSTANCE.isBasePackOnly(IconPackType.DEFAULT)) {
-            emojiButton = new ChatActivityEnterViewAnimatedIconView(context) {
-                @Override
-                protected void onDraw(Canvas canvas) {
-                    super.onDraw(canvas);
-                    drawEmojiUnreadDot(canvas, this);
-                }
-            };
+            emojiButton = new ChatActivityEnterViewAnimatedIconView(context);
         } else {
-            emojiButton = new ChatActivityEnterViewStaticIconView(context, this) {
-                @Override
-                protected void onDraw(Canvas canvas) {
-                    super.onDraw(canvas);
-                    drawEmojiUnreadDot(canvas, this);
-                }
-            };
+            emojiButton = new ChatActivityEnterViewStaticIconView(context, this);
         }
         emojiButton.setContentDescription(getString(R.string.AccDescrEmojiButton));
         emojiButton.setFocusable(true);
@@ -2913,6 +2905,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 notifyButton = new ImageView(context);
                 notifySilentDrawable = new CrossOutDrawable(context, R.drawable.input_notify_on, Theme.key_glass_defaultIcon);
                 notifyButton.setImageDrawable(notifySilentDrawable);
+                if (!IconManager.INSTANCE.isBasePackOnly(IconPackType.DEFAULT)) {
+                    notifySilentDrawable.setPaddings(0, -dp(0.5f), 0, -dp(0.5f));
+                }
                 notifySilentDrawable.setCrossOut(silent, false);
                 notifyButton.setContentDescription(silent ? getString("AccDescrChanSilentOn", R.string.AccDescrChanSilentOn) : getString("AccDescrChanSilentOff", R.string.AccDescrChanSilentOff));
                 notifyButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
@@ -3651,6 +3646,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
             sendMessage();
         });
+        sendButton.setOnTouchListener(this::onSendOptionsTouch);
         sendButton.setOnLongClickListener(this::onSendLongClick);
         if (AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
             sendButtonContainer.setOnLongClickListener(this::onSendLongClick);
@@ -3693,6 +3689,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
             return onSendLongClick(v);
         });
+        slowModeButton.setOnTouchListener(this::onSendOptionsTouch);
 
         SharedPreferences sharedPreferences = MessagesController.getGlobalEmojiSettings();
         keyboardHeight = sharedPreferences.getInt("kbd_height", dp(200));
@@ -5039,6 +5036,17 @@ public class ChatActivityEnterView extends FrameLayout implements
             });
     }
 
+    private boolean onSendOptionsTouch(View view, MotionEvent event) {
+        if (sendButtonItemOptions == null || messageSendPreview == null || !messageSendPreview.isShowing()) {
+            return false;
+        }
+        if (view.getParent() != null) {
+            view.getParent().requestDisallowInterceptTouchEvent(true);
+        }
+        messageSendPreview.dispatchCapturedTouchEvent(event, sendButtonItemOptions);
+        return false;
+    }
+
     private boolean onSendLongClick(View view) {
         if (isInScheduleMode() || parentFragment != null && parentFragment.getChatMode() == ChatActivity.MODE_QUICK_REPLIES || animatorEphemeralMessageVisibility.getValue()) {
             return false;
@@ -5187,6 +5195,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         messageSendPreview.setOnDismissListener(di -> {
+            sendButtonItemOptions = null;
             messageSendPreview = null;
         });
 
@@ -5327,6 +5336,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
 
         ItemOptions options = ItemOptions.makeOptions(this, resourcesProvider, sendButton);
+        sendButtonItemOptions = options;
 
         addAiSendOptions(options);
 
@@ -5585,6 +5595,40 @@ public class ChatActivityEnterView extends FrameLayout implements
     private ArrayList<TextWatcher> messageEditTextWatchers;
     private boolean messageEditTextEnabled = true;
 
+    private static InputContentInfoCompat getReceivedInputContent(ContentInfoCompat payload, Uri uri, ClipDescription description) {
+        Bundle extras = payload.getExtras();
+        if (extras != null) {
+            try {
+                InputContentInfoCompat inputContentInfo = InputContentInfoCompat.wrap(extras.getParcelable("androidx.core.view.extra.INPUT_CONTENT_INFO"));
+                if (inputContentInfo != null) {
+                    return inputContentInfo;
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        return new InputContentInfoCompat(uri, description, payload.getLinkUri());
+    }
+
+    private void sendReceivedMedia(String mime, Uri uri, InputContentInfoCompat inputContentInfo, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+        if (messageSendPreview != null) {
+            messageSendPreview.dismiss(true);
+            messageSendPreview = null;
+        }
+        if (replyingQuote != null && parentFragment != null && replyingQuote.outdated) {
+            parentFragment.showQuoteMessageUpdate();
+            return;
+        }
+        if (mime != null && mime.equalsIgnoreCase("image/gif")) {
+            SendMessagesHelper.prepareSendingDocument(accountInstance, null, null, uri, null, "image/gif", dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, null, notify, 0, inputContentInfo, parentFragment != null ? parentFragment.getMessageChatSendParams() : null, false);
+        } else {
+            SendMessagesHelper.prepareSendingPhoto(accountInstance, null, uri, dialog_id, replyingMessageObject, getThreadMessage(), replyingQuote, null, null, null, inputContentInfo, 0, null, notify, 0, parentFragment == null ? 0 : parentFragment.getChatMode(), parentFragment != null ? parentFragment.getMessageChatSendParams() : null);
+        }
+        if (delegate != null) {
+            delegate.onMessageSend(null, true, scheduleDate, scheduleRepeatPeriod, 0);
+        }
+    }
+
     private class ChatActivityEditTextCaption extends EditTextCaption {
         public ChatActivityEditTextCaption(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context, resourcesProvider);
@@ -5612,67 +5656,6 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (delegate != null) {
                 delegate.onContextMenuClose();
             }
-        }
-
-        private void send(InputContentInfoCompat inputContentInfo, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
-            if (messageSendPreview != null) {
-                messageSendPreview.dismiss(true);
-                messageSendPreview = null;
-            }
-            if (replyingQuote != null && parentFragment != null && replyingQuote.outdated) {
-                parentFragment.showQuoteMessageUpdate();
-                return;
-            }
-            ClipDescription description = inputContentInfo.getDescription();
-            if (description.hasMimeType("image/gif")) {
-                SendMessagesHelper.prepareSendingDocument(accountInstance, null, null, inputContentInfo.getContentUri(), null, "image/gif", dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, null, notify, 0, inputContentInfo, parentFragment != null ? parentFragment.getMessageChatSendParams() : null, false);
-            } else {
-                SendMessagesHelper.prepareSendingPhoto(accountInstance, null, inputContentInfo.getContentUri(), dialog_id, replyingMessageObject, getThreadMessage(), replyingQuote, null, null, null, inputContentInfo, 0, null, notify, 0, parentFragment == null ? 0 : parentFragment.getChatMode(), parentFragment != null ? parentFragment.getMessageChatSendParams() : null);
-            }
-            if (delegate != null) {
-                delegate.onMessageSend(null, true, scheduleDate, scheduleRepeatPeriod, 0);
-            }
-        }
-
-        @Override
-        public InputConnection onCreateInputConnection(EditorInfo editorInfo) {
-            final InputConnection ic = super.onCreateInputConnection(editorInfo);
-            if (ic == null) {
-                return null;
-            }
-            try {
-                if (isEditingBusinessLink() || isLiveComment) {
-                    EditorInfoCompat.setContentMimeTypes(editorInfo, null);
-                } else {
-                    EditorInfoCompat.setContentMimeTypes(editorInfo, new String[]{"image/gif", "image/*", "image/jpg", "image/png", "image/webp"});
-                }
-                final InputConnectionCompat.OnCommitContentListener callback = (inputContentInfo, flags, opts) -> {
-                    if (isLiveComment) {
-                        return true;
-                    }
-                    if (BuildCompat.isAtLeastNMR1() && (flags & InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0) {
-                        try {
-                            inputContentInfo.requestPermission();
-                        } catch (Exception e) {
-                            return false;
-                        }
-                    }
-                    if (inputContentInfo.getDescription().hasMimeType("image/gif") || SendMessagesHelper.shouldSendWebPAsSticker(null, inputContentInfo.getContentUri())) {
-                        if (isInScheduleMode()) {
-                            AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> send(inputContentInfo, notify, scheduleDate, scheduleRepeatPeriod), resourcesProvider);
-                        } else {
-                            send(inputContentInfo, true, 0, 0);
-                        }
-                    } else {
-                        editPhoto(inputContentInfo.getContentUri(), inputContentInfo.getDescription().getMimeType(0));
-                    }
-                    return true;
-                };
-                return InputConnectionCompat.createWrapper(ic, editorInfo, callback);
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-            return ic;
         }
 
         @Override
@@ -5799,42 +5782,58 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         @Override
         public boolean onTextContextMenuItem(int id) {
-            if (id == android.R.id.paste) {
+            if (id == android.R.id.paste || id == android.R.id.pasteAsPlainText) {
                 isPaste = true;
-
-                ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clipData = clipboard.getPrimaryClip();
-                if (clipData != null) {
-                    if (clipData.getItemCount() == 1 && clipData.getDescription().hasMimeType("image/*") && !isEditingBusinessLink()) {
-                        editPhoto(clipData.getItemAt(0).getUri(), clipData.getDescription().getMimeType(0));
-                    }
-                }
             }
             return super.onTextContextMenuItem(id);
+        }
+
+        @Override
+        public boolean onDragEvent(DragEvent event) {
+            if (event.getAction() != DragEvent.ACTION_DROP || isEditingBusinessLink() || isEditingCaption() || isEditingMessage()) {
+                return false;
+            }
+            ClipData clipData = event.getClipData();
+            if (clipData == null) {
+                return false;
+            }
+            try {
+                parentActivity.requestDragAndDropPermissions(event);
+                if (clipData.getItemCount() == 1) {
+                    ClipDescription description = clipData.getDescription();
+                    if (description != null && (description.hasMimeType("image/*") || description.hasMimeType("video/mp4"))) {
+                        editPhoto(clipData.getItemAt(0).getUri(), description.getMimeType(0));
+                    }
+                }
+                return true;
+            } catch (Exception e) {
+                FileLog.e(e);
+                return true;
+            }
         }
 
         private void editPhoto(Uri uri, String mime) {
             final File file = AndroidUtilities.generatePicturePath(parentFragment != null && parentFragment.isSecretChat(), MimeTypeMap.getSingleton().getExtensionFromMimeType(mime));
             Utilities.globalQueue.postRunnable(() -> {
-                try {
-                    InputStream in = getContext().getContentResolver().openInputStream(uri);
-                    FileOutputStream fos = new FileOutputStream(file);
+                try (InputStream in = getContext().getContentResolver().openInputStream(uri);
+                     FileOutputStream fos = new FileOutputStream(file)) {
+                    if (in == null) {
+                        FileLog.e("InputStream is null for URI: " + uri);
+                        return;
+                    }
                     byte[] buffer = new byte[1024];
                     int lengthRead;
                     while ((lengthRead = in.read(buffer)) > 0) {
                         fos.write(buffer, 0, lengthRead);
-                        fos.flush();
                     }
-                    in.close();
-                    fos.close();
-                    MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, -1, 0, file.getAbsolutePath(), 0, false, 0, 0, 0);
+                    MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, -1, 0, file.getAbsolutePath(), 0, "video/mp4".equals(mime), 0, 0, 0);
                     ArrayList<Object> entries = new ArrayList<>();
                     entries.add(photoEntry);
                     AndroidUtilities.runOnUIThread(() -> {
                         openPhotoViewerForEdit(entries, file);
                     });
-                } catch (Throwable e) {
-                    e.printStackTrace();
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
             });
         }
@@ -5868,6 +5867,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                     SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
                     if (!photoEntry.isVideo && photoEntry.imagePath != null) {
                         info.path = photoEntry.imagePath;
+                        if (photoEntry.isHighQuality()) {
+                            info.originalPhotoEntry = photoEntry.clone();
+                        }
                     } else if (photoEntry.path != null) {
                         info.path = photoEntry.path;
                     }
@@ -5882,7 +5884,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                     info.masks = photoEntry.stickers;
                     info.ttl = photoEntry.ttl;
                     info.videoEditedInfo = videoEditedInfo;
+                    info.hasMediaSpoilers = photoEntry.hasSpoiler;
                     info.canDeleteAfter = true;
+                    info.highQuality = photoEntry.isHighQuality();
                     photos.add(info);
                     photoEntry.reset();
                     sending = true;
@@ -6054,6 +6058,37 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         };
+        if (parentFragment != null && !isEditingBusinessLink() && !isLiveComment) {
+            ViewCompat.setOnReceiveContentListener(messageEditText, new String[]{"image/gif", "image/*", "image/jpg", "image/png", "image/webp"}, (view, payload) -> {
+                Pair<ContentInfoCompat, ContentInfoCompat> split = payload.partition(item -> item.getUri() != null);
+                ContentInfoCompat uriContent = split.first;
+                ContentInfoCompat remaining = split.second;
+                if (uriContent != null) {
+                    ClipData clip = uriContent.getClip();
+                    ArrayList<SendMessagesHelper.SendingMediaInfo> photos = new ArrayList<>();
+                    for (int i = 0; i < clip.getItemCount(); i++) {
+                        final Uri uri = clip.getItemAt(i).getUri();
+                        final String mime = clip.getDescription().getMimeType(i);
+                        if (payload.getSource() == ContentInfoCompat.SOURCE_INPUT_METHOD && clip.getItemCount() == 1 && (mime != null && mime.equalsIgnoreCase("image/gif") || SendMessagesHelper.shouldSendWebPAsSticker(null, uri))) {
+                            final InputContentInfoCompat inputContentInfo = getReceivedInputContent(payload, uri, clip.getDescription());
+                            if (isInScheduleMode()) {
+                                AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> sendReceivedMedia(mime, uri, inputContentInfo, notify, scheduleDate, scheduleRepeatPeriod), resourcesProvider);
+                            } else {
+                                sendReceivedMedia(mime, uri, inputContentInfo, true, 0, 0);
+                            }
+                        } else {
+                            SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
+                            info.uri = uri;
+                            photos.add(info);
+                        }
+                    }
+                    if (!photos.isEmpty()) {
+                        parentFragment.openPhotosEditor(photos, getFieldText());
+                    }
+                }
+                return remaining;
+            });
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             messageEditText.setFallbackLineSpacing(false);
         }
@@ -6472,15 +6507,6 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     public boolean isSendButtonVisible() {
         return sendButton.getVisibility() == VISIBLE;
-    }
-
-    private void drawEmojiUnreadDot(Canvas canvas, View button) {
-        if (button.getTag() != null && attachLayout != null && !emojiViewVisible
-                && !MediaDataController.getInstance(currentAccount).getUnreadStickerSets().isEmpty() && dotPaint != null) {
-            int x = button.getWidth() / 2 + dp(9);
-            int y = button.getHeight() / 2 - dp(8);
-            canvas.drawCircle(x, y, dp(5), dotPaint);
-        }
     }
 
     private void drawForbiddenAudioVideoIcon(Canvas canvas, View button, boolean video) {
@@ -10633,6 +10659,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                         } else {
                             span = new AnimatedEmojiSpan(emojiEntity.document_id, fontMetricsInt);
                         }
+                        span.local = emojiEntity.local;
                         stringBuilder.setSpan(span, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                 }
@@ -11491,6 +11518,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 notifyVisible = canWriteToChannel;
                 if (notifySilentDrawable == null) {
                     notifySilentDrawable = new CrossOutDrawable(getContext(), R.drawable.input_notify_on, Theme.key_glass_defaultIcon);
+                    if (!IconManager.INSTANCE.isBasePackOnly(IconPackType.DEFAULT)) {
+                        notifySilentDrawable.setPaddings(0, -dp(0.5f), 0, -dp(0.5f));
+                    }
                 }
                 notifySilentDrawable.setCrossOut(silent, false);
                 notifyButton.setImageDrawable(notifySilentDrawable);

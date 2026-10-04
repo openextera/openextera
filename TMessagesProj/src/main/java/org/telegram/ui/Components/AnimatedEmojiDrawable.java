@@ -1185,17 +1185,21 @@ public class AnimatedEmojiDrawable extends Drawable {
         private boolean hasParticles;
         private StarsReactionsSheet.Particles particles;
         public void setParticles(boolean show, boolean animated) {
+            setParticles(show, animated, 8);
+        }
+
+        public void setParticles(boolean show, boolean animated, int count) {
             if (hasParticles == show) return;
             if (animated) {
                 if (particles == null) {
-                    particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 8);
+                    particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, count);
                 }
                 hasParticles = show;
                 invalidate();
             } else {
                 hasParticles = show;
                 if (show && particles == null) {
-                    particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 8);
+                    particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, count);
                 } else if (!show && particles != null) {
                     particles = null;
                 }

@@ -1592,6 +1592,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private final static int gotochat = 102;
     private final static int pin = 103;
     private final static int unpin = 104;
+    private final static int forward_noquote = 105;
 
     private BaseFragment profileActivity;
 
@@ -2287,6 +2288,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 actionModeLayout.addView(forwardItem, new LinearLayout.LayoutParams(dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
                 actionModeViews.add(forwardItem);
                 forwardItem.setOnClickListener(v -> onActionBarItemClick(v, forward));
+                forwardItem.setOnLongClickListener(v -> {
+                    onActionBarItemClick(v, forward_noquote);
+                    return true;
+                });
             }
 
             pinItem = new ActionBarMenuItem(context, null, getThemedColor(Theme.key_actionBarActionModeDefaultSelector), getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
@@ -5353,7 +5358,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 actionBar.closeSearchField();
                 cantDeleteMessagesCount = 0;
             }, null, resourcesProvider);
-        } else if (id == forward) {
+        } else if (id == forward || id == forward_noquote) {
+            final boolean noQuote = id == forward_noquote;
             if (userInfo != null) {
                 if (profileActivity.getMessagesController().isUserNoForwards(userInfo)) {
                     if (fwdRestrictedHint != null) {
@@ -5386,6 +5392,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             args.putBoolean("onlySelect", true);
             args.putBoolean("canSelectTopics", true);
             args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
+            args.putBoolean("forward_noquote", noQuote);
             DialogsActivity fragment = new DialogsActivity(args);
             fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                 ArrayList<MessageObject> fmessages = new ArrayList<>();
@@ -5415,7 +5422,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         if (message != null) {
                             profileActivity.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, true, 0, 0, null, false));
                         }
-                        profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, false, false, true, 0, 0);
+                        profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, noQuote, false, true, 0, 0);
                     }
                     fragment1.finishFragment();
                     UndoView undoView = null;
@@ -5448,9 +5455,11 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
                     profileActivity.getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
 
+                    args1.putBoolean("forward_noquote", noQuote);
                     ChatActivity chatActivity = new ChatActivity(args1);
                     ForumUtilities.applyTopic(chatActivity, dids.get(0));
                     fragment1.presentFragment(chatActivity, true);
+                    chatActivity.setForwardParams(noQuote);
                     chatActivity.showFieldPanelForForward(true, fmessages);
                 }
                 return true;

@@ -51,6 +51,7 @@ public class OutlineTextContainerView extends FrameLayout {
     private String mText = "";
     private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    private boolean useDefaultColor;
 
     private final SpringAnimation selectionSpring = new SpringAnimation(this, SELECTION_PROGRESS_PROPERTY);
     private float selectionProgress;
@@ -79,6 +80,7 @@ public class OutlineTextContainerView extends FrameLayout {
 
         setWillNotDraw(false);
         textPaint.setTextSize(AndroidUtilities.dp(16));
+        textPaint.setTypeface(AndroidUtilities.regular());
         outlinePaint.setStyle(Paint.Style.STROKE);
         outlinePaint.setStrokeCap(Paint.Cap.ROUND);
         outlinePaint.setStrokeWidth(strokeWidthRegular);
@@ -121,10 +123,15 @@ public class OutlineTextContainerView extends FrameLayout {
         invalidate();
     }
 
+    public void setUseDefaultColor(boolean useDefaultColor) {
+        this.useDefaultColor = useDefaultColor;
+        invalidate();
+    }
+
     public void updateColor() {
-        int textSelectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider), forceUseCenter && !forceForceUseCenter ? 0f : titleProgress);
+        int textSelectionColor = ColorUtils.blendARGB(useDefaultColor ? 0xff212121 : Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider), useDefaultColor ? 0xff19a7e8 : Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), forceUseCenter && !forceForceUseCenter ? 0f : titleProgress);
         textPaint.setColor(ColorUtils.blendARGB(textSelectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
-        int selectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), forceUseCenter && !forceForceUseCenter ? 0f : selectionProgress);
+        int selectionColor = ColorUtils.blendARGB(useDefaultColor ? 0xff212121 : Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), useDefaultColor ? 0xff19a7e8 : Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), forceUseCenter && !forceForceUseCenter ? 0f : selectionProgress);
         setColor(ColorUtils.blendARGB(selectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
     }
 

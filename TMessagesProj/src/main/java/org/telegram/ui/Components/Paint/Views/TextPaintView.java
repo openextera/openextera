@@ -379,6 +379,7 @@ public class TextPaintView extends EntityView {
         } else {
             editText.setFrameColor(0);
             editText.setStrokeColor(swatch.color);
+            editText.setShadowLayer(0, 0, 0, 0);
             textColor = AndroidUtilities.computePerceivedBrightness(swatch.color) >= .721f ? Color.BLACK : Color.WHITE;
         }
         editText.setTextColor(textColor);

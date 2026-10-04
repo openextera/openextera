@@ -2350,7 +2350,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
     @Override
     public void onTextOutlineSelected(View v) {
-        setTextType((selectedTextType + 1) % 4);
+        setTextType((selectedTextType + 1) % 5);
     }
 
     private PopupButton buttonForPopup(String text, int icon, boolean selected, Runnable onClick) {

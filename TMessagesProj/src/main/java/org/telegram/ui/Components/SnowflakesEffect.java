@@ -14,6 +14,7 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.SystemClock;
 import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
@@ -53,12 +54,18 @@ public class SnowflakesEffect {
         float currentTime;
         float scale;
         int type;
+        int paintType;
 
         public void draw(Canvas canvas) {
             switch (type) {
                 case 0: {
-                    particlePaint.setAlpha((int) (255 * alpha));
-                    canvas.drawPoint(x, y, particlePaint);
+                    final int alphaComponent = getAlphaComponent(alpha);
+                    if (paintType == 0) {
+                        particlePaint.setAlpha(alphaComponent);
+                    } else {
+                        particleThinPaint.setAlpha(alphaComponent);
+                    }
+                    canvas.drawPoint(x, y, paintType == 0 ? particlePaint : particleThinPaint);
                     break;
                 }
                 case 1:
@@ -66,7 +73,7 @@ public class SnowflakesEffect {
                     if (particleBitmap == null) {
                         particleBitmap = createParticlesBitmap(false);
                     }
-                    bitmapPaint.setAlpha((int) (255 * alpha));
+                    bitmapPaint.setAlpha(getAlphaComponent(alpha));
                     canvas.save();
                     canvas.scale(scale, scale, x, y);
                     canvas.drawBitmap(particleBitmap, x, y, bitmapPaint);
@@ -87,12 +94,12 @@ public class SnowflakesEffect {
         this.viewType = viewType;
         this.maxCount = viewType == 0 ? 100 : 300;
         particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        particlePaint.setStrokeWidth(dp(1.5f));
+        particlePaint.setStrokeWidth(dp(2.5f));
         particlePaint.setStrokeCap(Paint.Cap.ROUND);
         particlePaint.setStyle(Paint.Style.STROKE);
 
         particleThinPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        particleThinPaint.setStrokeWidth(dp(0.5f));
+        particleThinPaint.setStrokeWidth(dp(1.0f));
         particleThinPaint.setStrokeCap(Paint.Cap.ROUND);
         particleThinPaint.setStyle(Paint.Style.STROKE);
 
@@ -167,8 +174,14 @@ public class SnowflakesEffect {
             return;
         }
 
+        final float viewArea = Math.max(1, parent.getMeasuredWidth() * parent.getMeasuredHeight());
+        final float displayArea = Math.max(1, AndroidUtilities.displaySize.x * AndroidUtilities.displaySize.y);
+        final float areaScale = viewType == 1 ? Math.max(0.12f, Math.min(1.0f, viewArea / displayArea)) : 1.0f;
+        final int currentMaxCount = Math.max(1, Math.round(maxCount * areaScale));
+        final int createPerFrame = Math.max(1, Math.round((viewType == 0 ? 1 : 10) * areaScale));
+
         if (batchParticlesBuffer != null) {
-            final int count = Math.min(maxCount, particles.size());
+            final int count = Math.min(currentMaxCount, particles.size());
             final int texSize = dp(TEXTURE_SIZE_DP);
 
             for (int a = 0; a < count; a++) {
@@ -177,7 +190,7 @@ public class SnowflakesEffect {
                 final float h = particle.type == 0 ? (texSize / 2f) : (texSize / 2f * particle.scale);
                 final float tx = particle.type == 0 ? texSize : 0;
 
-                batchParticlesBuffer.setParticleColor(a, ColorUtils.setAlphaComponent(color, (int) (255 * particle.alpha)));
+                batchParticlesBuffer.setParticleColor(a, ColorUtils.setAlphaComponent(color, getAlphaComponent(particle.alpha)));
                 batchParticlesBuffer.setParticleVertexCords(a, x - h, y - h, x + h, y + h);
                 batchParticlesBuffer.setParticleTextureCords(a, tx, 0, tx + texSize, texSize);
             }
@@ -190,10 +203,9 @@ public class SnowflakesEffect {
             }
         }
 
-        int createPerFrame = viewType == 0 ? 1 : 10;
-        if (particles.size() < maxCount) {
+        if (particles.size() < currentMaxCount) {
             for (int i = 0; i < createPerFrame; i++) {
-                if (particles.size() < maxCount && Utilities.random.nextFloat() > 0.7f) {
+                if (particles.size() < currentMaxCount && Utilities.random.nextFloat() > 0.7f) {
                     int statusBarHeight = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
                     float cx = Utilities.random.nextFloat() * parent.getMeasuredWidth();
                     float cy;
@@ -224,7 +236,8 @@ public class SnowflakesEffect {
                     newParticle.currentTime = 0;
 
                     newParticle.scale = Utilities.random.nextFloat() * 1.2f;
-                    newParticle.type = Utilities.random.nextInt(2);
+                    newParticle.type = 0;
+                    newParticle.paintType = Utilities.random.nextInt(2);
 
                     if (viewType == 0) {
                         newParticle.lifeTime = 2000 + Utilities.random.nextInt(100);
@@ -237,13 +250,17 @@ public class SnowflakesEffect {
             }
         }
 
-        long newTime = System.currentTimeMillis();
-        long dt = Math.min(17, newTime - lastAnimationTime);
+        long newTime = SystemClock.elapsedRealtime();
+        long dt = Utilities.clamp(newTime - lastAnimationTime, 17, 0);
         updateParticles(dt);
         lastAnimationTime = newTime;
         parent.invalidate();
     }
 
+
+    private static int getAlphaComponent(float alpha) {
+        return (int) (Utilities.clamp01(alpha) * 255.0f);
+    }
 
     private static final int TEXTURE_SIZE_DP = 10;
     private static Bitmap createParticlesBitmap(boolean useFull) {

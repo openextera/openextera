@@ -449,7 +449,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 }
             }
 
-            if (!isCommunity && (!ChatObject.isChannel(currentChat) && currentChat.creator || currentChat.megagroup && !currentChat.gigagroup && ChatObject.canBlockUsers(currentChat))) {
+            if (!isCommunity && (!ChatObject.isChannel(currentChat) && currentChat.creator || currentChat.megagroup && !currentChat.gigagroup && ChatObject.canBlockUsers(currentChat) || !ChatObject.hasAdminRights(currentChat))) {
                 if (participantsDivider2Row == -1) {
                     participantsDivider2Row = rowCount++;
                 }
@@ -469,7 +469,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 dontRestrictBoostersInfoRow = rowCount++;
             }
 
-            if (ChatObject.isChannel(currentChat) && !isCommunity) {
+            if (ChatObject.isChannel(currentChat) && ChatObject.hasAdminRights(currentChat) && !isCommunity) {
                 if (participantsDivider2Row == -1) {
                     participantsDivider2Row = rowCount++;
                 }
@@ -562,7 +562,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 }
             }
         } else if (type == TYPE_USERS) {
-            if (ChatObject.isChannel(currentChat)) {
+            if (ChatObject.isChannel(currentChat) && ChatObject.hasAdminRights(currentChat)) {
                 if (!ChatObject.isChannelAndNotMegaGroup(currentChat) && !needOpenSearch) {
                     hideMembersRow = rowCount++;
                     hideMembersInfoRow = rowCount++;
@@ -671,7 +671,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 }
             }
         });
-        if (selectType != SELECT_TYPE_MEMBERS || type == TYPE_USERS || type == TYPE_BANNED || type == TYPE_KICKED) {
+        if (selectType != SELECT_TYPE_MEMBERS || type == TYPE_USERS || ChatObject.hasAdminRights(currentChat) && (type == TYPE_BANNED || type == TYPE_KICKED)) {
             searchListViewAdapter = new SearchAdapter(context);
             ActionBarMenu menu = actionBar.createMenu();
             searchItem = menu.addItem(search_button, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
@@ -864,6 +864,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 listViewAdapter.notifyItemChanged(payRow);
             } else if (listAdapter) {
                 if (isExpandableSendMediaRow(position)) {
+                    if (!ChatObject.canBlockUsers(currentChat)) {
+                        return;
+                    }
                     CheckBoxCell checkBoxCell = (CheckBoxCell) view;
                     if (position == sendMediaPhotosRow) {
                         defaultBannedRights.send_photos = !defaultBannedRights.send_photos;
@@ -1187,7 +1190,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     return;
                 } else if (position > permissionsSectionRow && position <= Math.max(manageTopicsRow, changeInfoRow) || position == manageLinkedPeersRow) {
                     TextCheckCell2 checkCell = (TextCheckCell2) view;
-                    if (!checkCell.isEnabled()) {
+                    if (!checkCell.isEnabled() && position != sendMediaRow) {
                         return;
                     }
                     if (checkCell.hasIcon()) {
@@ -3266,7 +3269,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             if (viewType == VIEW_TYPE_CHECK) {
                 return true;
             }
-            if (viewType == 7 || viewType == VIEW_TYPE_EXPANDABLE_SWITCH) {
+            if (viewType == 7 || viewType == VIEW_TYPE_EXPANDABLE_SWITCH || viewType == VIEW_TYPE_INNER_CHECK) {
                 return ChatObject.canBlockUsers(currentChat);
             } else if (viewType == 0) {
                 ManageChatUserCell cell = (ManageChatUserCell) holder.itemView;
@@ -3379,6 +3382,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 default:
                     SlideChooseView chooseView = new SlideChooseView(mContext);
                     view = chooseView;
+                    chooseView.setAllowSlide(ChatObject.hasAdminRights(currentChat));
                     chooseView.setOptions(
                             selectedSlowmode,
                             getString("SlowmodeOff", R.string.SlowmodeOff),
@@ -3691,9 +3695,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         checkCell.setCollapseArrow(String.format(Locale.US, "%d/10", sentMediaCount), !sendMediaExpanded, new Runnable() {
                             @Override
                             public void run() {
-                                boolean checked = !checkCell.isChecked();
-                                checkCell.setChecked(checked);
-                                setSendMediaEnabled(checked);
+                                if (ChatObject.canBlockUsers(currentChat)) {
+                                    boolean checked = !checkCell.isChecked();
+                                    checkCell.setChecked(checked);
+                                    setSendMediaEnabled(checked);
+                                }
                             }
                         });
                     } else if (position == sendStickersRow) {

@@ -6794,7 +6794,8 @@ public class MessageObject {
     }
 
     public boolean checkLayout() {
-        if (type != TYPE_TEXT && type != TYPE_EMOJIS && type != TYPE_ARTICLE || messageOwner.peer_id == null || messageText == null || messageText.length() == 0 && !isBotPendingDraft) {
+        final boolean widePostsStoryMention = type == TYPE_STORY_MENTION && widePostsTextWidth > 0;
+        if (type != TYPE_TEXT && type != TYPE_EMOJIS && type != TYPE_ARTICLE && !widePostsStoryMention || messageOwner.peer_id == null || messageText == null || messageText.length() == 0 && !isBotPendingDraft) {
             return false;
         }
         if (layoutCreated) {
@@ -6837,6 +6838,18 @@ public class MessageObject {
 
     public void resetLayout() {
         layoutCreated = false;
+    }
+
+    private int widePostsTextWidth;
+
+    public void setWidePostsTextWidth(int width) {
+        width = Math.max(0, width);
+        if (widePostsTextWidth != width) {
+            widePostsTextWidth = width;
+            cachedTextHeight = null;
+            cachedApproximateHeight = null;
+            resetLayout();
+        }
     }
 
     public String getMimeType() {
@@ -7539,11 +7552,20 @@ public class MessageObject {
     }
 
     public float measureVoiceTranscriptionHeight() {
+        return measureVoiceTranscriptionHeight(needDrawAvatar());
+    }
+
+    public float measureVoiceTranscriptionHeight(boolean needAvatar) {
         CharSequence voiceTranscription = getVoiceTranscription();
         if (voiceTranscription == null) {
             return 0;
         }
-        int width = AndroidUtilities.displaySize.x - dp(this.needDrawAvatar() ? 147 : 95);
+        int width;
+        if (widePostsTextWidth > 0) {
+            width = Math.max(dp(10), widePostsTextWidth - dp(type != TYPE_ROUND_VIDEO ? 14 : 0));
+        } else {
+            width = AndroidUtilities.displaySize.x - dp(needAvatar ? 147 : 95);
+        }
         StaticLayout captionLayout;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             captionLayout = StaticLayout.Builder.obtain(voiceTranscription, 0, voiceTranscription.length(), Theme.chat_msgTextPaint, width)
@@ -8038,6 +8060,7 @@ public class MessageObject {
                     } else {
                         span = new AnimatedEmojiSpan(entity.document_id, scale, fontMetricsInt);
                     }
+                    span.local = entity.local;
                     span.top = top;
                     spannable.setSpan(span, messageEntity.offset, messageEntity.offset + messageEntity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     limitCount--;
@@ -8498,10 +8521,10 @@ public class MessageObject {
                 maxWidth -= dp(10);
             }
         }
-        if (emojiOnlyCount >= 1 && totalAnimatedEmojiCount <= 100 && (emojiOnlyCount - totalAnimatedEmojiCount) < (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50) && (hasValidReplyMessageObject() || isForwarded())) {
+        if (emojiOnlyCount >= 1 && totalAnimatedEmojiCount <= 100 && (emojiOnlyCount - totalAnimatedEmojiCount) < (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 200 : 100) && (hasValidReplyMessageObject() || isForwarded())) {
             maxWidth = Math.min(maxWidth, (int) (generatedWithMinSize * .65f));
         }
-        return maxWidth;
+        return widePostsTextWidth > 0 ? widePostsTextWidth : maxWidth;
     }
 
     public boolean updateSideMenuEnabled(boolean enabled) {
@@ -8656,6 +8679,9 @@ public class MessageObject {
                 if (old != null && old.view != null) {
                     old.detach(old.view);
                 }
+            }
+            if (widePostsTextWidth > 0) {
+                textWidth = widePostsTextWidth;
             }
             return;
         }
@@ -9090,6 +9116,9 @@ public class MessageObject {
 
         hasWideCode = hasCode && textWidth > generatedWithMinSize - dp(80 + (needDrawAvatarInternal() && !isOutOwner() && !messageOwner.isThreadMessage ? 52 : 0));
         factCheckText = null;
+        if (widePostsTextWidth > 0) {
+            textWidth = widePostsTextWidth;
+        }
     }
 
     private Integer cachedTextHeight;
