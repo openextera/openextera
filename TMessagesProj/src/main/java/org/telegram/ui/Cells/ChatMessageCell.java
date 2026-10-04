@@ -19287,9 +19287,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             timeString = LocaleController.formatSmallDateChat(messageObject.messageOwner.date) + ", " + LocaleController.getInstance().getFormatterDay().format((long) (messageObject.messageOwner.date) * 1000);
         } else if (edited) {
             if (AppGlobalConfig.getInstance(currentAccount).messagePrimaryEditedDate.get()) {
+                int editDate = currentMessagesGroup != null ? currentMessagesGroup.getMaxEditDate() : messageObject.messageOwner.edit_date;
+                if (editDate == 0 && currentMessageObject.isEditing()) {
+                    editDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                }
                 timeString = ExteraConfig.getReplaceEditedWithIcon()
-                    ? new SpannableStringBuilder(ChatUtils.getEditedIcon()).append(" ").append(LocaleController.formatDateAudio(messageObject.messageOwner.edit_date, true))
-                    : LocaleController.formatPmEditedDate(currentMessagesGroup != null ? currentMessagesGroup.getMaxEditDate() : messageObject.messageOwner.edit_date);
+                    ? new SpannableStringBuilder(ChatUtils.getEditedIcon()).append(" ").append(LocaleController.formatDateAudio(editDate, true))
+                    : LocaleController.formatPmEditedDate(editDate);
             } else {
                 timeString = new SpannableStringBuilder(ExteraConfig.getReplaceEditedWithIcon() ? ChatUtils.getEditedIcon() : getString(R.string.EditedMessage))
                     .append(" ").append(LocaleController.getInstance().getFormatterDay().format((long) messageObject.messageOwner.date * 1000));
