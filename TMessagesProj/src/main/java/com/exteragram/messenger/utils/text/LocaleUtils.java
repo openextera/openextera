@@ -1,5 +1,6 @@
 package com.exteragram.messenger.utils.text;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.text.Html;
 import android.text.Spannable;
@@ -10,6 +11,8 @@ import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
 import android.text.style.URLSpan;
 import android.view.View;
+
+import androidx.core.content.ContextCompat;
 
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.utils.network.RemoteUtils;
@@ -31,6 +34,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.FilterCreateActivity;
@@ -263,6 +267,22 @@ public abstract class LocaleUtils {
         span.setColor(Theme.getColor(colorKey));
         span.setTextColor(Theme.getColor(textColorKey));
         builder.setSpan(span, builder.length() - 1, builder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return builder;
+    }
+
+    public static SpannableStringBuilder replaceArrows(Context context, CharSequence text, int arrowResId) {
+        SpannableStringBuilder builder = new SpannableStringBuilder(text);
+        int index = TextUtils.indexOf(builder, "->");
+        while (index >= 0) {
+            ColoredImageSpan span = new ColoredImageSpan(ContextCompat.getDrawable(context, arrowResId).mutate(), ColoredImageSpan.ALIGN_CENTER);
+            if (LocaleController.isRTL) {
+                span.rotate(180f);
+            }
+            builder.replace(index, index + 2, ">");
+            int end = index + 1;
+            builder.setSpan(span, index, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            index = TextUtils.indexOf(builder, "->", end);
+        }
         return builder;
     }
 

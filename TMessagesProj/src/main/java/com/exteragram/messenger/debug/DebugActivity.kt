@@ -32,7 +32,15 @@ class DebugActivity : BasePreferencesActivity() {
         CLEAR_DB,
         CLEAR_TRANSLATIONS,
         SET_IPCONFIG_OVERRIDE,
-        CLEAR_IPCONFIG_OVERRIDE;
+        CLEAR_IPCONFIG_OVERRIDE,
+        HEAP_MONITOR,
+        DUMP_HEAP,
+        SHARE_HEAP_DUMP,
+        DELETE_HEAP_DUMPS,
+        LOAD_MONITOR,
+        CAPTURE_LOAD_REPORT,
+        SHARE_LOAD_REPORT,
+        DELETE_LOAD_REPORTS;
 
         val id: Int
             get() = ordinal + 1
@@ -53,7 +61,50 @@ class DebugActivity : BasePreferencesActivity() {
         items.add(UItem.asShadow())
         items.add(UItem.asButton(DebugItem.SET_IPCONFIG_OVERRIDE.id, "Set ipconfigv3 override", ipConfigOverrideValue))
         items.add(UItem.asButton(DebugItem.CLEAR_IPCONFIG_OVERRIDE.id, "Clear ipconfigv3 override"))
+        items.add(UItem.asShadow())
+        items.add(UItem.asCheck(DebugItem.HEAP_MONITOR.id, "Heap limit monitor").setChecked(DebugConfig.heapMonitorEnabled))
+        if (DebugConfig.heapMonitorEnabled) {
+            items.add(createHeapLimitSliderItem())
+        }
+        items.add(UItem.asButton(DebugItem.DUMP_HEAP.id, "Dump & share heap", heapUsageValue))
+        HeapMonitor.lastDump?.let { lastDump ->
+            items.add(UItem.asButton(DebugItem.SHARE_HEAP_DUMP.id, "Share last heap dump", AndroidUtilities.formatFileSize(lastDump.length())))
+        }
+        val dumpsSize = HeapMonitor.dumpsSize
+        if (dumpsSize > 0) {
+            items.add(UItem.asButton(DebugItem.DELETE_HEAP_DUMPS.id, "Delete heap dumps", AndroidUtilities.formatFileSize(dumpsSize)))
+        }
+        items.add(UItem.asShadow())
+        items.add(UItem.asCheck(DebugItem.LOAD_MONITOR.id, "Load monitor").setChecked(DebugConfig.loadMonitorEnabled))
+        if (DebugConfig.loadMonitorEnabled) {
+            items.add(createLoadThresholdSliderItem())
+        }
+        items.add(UItem.asButton(DebugItem.CAPTURE_LOAD_REPORT.id, "Capture & share load report", LoadMonitor.summary))
+        LoadMonitor.lastReport?.let { lastReport ->
+            items.add(UItem.asButton(DebugItem.SHARE_LOAD_REPORT.id, "Share last load report", AndroidUtilities.formatFileSize(lastReport.length())))
+        }
+        val reportsSize = LoadMonitor.reportsSize
+        if (reportsSize > 0) {
+            items.add(UItem.asButton(DebugItem.DELETE_LOAD_REPORTS.id, "Delete load reports", AndroidUtilities.formatFileSize(reportsSize)))
+        }
+        items.add(UItem.asShadow())
     }
+
+    private fun createHeapLimitSliderItem(): UItem {
+        val step = 16
+        return UItem.asIntSlideView(1, 4, HeapMonitor.limitMb / step, HeapMonitor.maxLimitMb / step,
+            { value -> "${value * step} MB" },
+            { value -> HeapMonitor.setLimitMb(value * step) })
+    }
+
+    private fun createLoadThresholdSliderItem(): UItem {
+        return UItem.asIntSlideView(1, 1, LoadMonitor.cpuPercent, 50,
+            { value -> "$value% of a core" },
+            { value -> LoadMonitor.cpuPercent = value })
+    }
+
+    private val heapUsageValue: String
+        get() = AndroidUtilities.formatFileSize(HeapMonitor.usedBytes, true, false) + " / " + AndroidUtilities.formatFileSize(Runtime.getRuntime().maxMemory(), true, false)
 
     override fun onClick(item: UItem, view: View, position: Int, x: Float, y: Float) {
         val debugItem = DebugItem.entries.getOrNull(item.id - 1) ?: return
@@ -81,6 +132,20 @@ class DebugActivity : BasePreferencesActivity() {
                 ConnectionsManager.setDebugDnsConfigOverride(null)
                 listView.adapter.update(true)
                 BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, "ipconfigv3 override cleared.").show()
+            }
+            DebugItem.HEAP_MONITOR -> toggleBooleanSettingAndRefresh(item) { HeapMonitor.setEnabled(it) }
+            DebugItem.DUMP_HEAP -> parentActivity?.let { HeapMonitor.dumpAndShare(it, resourceProvider) }
+            DebugItem.SHARE_HEAP_DUMP -> parentActivity?.let { HeapMonitor.shareLastDump(it) }
+            DebugItem.DELETE_HEAP_DUMPS -> HeapMonitor.deleteDumps {
+                listView.adapter.update(true)
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, "Heap dumps deleted.").show()
+            }
+            DebugItem.LOAD_MONITOR -> toggleBooleanSettingAndRefresh(item) { LoadMonitor.setEnabled(it) }
+            DebugItem.CAPTURE_LOAD_REPORT -> parentActivity?.let { LoadMonitor.captureAndShare(it) }
+            DebugItem.SHARE_LOAD_REPORT -> parentActivity?.let { LoadMonitor.shareLastReport(it) }
+            DebugItem.DELETE_LOAD_REPORTS -> LoadMonitor.deleteReports {
+                listView.adapter.update(true)
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, "Load reports deleted.").show()
             }
         }
     }

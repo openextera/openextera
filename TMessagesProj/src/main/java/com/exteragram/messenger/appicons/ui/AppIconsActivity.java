@@ -89,7 +89,7 @@ public class AppIconsActivity extends BaseFragment {
     @Override
     public View createView(Context context) {
         appliedIcon = previewIcon = AppIconController.getSelectedIcon();
-        backgroundColor = toThemeTint(AppIconPreviewLoader.getAccent(previewIcon));
+        backgroundColor = AppIconPreviewLoader.getAccentTint(previewIcon);
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(false);
@@ -230,11 +230,11 @@ public class AppIconsActivity extends BaseFragment {
         if (previewIcon == null) {
             return;
         }
-        int accent = AppIconPreviewLoader.getAccent(previewIcon);
-        if (accent == 0) {
+        int accentTint = AppIconPreviewLoader.getAccentTint(previewIcon);
+        if (accentTint == 0) {
             return;
         }
-        animateBackgroundColor(toThemeTint(accent));
+        animateBackgroundColor(accentTint);
     }
 
     private void onButtonClick() {
@@ -306,17 +306,6 @@ public class AppIconsActivity extends BaseFragment {
     @Override
     public boolean isLightStatusBar() {
         return !AndroidUtilities.isDarkColor(getTopColor());
-    }
-
-    private int toThemeTint(int color) {
-        if (color == 0) {
-            return 0;
-        }
-        float[] hsl = new float[3];
-        ColorUtils.colorToHSL(color, hsl);
-        hsl[1] = Math.min(hsl[1], 0.6f);
-        hsl[2] = Theme.isCurrentThemeDark() ? 0.22f : 0.86f;
-        return ColorUtils.HSLToColor(hsl);
     }
 
     private int getBaseColor() {
@@ -473,7 +462,7 @@ public class AppIconsActivity extends BaseFragment {
 
         @Override
         public void updateColors() {
-            backgroundColor = toThemeTint(AppIconPreviewLoader.getAccent(previewIcon));
+            backgroundColor = AppIconPreviewLoader.getAccentTint(previewIcon);
             actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
             actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_listSelector), false);
             if (buttonFaded) {

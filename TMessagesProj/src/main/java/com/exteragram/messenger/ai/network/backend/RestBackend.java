@@ -36,6 +36,7 @@ import okhttp3.ResponseBody;
 public class RestBackend implements Backend {
 
     private static final int STREAM_SYMBOLS_LIMIT = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE ? 10 : 20;
+    private static final String[] ERROR_MESSAGE_KEYS = {"error", "message", "detail"};
 
     private final OkHttpClient httpClient;
 
@@ -74,7 +75,8 @@ public class RestBackend implements Backend {
 
     @Override
     public void execute(BackendRequest request, BackendSink sink) throws IOException {
-        Request httpRequest = createRequest(request);
+        Endpoint endpoint = resolveEndpoint(request.service().getUrl());
+        Request httpRequest = endpoint != null ? createRequest(request, endpoint) : null;
         if (httpRequest == null) {
             sink.onError(500, "Failed to create request body");
             return;
@@ -98,9 +100,17 @@ public class RestBackend implements Backend {
             }
             ResponseBody body = response.body();
             if (request.stream()) {
-                handleStreamResponse(body, sink);
+                handleStreamResponse(body, sink, endpoint.responsesApi());
             } else {
-                String content = parseResponseContent(body.string());
+                String json = body.string();
+                String content = parseResponseContent(json, endpoint.responsesApi());
+                if (TextUtils.isEmpty(content)) {
+                    String errorMessage = extractErrorMessage(json);
+                    if (!TextUtils.isEmpty(errorMessage)) {
+                        sink.onError(500, errorMessage);
+                        return;
+                    }
+                }
                 if (content == null) {
                     sink.onError(500, "Failed to parse response");
                     return;
@@ -110,38 +120,64 @@ public class RestBackend implements Backend {
         }
     }
 
-    private Request createRequest(BackendRequest request) {
-        Service service = request.service();
-        String url = service.getUrl();
+    private Endpoint resolveEndpoint(String url) {
         if (TextUtils.isEmpty(url)) {
             return null;
         }
-        String baseUrl = url.contains("generativelanguage.googleapis") ? "https://generativelanguage.googleapis.com/v1beta/openai/" : url;
-        String endpoint = baseUrl + (baseUrl.endsWith("/") ? "chat/completions" : "/chat/completions");
+        String lowerUrl = url.toLowerCase(Locale.ROOT);
+        if (isGeminiService(lowerUrl)) {
+            return new Endpoint("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", false);
+        }
+        if (isPerplexityService(lowerUrl) && !lowerUrl.contains("/router")) {
+            return new Endpoint("https://api.perplexity.ai/v1/agent", true);
+        }
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        lowerUrl = url.toLowerCase(Locale.ROOT);
+        if (lowerUrl.endsWith("/responses") || lowerUrl.endsWith("/agent")) {
+            return new Endpoint(url, true);
+        }
+        if (!lowerUrl.endsWith("/chat/completions")) {
+            url = url + "/chat/completions";
+        }
+        return new Endpoint(url, false);
+    }
+
+    private Request createRequest(BackendRequest request, Endpoint endpoint) {
+        Service service = request.service();
+        boolean responsesApi = endpoint.responsesApi();
         JSONObject body = new JSONObject();
         JSONArray messages = new JSONArray();
         try {
             Role role = request.role();
             if (role != null && !TextUtils.isEmpty(role.getPrompt())) {
-                messages.put(new JSONObject().put("role", "system").put("content", role.getPrompt()));
+                if (responsesApi) {
+                    body.put("instructions", role.getPrompt());
+                } else {
+                    messages.put(new JSONObject().put("role", "system").put("content", role.getPrompt()));
+                }
             }
             for (Message message : request.history()) {
-                messages.put(createMessageObject(message));
+                messages.put(createMessageObject(message, responsesApi));
             }
-            messages.put(createMessageObject(request.currentMessage()));
+            messages.put(createMessageObject(request.currentMessage(), responsesApi));
             body.put("model", service.getModel());
-            body.put("messages", messages);
+            body.put(responsesApi ? "input" : "messages", messages);
             body.put("stream", request.stream());
             body.put("temperature", request.temperature());
-            applyReasoningConfig(body, service, url);
-            body.put("max_tokens", request.maxOutputTokens());
+            applyReasoningConfig(body, service, service.getUrl(), responsesApi);
+            body.put(responsesApi ? "max_output_tokens" : "max_tokens", request.maxOutputTokens());
+            if (responsesApi) {
+                body.put("store", false);
+            }
 
-            FileLog.d("AI_REQUEST_URL: " + endpoint);
+            FileLog.d("AI_REQUEST_URL: " + endpoint.url());
             FileLog.d("AI_REQUEST_MODEL: " + service.getModel());
             FileLog.d("AI_REQUEST_MESSAGES: " + messages.length() + ", stream=" + request.stream() + ", image=" + (request.currentMessage().getImageData() != null));
 
             return new Request.Builder()
-                    .url(endpoint)
+                    .url(endpoint.url())
                     .addHeader("Content-Type", "application/json")
                     .addHeader("Authorization", "Bearer " + service.getKey())
                     .addHeader("User-Agent", TranslatorUtils.formatUserAgent())
@@ -155,20 +191,29 @@ public class RestBackend implements Backend {
         }
     }
 
-    private void applyReasoningConfig(JSONObject body, Service service, String url) throws JSONException {
+    private void applyReasoningConfig(JSONObject body, Service service, String url, boolean responsesApi) throws JSONException {
         if (service.isReasoningEnabled()) {
             return;
         }
         String model = service.getModel() == null ? "" : service.getModel().toLowerCase(Locale.ROOT);
         String lowerUrl = url == null ? "" : url.toLowerCase(Locale.ROOT);
+        String effort = null;
         if (lowerUrl.contains("openrouter.ai")) {
             body.put("reasoning", new JSONObject().put("effort", "none"));
+        } else if (isGeminiService(lowerUrl) && isGeminiReasoningModel(model)) {
+            effort = getGeminiReasoningEffort(model);
+        } else if (isOpenAiService(lowerUrl) && isOpenAiReasoningModel(model)) {
+            effort = getOpenAiReasoningEffort(model);
+        } else if (isPerplexityService(lowerUrl) && (isGeminiReasoningModel(model) || isOpenAiReasoningModel(model))) {
+            effort = "minimal";
+        }
+        if (effort == null) {
             return;
         }
-        if (isGeminiService(lowerUrl) && isGeminiReasoningModel(model)) {
-            body.put("reasoning_effort", getGeminiReasoningEffort(model));
-        } else if (isOpenAiService(lowerUrl) && isOpenAiReasoningModel(model)) {
-            body.put("reasoning_effort", getOpenAiReasoningEffort(model));
+        if (responsesApi) {
+            body.put("reasoning", new JSONObject().put("effort", effort));
+        } else {
+            body.put("reasoning_effort", effort);
         }
     }
 
@@ -183,6 +228,10 @@ public class RestBackend implements Backend {
 
     private boolean isOpenAiService(String url) {
         return url.contains("api.openai.com");
+    }
+
+    private boolean isPerplexityService(String url) {
+        return url.contains("api.perplexity.ai");
     }
 
     private String getGeminiReasoningEffort(String model) {
@@ -213,16 +262,23 @@ public class RestBackend implements Backend {
         return slash >= 0 ? model.substring(slash + 1) : model;
     }
 
-    private JSONObject createMessageObject(Message message) throws JSONException {
+    private JSONObject createMessageObject(Message message, boolean responsesApi) throws JSONException {
         JSONObject object = new JSONObject();
+        if (responsesApi) {
+            object.put("type", "message");
+        }
         object.put("role", message.role());
         if (message.getImageData() != null && !TextUtils.isEmpty(message.getMimeType())) {
             JSONArray content = new JSONArray();
             if (!TextUtils.isEmpty(message.content())) {
-                content.put(new JSONObject().put("type", "text").put("text", message.content()));
+                content.put(new JSONObject().put("type", responsesApi ? "input_text" : "text").put("text", message.content()));
             }
             String dataUrl = "data:" + message.getMimeType() + ";base64," + Base64.encodeToString(message.getImageData(), Base64.NO_WRAP);
-            content.put(new JSONObject().put("type", "image_url").put("image_url", new JSONObject().put("url", dataUrl)));
+            if (responsesApi) {
+                content.put(new JSONObject().put("type", "input_image").put("image_url", dataUrl));
+            } else {
+                content.put(new JSONObject().put("type", "image_url").put("image_url", new JSONObject().put("url", dataUrl)));
+            }
             object.put("content", content);
             return object;
         }
@@ -230,10 +286,10 @@ public class RestBackend implements Backend {
         return object;
     }
 
-    private void handleStreamResponse(ResponseBody body, BackendSink sink) {
+    private void handleStreamResponse(ResponseBody body, BackendSink sink, boolean responsesApi) {
         StringBuilder response = new StringBuilder();
         ReasoningContentFilter filter = new ReasoningContentFilter();
-        Exception error = null;
+        String error = null;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(body.byteStream()))) {
             int unsentLength = 0;
             String line;
@@ -242,13 +298,18 @@ public class RestBackend implements Backend {
                     continue;
                 }
                 String data = line.substring(5).trim();
+                StreamResponsePart part;
                 if (data.equals("[DONE]")) {
-                    if (unsentLength > 0) {
-                        sink.onChunk(response.toString());
-                    }
+                    part = StreamResponsePart.DONE;
+                } else if (responsesApi) {
+                    part = parseResponsesStreamPart(data);
+                } else {
+                    part = parseStreamResponsePart(data);
+                }
+                if (part.error() != null) {
+                    error = part.error();
                     break;
                 }
-                StreamResponsePart part = parseStreamResponsePart(data);
                 if (part.hasReasoning()) {
                     sink.onThinking();
                 }
@@ -256,27 +317,32 @@ public class RestBackend implements Backend {
                 if (filter.consumeReasoningSignal()) {
                     sink.onThinking();
                 }
-                if (TextUtils.isEmpty(text)) {
-                    continue;
+                if (!TextUtils.isEmpty(text)) {
+                    response.append(text);
+                    unsentLength += text.length();
+                    if (unsentLength >= STREAM_SYMBOLS_LIMIT) {
+                        sink.onChunk(response.toString());
+                        unsentLength = 0;
+                    }
                 }
-                response.append(text);
-                unsentLength += text.length();
-                if (unsentLength >= STREAM_SYMBOLS_LIMIT) {
-                    sink.onChunk(response.toString());
-                    unsentLength = 0;
+                if (part.done()) {
+                    if (unsentLength > 0) {
+                        sink.onChunk(response.toString());
+                    }
+                    break;
                 }
             }
         } catch (Exception e) {
             if (sink.isActive()) {
                 FileLog.e(e);
-                error = e;
+                error = e.getMessage() != null ? e.getMessage() : "Unknown error";
             }
         }
         if (!sink.isActive()) {
             return;
         }
         if (error != null) {
-            sink.onError(500, error.getMessage() != null ? error.getMessage() : "Unknown error");
+            sink.onError(500, error);
             return;
         }
         String rest = filter.flush();
@@ -292,9 +358,14 @@ public class RestBackend implements Backend {
         }
     }
 
-    private String parseResponseContent(String json) {
+    private String parseResponseContent(String json, boolean responsesApi) {
         try {
-            JSONArray choices = new JSONObject(json).optJSONArray("choices");
+            JSONObject object = new JSONObject(json);
+            if (responsesApi) {
+                String output = parseResponsesOutput(object);
+                return output != null ? stripReasoningMarkup(output) : null;
+            }
+            JSONArray choices = object.optJSONArray("choices");
             if (choices == null || choices.length() <= 0) {
                 return null;
             }
@@ -313,6 +384,28 @@ public class RestBackend implements Backend {
         return null;
     }
 
+    private String parseResponsesOutput(JSONObject object) {
+        JSONArray output = object.optJSONArray("output");
+        if (output == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < output.length(); i++) {
+            JSONObject item = output.optJSONObject(i);
+            JSONArray content = item != null && "message".equals(item.optString("type")) ? item.optJSONArray("content") : null;
+            if (content == null) {
+                continue;
+            }
+            for (int j = 0; j < content.length(); j++) {
+                JSONObject part = content.optJSONObject(j);
+                if (part != null && "output_text".equals(part.optString("type"))) {
+                    sb.append(part.optString("text"));
+                }
+            }
+        }
+        return sb.toString();
+    }
+
     private StreamResponsePart parseStreamResponsePart(String json) {
         try {
             JSONArray choices = new JSONObject(json).optJSONArray("choices");
@@ -327,6 +420,41 @@ public class RestBackend implements Backend {
         } catch (Exception ignore) {
         }
         return new StreamResponsePart("", false);
+    }
+
+    private StreamResponsePart parseResponsesStreamPart(String json) {
+        try {
+            JSONObject object = new JSONObject(json);
+            String type = object.optString("type");
+            switch (type) {
+                case "response.output_item.added": {
+                    JSONObject item = object.optJSONObject("item");
+                    return new StreamResponsePart("", item != null && "reasoning".equals(item.optString("type")));
+                }
+                case "response.output_text.delta":
+                    return new StreamResponsePart(object.optString("delta"), false);
+                case "response.completed":
+                case "response.incomplete":
+                    return StreamResponsePart.DONE;
+                case "error":
+                case "response.failed":
+                    return new StreamResponsePart("", false, true, getResponsesStreamError(object));
+                default:
+                    return new StreamResponsePart("", type.startsWith("response.reasoning"));
+            }
+        } catch (Exception e) {
+            return new StreamResponsePart("", false);
+        }
+    }
+
+    private String getResponsesStreamError(JSONObject object) {
+        JSONObject error = object.optJSONObject("error");
+        if (error == null) {
+            JSONObject response = object.optJSONObject("response");
+            error = response != null ? response.optJSONObject("error") : null;
+        }
+        String message = error != null ? error.optString("message") : object.optString("message");
+        return TextUtils.isEmpty(message) ? "Unknown error" : message;
     }
 
     private boolean hasReasoning(JSONObject delta) {
@@ -409,8 +537,24 @@ public class RestBackend implements Backend {
                 }
                 return null;
             }
-            JSONObject error = new JSONObject(trimmed).optJSONObject("error");
-            return error == null ? null : error.optString("message", null);
+            if (trimmed.startsWith("{")) {
+                JSONObject object = new JSONObject(trimmed);
+                JSONObject error = object.optJSONObject("error");
+                if (error != null) {
+                    return error.optString("message", null);
+                }
+                for (String key : ERROR_MESSAGE_KEYS) {
+                    Object value = object.opt(key);
+                    if (value instanceof String && !((String) value).isEmpty()) {
+                        return (String) value;
+                    }
+                }
+                return null;
+            }
+            if (trimmed.startsWith("<") || trimmed.length() > 200 || trimmed.indexOf('\n') >= 0) {
+                return null;
+            }
+            return trimmed;
         } catch (Exception e) {
             return null;
         }
@@ -500,14 +644,63 @@ public class RestBackend implements Backend {
         }
     }
 
+    public static final class Endpoint {
+
+        private final String url;
+        private final boolean responsesApi;
+
+        private Endpoint(String url, boolean responsesApi) {
+            this.url = url;
+            this.responsesApi = responsesApi;
+        }
+
+        public String url() {
+            return url;
+        }
+
+        public boolean responsesApi() {
+            return responsesApi;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Endpoint)) {
+                return false;
+            }
+            Endpoint that = (Endpoint) o;
+            return responsesApi == that.responsesApi && Objects.equals(url, that.url);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(url, responsesApi);
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return "Endpoint[url=" + url + ", responsesApi=" + responsesApi + "]";
+        }
+    }
+
     public static final class StreamResponsePart {
+
+        static final StreamResponsePart DONE = new StreamResponsePart("", false, true, null);
 
         private final String content;
         private final boolean hasReasoning;
+        private final boolean done;
+        private final String error;
 
-        private StreamResponsePart(String content, boolean hasReasoning) {
+        private StreamResponsePart(String content, boolean hasReasoning, boolean done, String error) {
             this.content = content;
             this.hasReasoning = hasReasoning;
+            this.done = done;
+            this.error = error;
+        }
+
+        public StreamResponsePart(String content, boolean hasReasoning) {
+            this(content, hasReasoning, false, null);
         }
 
         public String content() {
@@ -518,24 +711,32 @@ public class RestBackend implements Backend {
             return hasReasoning;
         }
 
+        public boolean done() {
+            return done;
+        }
+
+        public String error() {
+            return error;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (!(o instanceof StreamResponsePart)) {
                 return false;
             }
             StreamResponsePart that = (StreamResponsePart) o;
-            return hasReasoning == that.hasReasoning && Objects.equals(content, that.content);
+            return hasReasoning == that.hasReasoning && done == that.done && Objects.equals(content, that.content) && Objects.equals(error, that.error);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(content, hasReasoning);
+            return Objects.hash(content, hasReasoning, done, error);
         }
 
         @NonNull
         @Override
         public String toString() {
-            return "StreamResponsePart[content=" + content + ", hasReasoning=" + hasReasoning + "]";
+            return "StreamResponsePart[content=" + content + ", hasReasoning=" + hasReasoning + ", done=" + done + ", error=" + error + "]";
         }
     }
 }

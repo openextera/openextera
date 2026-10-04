@@ -147,10 +147,10 @@ public class AppNavigationPreferencesActivity extends BasePreferencesActivity {
                 public CharSequence getTextForHeader() {
                     float value = Math.round(currentValue * 10f) / 10f;
                     if (value <= 0) {
-                        return leftTextView.getText().toString().toUpperCase();
+                        return leftTextView.getText().toString().toUpperCase(Locale.US);
                     }
                     if (value >= MAX_PREDICTIVE_BACK_INTENSITY) {
-                        return rightTextView.getText().toString().toUpperCase();
+                        return rightTextView.getText().toString().toUpperCase(Locale.US);
                     }
                     int intValue = (int) value;
                     if (value == intValue) {
@@ -182,7 +182,9 @@ public class AppNavigationPreferencesActivity extends BasePreferencesActivity {
         boolean wasOff = isPredictiveBackOff(ExteraConfig.getPredictiveBackIntensity());
         boolean isOff = isPredictiveBackOff(value);
         ExteraConfig.setPredictiveBackIntensity(value);
-        predictiveBackSeekbar.updateHeader(value);
+        if (predictiveBackSeekbar != null) {
+            predictiveBackSeekbar.updateHeader(value);
+        }
         if (wasOff != isOff) {
             showRestartBulletin();
         }
@@ -202,7 +204,7 @@ public class AppNavigationPreferencesActivity extends BasePreferencesActivity {
         items.add(UItem.asButton(AppNavigationItem.BOTTOM_NAVIGATION_BAR_MODE.getId(), LocaleController.getString(R.string.BottomNavigationBarMode), bottomNavigationModes[BottomNavigationBar.getMode()]).setSearchable(this).setLinkAlias("bottomNavigationBarMode", this));
         items.add(UItem.asButton(AppNavigationItem.TRANSITION_ANIMATION.getId(), LocaleController.getString(R.string.TransitionAnimation), transitionAnimations[ExteraConfig.getTransitionAnimation().ordinal()]).setSearchable(this).setLinkAlias("transitionAnimation", this));
         items.add(UItem.asShadow(LocaleController.getString(R.string.TransitionAnimationInfo)));
-        if (Build.VERSION.SDK_INT >= 34) {
+        if (Build.VERSION.SDK_INT >= 34 && predictiveBackSeekbar != null) {
             items.add(UItem.asCustom(AppNavigationItem.PREDICTIVE_BACK_ANIMATION.getId(), predictiveBackSeekbar).setLinkAlias("predictiveBackAnimation", this));
             items.add(UItem.asShadow(LocaleController.getString(R.string.PredictiveBackInfo)));
         }

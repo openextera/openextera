@@ -338,7 +338,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     @Override
     public Resources getResources() {
         Resources resources = super.getResources();
-        if (res == null || res.getAssets() != resources.getAssets()) {
+        if (res == null || res.getSourceAssets() != resources.getAssets()) {
             res = new ExteraResources(resources);
             resHistory.add(new WeakReference<>(res));
         }

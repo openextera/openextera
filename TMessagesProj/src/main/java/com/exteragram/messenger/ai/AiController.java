@@ -179,10 +179,11 @@ public class AiController {
                 break;
         }
 
-        String subtitle = showRawMessage ? trimErrorMessage(message) : null;
-        if (subtitle != null) {
+        String subtitle = showRawMessage || code == 400 || code == 403 ? trimErrorMessage(message) : null;
+        if (showRawMessage && subtitle != null) {
             title = R.string.UnknownError;
-        } else {
+        }
+        if (subtitle == null) {
             subtitle = LocaleController.getString(info);
         }
 

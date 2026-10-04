@@ -8,8 +8,8 @@ import com.exteragram.messenger.utils.network.ExteraHttpClient;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueue;
+import org.telegram.messenger.Utilities;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,7 +51,6 @@ public class ScriptletsManager {
         SCRIPTLETS_MAP.put("googlesyndication_adsbygoogle.js", new ScriptletInfo(new String[]{"googlesyndication.com/adsbygoogle.js", "googlesyndication-adsbygoogle"}));
         SCRIPTLETS_MAP.put("googletagservices_gpt.js", new ScriptletInfo(new String[]{"googletagservices.com/gpt.js", "googletagservices-gpt"}));
         SCRIPTLETS_MAP.put("hd-main.js", new ScriptletInfo(null));
-        SCRIPTLETS_MAP.put("nobab.js", new ScriptletInfo(new String[]{"bab-defuser.js", "prevent-bab.js"}));
         SCRIPTLETS_MAP.put("nobab2.js", new ScriptletInfo(null));
         SCRIPTLETS_MAP.put("noeval.js", new ScriptletInfo(null));
         SCRIPTLETS_MAP.put("noeval-silent.js", new ScriptletInfo("silent-noeval.js"));
@@ -84,12 +83,6 @@ public class ScriptletsManager {
     private final OkHttpClient client = ExteraHttpClient.INSTANCE.getClient();
     private final SharedPreferences prefs = PreferencesUtils.getPreferences("ublock_scriptlets");
 
-    public interface DownloadCallback {
-        void onProgress(int downloaded, int total);
-
-        void onError();
-    }
-
     public static ScriptletsManager getInstance() {
         if (instance == null) {
             instance = new ScriptletsManager();
@@ -120,60 +113,70 @@ public class ScriptletsManager {
         return ".txt";
     }
 
-    public void download(DownloadCallback callback) {
+    public void download(Utilities.Callback<Boolean> callback) {
         queue.postRunnable(() -> {
-            int total = SCRIPTLETS_MAP.size();
-            int downloaded = 0;
+            boolean success = true;
             for (Map.Entry<String, ScriptletInfo> entry : SCRIPTLETS_MAP.entrySet()) {
-                String name = entry.getKey();
-                Request request = new Request.Builder()
-                        .url(RESOURCES_URL + name)
-                        .header("User-Agent", USER_AGENT)
-                        .build();
-                try (Response response = client.newCall(request).execute()) {
-                    if (response.isSuccessful()) {
-                        String content = Base64.encodeToString(response.body().bytes(), Base64.NO_WRAP);
-                        synchronized (lock) {
-                            SharedPreferences.Editor editor = prefs.edit();
-                            editor.putString(name, content);
-                            Object alias = entry.getValue().alias;
-                            if (alias != null) {
-                                JSONArray aliases = new JSONArray();
-                                if (alias instanceof String) {
-                                    aliases.put(alias);
-                                } else if (alias instanceof String[]) {
-                                    for (String a : (String[]) alias) {
-                                        aliases.put(a);
-                                    }
-                                }
-                                editor.putString(name + "_aliases", aliases.toString());
-                            }
-                            editor.apply();
-                        }
-                    }
-                } catch (IOException e) {
-                    if (callback != null) {
-                        AndroidUtilities.runOnUIThread(callback::onError);
-                    }
-                    return;
+                if (!downloadScriptlet(entry.getKey(), entry.getValue())) {
+                    success = false;
+                    break;
                 }
-                downloaded++;
-                if (callback != null) {
-                    int progress = downloaded;
-                    AndroidUtilities.runOnUIThread(() -> callback.onProgress(progress, total));
+            }
+            if (success) {
+                synchronized (lock) {
+                    prefs.edit().putBoolean("__downloaded", true).apply();
                 }
+            }
+            if (callback != null) {
+                callback.run(success);
             }
         });
     }
 
-    public boolean isDownloaded() {
+    private boolean downloadScriptlet(String name, ScriptletInfo info) {
         synchronized (lock) {
-            for (String name : SCRIPTLETS_MAP.keySet()) {
-                if (!prefs.contains(name)) {
-                    return false;
+            if (prefs.contains(name)) {
+                return true;
+            }
+        }
+        Request request = new Request.Builder()
+                .url(RESOURCES_URL + name)
+                .header("User-Agent", USER_AGENT)
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.code() == 404) {
+                return true;
+            }
+            if (!response.isSuccessful()) {
+                return false;
+            }
+            String content = Base64.encodeToString(response.body().bytes(), Base64.NO_WRAP);
+            synchronized (lock) {
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString(name, content);
+                Object alias = info.alias;
+                if (alias != null) {
+                    JSONArray aliases = new JSONArray();
+                    if (alias instanceof String) {
+                        aliases.put(alias);
+                    } else if (alias instanceof String[]) {
+                        for (String a : (String[]) alias) {
+                            aliases.put(a);
+                        }
+                    }
+                    editor.putString(name + "_aliases", aliases.toString());
                 }
+                editor.apply();
             }
             return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public boolean isDownloaded() {
+        synchronized (lock) {
+            return prefs.getBoolean("__downloaded", false);
         }
     }
 

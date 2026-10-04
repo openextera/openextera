@@ -780,6 +780,17 @@
     <string name="formatterDay24HSec" translatable="false">HH:mm:ss</string>
     <string name="formatterDay12HSec" translatable="false">h:mm:ss a</string>
     <string name="PhotoEditorTypefaceImpact" translatable="false">Impact</string>
+    <string name="TabCounterUnmuted">С уведомлениями</string>
+    <string name="AccountNotifications">Аккаунты</string>
+    <string name="AccountNotificationsCount">%1$d из %2$d</string>
+    <string name="AccountNotificationsInfo">Уведомления от неотмеченных аккаунтов не приходят, пока вы пользуетесь другим аккаунтом.</string>
+    <string name="AccountNotificationsCurrent">Уведомления текущего аккаунта показываются всегда.</string>
+    <string name="ShowForwardsCount">Показывать число пересылок</string>
+    <string name="BlockAds">Блокировка рекламы</string>
+    <string name="BlockedRequests_one">%1$d заблокировано</string>
+    <string name="BlockedRequests_few">%1$d заблокировано</string>
+    <string name="BlockedRequests_many">%1$d заблокировано</string>
+    <string name="BlockedRequests_other">%1$d заблокировано</string>
+    <string name="AdBlockFiltersLoading">Загрузка фильтров…</string>
 
 </resources>
-

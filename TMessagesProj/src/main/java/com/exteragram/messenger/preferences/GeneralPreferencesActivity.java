@@ -40,7 +40,7 @@ public class GeneralPreferencesActivity extends BasePreferencesActivity {
 
     private static final Pattern SAVE_PATH_PATTERN = Pattern.compile("^(?!\\.{1,2}$)[A-Za-z0-9._ -]{1,255}$");
 
-    private final int fiveMinutesAgo = ConnectionsManager.getInstance(currentAccount).getCurrentTime() - 300;
+    private Integer fiveMinutesAgo;
     private CharSequence[] idOptions;
     private CharSequence[] translationProviders;
 
@@ -124,7 +124,7 @@ public class GeneralPreferencesActivity extends BasePreferencesActivity {
         items.add(UItem.asShadow(getCustomSavePathInfo()));
 
         items.add(UItem.asHeader(LocaleController.getString(R.string.Profile)));
-        items.add(UItem.asCheck(GeneralItem.RELATIVE_LAST_SEEN.getId(), LocaleController.getString(R.string.RelativeLastSeen), LocaleController.formatDateOnline(fiveMinutesAgo, null, new boolean[1]), false).setChecked(ExteraConfig.getRelativeLastSeen()).setSearchable(this).setLinkAlias("relativeLastSeen", this));
+        items.add(UItem.asCheck(GeneralItem.RELATIVE_LAST_SEEN.getId(), LocaleController.getString(R.string.RelativeLastSeen), LocaleController.formatDateOnline(getFiveMinutesAgo(), null, new boolean[1]), false).setChecked(ExteraConfig.getRelativeLastSeen()).setSearchable(this).setLinkAlias("relativeLastSeen", this));
         items.add(UItem.asCheck(GeneralItem.HIDE_PHONE_NUMBER.getId(), LocaleController.getString(R.string.HidePhoneNumber)).setChecked(ExteraConfig.getHidePhoneNumber()).setSearchable(this).setLinkAlias("hidePhoneNumber", this));
         items.add(UItem.asButton(GeneralItem.SHOW_ID_AND_DC.getId(), LocaleController.getString(R.string.ShowIdAndDc), idOptions[ExteraConfig.getShowIdAndDc()]).setSearchable(this).setLinkAlias("showIdAndDc", this));
         items.add(UItem.asShadow(LocaleController.getString(R.string.ShowIdAndDcInfo)));
@@ -214,6 +214,13 @@ public class GeneralPreferencesActivity extends BasePreferencesActivity {
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setDisableUnarchiveSwipe);
                 break;
         }
+    }
+
+    private int getFiveMinutesAgo() {
+        if (fiveMinutesAgo == null) {
+            fiveMinutesAgo = ConnectionsManager.getInstance(currentAccount).getCurrentTime() - 300;
+        }
+        return fiveMinutesAgo;
     }
 
     private CharSequence getDoNotTranslateValue() {

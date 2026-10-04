@@ -30,7 +30,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.exteragram.messenger.components.VerticalImageSpan;
+import com.exteragram.messenger.utils.text.LocaleUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -273,7 +273,7 @@ public class TextCheckCell extends FrameLayout {
 
     public void setTextAndValueAndCheck(CharSequence text, String value, boolean checked, boolean multiline, boolean divider) {
         if (value != null && value.contains("->")) {
-            valueTextView.setText(VerticalImageSpan.createSpan(getContext(), R.drawable.search_arrow, value, "->", Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            valueTextView.setText(LocaleUtils.replaceArrows(getContext(), value, R.drawable.search_arrow));
         } else {
             valueTextView.setText(value);
         }

@@ -78,22 +78,24 @@ object IconManager {
     private val prewarmDispatcher = Dispatchers.IO.limitedParallelism(1)
 
     private val blacklistedIcons = setOf(
-        "blockpanel", "vd_flip", "system", "smiles_popup", "camera_btn", "cancel_big", "chats_archive_box",
-        "chats_archive_arrow", "chats_archive_muted", "chats_archive_pin", "chats_widget_preview", "circle_big",
-        "clone", "contacts_widget_preview", "equals", "etg_splash", "ev_minus", "ev_plus", "fast_scroll_empty",
-        "filled_chatlink_large", "field_carret_empty", "finalize", "dice", "dino_pic", "circle",
-        "widgets_light_badgebg", "greydivider", "greydivider_bottom", "greydivider_top", "groups_limit1",
-        "ic_ab_new", "ic_ab_reply_2", "ic_chatlist_add_2", "ic_foreground", "ic_foreground_monet", "ic_player",
-        "ic_reply_icon", "icon_background_clip", "icon_background_clip_round", "icon_plane", "icplaceholder",
-        "large_ads_info", "large_away", "large_greeting", "large_log_actions", "large_monetize",
-        "large_quickreplies", "list_selector_ex", "livepin", "load_big", "location_empty", "login_arrow1",
-        "login_phone1", "logo_middle", "map_pin3", "map_pin_photo", "msg_media_gallery", "music_empty",
-        "no_passport", "no_password", "nophotos", "notify", "paint_elliptical_brush", "paint_neon_brush",
-        "paint_radial_brush", "phone_activate", "photo_placeholder_in", "photo_tooltip2",
-        "photoview_placeholder", "screencast_big", "screencast_big_remix", "screencast_solar",
-        "scrollbar_vertical_thumb", "scrollbar_vertical_thumb_inset", "places_btn", "newmsg_divider",
-        "ic_launcher_dr", "smiles_info", "sms_bubble", "sms_devices", "stats_tooltip", "sticker", "story_camera",
-        "theme_preview_image", "ton", "transparent", "venue_tooltip", "wait", "videopreview",
+        "system", "smiles_popup", "camera_btn", "cancel_big", "chats_archive_box", "chats_archive_arrow",
+        "chats_archive_muted", "chats_archive_pin", "chats_widget_preview", "circle_big", "contacts_widget_preview",
+        "etg_splash", "ev_minus", "ev_plus", "filled_chatlink_large", "field_carret_empty", "dino_pic", "circle",
+        "widgets_light_badgebg", "greydivider", "greydivider_bottom", "greydivider_top", "groups_limit1", "ic_ab_new",
+        "ic_foreground", "ic_foreground_monet", "ic_foreground_solid", "ic_player", "ic_reply_icon",
+        "icon_background_clip", "icon_background_clip_round", "icon_plane", "icplaceholder", "large_ads_info",
+        "large_away", "large_greeting", "large_log_actions", "large_monetize", "large_quickreplies",
+        "list_selector_ex", "livepin", "load_big", "location_empty", "login_arrow1", "login_phone1", "logo_middle",
+        "map_pin", "map_pin2", "map_pin3", "map_pin_circle", "map_pin_cone2", "map_pin_photo", "msg_media_gallery",
+        "music_empty", "no_passport", "no_password", "nophotos", "nophotos3", "paint_elliptical_brush",
+        "paint_neon_brush", "paint_radial_brush", "phone_activate", "photo_placeholder_in", "photo_tooltip2",
+        "photoview_placeholder", "screencast_big", "scrollbar_vertical_thumb", "scrollbar_vertical_thumb_inset",
+        "newmsg_divider", "ic_launcher_dr", "smiles_info", "sms_bubble", "sms_devices", "stats_tooltip", "sticker",
+        "story_camera", "theme_preview_image", "transparent", "venue_tooltip", "videopreview", "bluecounter",
+        "photobadge", "photos_rounded", "calendar_date", "menu_copy", "redcircle", "tooltip_arrow",
+        "tooltip_arrow_up", "newyear", "cards_chat", "community_cards", "ic_call_notification_answer",
+        "ic_call_notification_decline", "shortcut_compose", "shortcut_user", "slide_dot_big", "slide_dot_small",
+        "cocoon_logo", "cocoon_text", "telegram_logo", "telegram_logo_2", "mastercard_icon", "ton_icon", "diamond",
     )
 
     val systemIcons = ConcurrentHashMap<String, Int>()
@@ -279,7 +281,8 @@ object IconManager {
             name.startsWith("minibubble_") ||
             name.startsWith("book_") ||
             name.startsWith("call_") ||
-            name.startsWith("groupsintro") ||
+            name.startsWith("dice") ||
+            name.startsWith("msg_other_new_filled") ||
             name.startsWith("profile_level") ||
             name.startsWith("widget_") ||
             name.startsWith("zoom_slide") ||

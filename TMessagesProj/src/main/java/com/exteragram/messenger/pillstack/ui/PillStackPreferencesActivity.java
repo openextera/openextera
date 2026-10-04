@@ -147,6 +147,9 @@ public class PillStackPreferencesActivity extends BasePreferencesActivity {
     @Override
     public void onClick(UItem item, View view, int position, float x, float y) {
         int id = item.id;
+        if (id <= 0) {
+            return;
+        }
         if (id == ID_INFINITE_SCROLLING) {
             toggleBooleanSettingAndRefresh(item, PillStackConfig::setInfiniteScrolling);
             return;

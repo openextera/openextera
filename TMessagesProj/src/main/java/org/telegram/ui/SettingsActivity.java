@@ -372,6 +372,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onSearchExpand() {
                 animatorSearchPageVisible.setValue(true, true);
+                search.prepareExteraItems();
                 search.search(query = "");
                 updateActionBarVisible();
                 listView.adapter.update(false);

@@ -638,8 +638,56 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         @Override
         public boolean isLivePhoto() {
             if (isVideo || parsedXmp) return isLivePhoto;
+            applyLivePhoto(parseLivePhoto(path));
+            return isLivePhoto;
+        }
+
+        private static DispatchQueue livePhotoQueue;
+        private Runnable livePhotoParseRunnable;
+
+        public boolean isLivePhotoAsync(Runnable onParsed) {
+            if (isVideo || parsedXmp) return isLivePhoto;
+            if (livePhotoParseRunnable != null) return false;
+            if (livePhotoQueue == null) {
+                livePhotoQueue = new DispatchQueue("livePhotoQueue");
+            }
+            final String path = this.path;
+            livePhotoParseRunnable = () -> {
+                final long[] result = parseLivePhoto(path);
+                AndroidUtilities.runOnUIThread(() -> {
+                    livePhotoParseRunnable = null;
+                    if (!parsedXmp) {
+                        applyLivePhoto(result);
+                    }
+                    onParsed.run();
+                });
+            };
+            livePhotoQueue.postRunnable(livePhotoParseRunnable);
+            return false;
+        }
+
+        public void cancelLivePhotoParse() {
+            if (livePhotoParseRunnable != null) {
+                livePhotoQueue.cancelRunnable(livePhotoParseRunnable);
+                livePhotoParseRunnable = null;
+            }
+        }
+
+        private void applyLivePhoto(long[] result) {
             parsedXmp = true;
+            if (result != null) {
+                isVideo = true;
+                isLivePhoto = true;
+                livePhotoVideoOffset = result[0];
+                livePhotoTimestampUs = result[1];
+            } else {
+                isLivePhoto = false;
+            }
+        }
+
+        private static long[] parseLivePhoto(String path) {
             final long start = System.currentTimeMillis();
+            long[] result = null;
             try {
                 final ExifInterface ei = new ExifInterface(new File(path));
                 final String xmp = ei.getAttribute(ExifInterface.TAG_XMP);
@@ -659,12 +707,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             try {
                                 final File wholeFile = new File(path);
                                 final long videoStart = wholeFile.length() - video.length;
-
-                                isVideo = true;
-                                isLivePhoto = true;
-
-                                livePhotoVideoOffset = videoStart;
-                                livePhotoTimestampUs = motionPhoto.photoPresentationTimestampUs;
+                                result = new long[] { videoStart, motionPhoto.photoPresentationTimestampUs };
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
@@ -673,10 +716,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             } catch (Exception e) {
                 FileLog.e(e);
-                isLivePhoto = false;
             }
-            FileLog.d("parsed isLivePhoto()="+isLivePhoto+" in " + (System.currentTimeMillis() - start) + "ms");
-            return isLivePhoto;
+            FileLog.d("parsed isLivePhoto()=" + (result != null) + " in " + (System.currentTimeMillis() - start) + "ms");
+            return result;
         }
 
         public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientationOrDuration, boolean isVideo, int width, int height, long size) {

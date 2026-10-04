@@ -115,7 +115,10 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.adblock.WebAdBlocker;
+import com.exteragram.messenger.components.PreformattedScrollView;
 import com.exteragram.messenger.utils.AppUtils;
+import com.exteragram.messenger.utils.MarkdownUtils;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -1946,8 +1949,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 }
             });
             windowView.openingPage = true;
-            actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getThemedColor(Theme.key_iv_background));
-            actionBar.setColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : getThemedColor(Theme.key_iv_background), true);
+            actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getChromeFallbackColor());
+            actionBar.setColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : getChromeFallbackColor(), true);
             actionBar.setIsTonsite(pages[0] != null && pages[0].isTonsite());
             actionBar.setIsLocal(pages[0] != null && pages[0].isLocal());
             AndroidUtilities.runOnUIThread(pageSwitchAnimation::start);
@@ -2209,8 +2212,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             }
         });
         animatorSet.start();
-        actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getThemedColor(Theme.key_iv_background));
-        actionBar.setColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : getThemedColor(Theme.key_iv_background), true);
+        actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getChromeFallbackColor());
+        actionBar.setColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : getChromeFallbackColor(), true);
         actionBar.setIsTonsite(pages[0] != null && pages[0].isTonsite());
         actionBar.setIsLocal(pages[0] != null && pages[0].isLocal());
         closeAnimationInProgress = true;
@@ -2370,8 +2373,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             }
         });
         animatorSet.start();
-        actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getThemedColor(Theme.key_iv_background));
-        actionBar.setColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : getThemedColor(Theme.key_iv_background), true);
+        actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getChromeFallbackColor());
+        actionBar.setColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : getChromeFallbackColor(), true);
         actionBar.setIsTonsite(pages[0] != null && pages[0].isTonsite());
         actionBar.setIsLocal(pages[0] != null && pages[0].isLocal());
         closeAnimationInProgress = true;
@@ -4386,6 +4389,15 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             protected WebInstantView.Loader getInstantViewLoader() {
                 return pages[0].loadInstant();
             }
+
+            @Override
+            public WebAdBlocker getAdBlocker() {
+                final BotWebViewContainer.MyWebView webView = pages[0].isWeb() ? pages[0].getWebView() : null;
+                if (webView != null) {
+                    return webView.adBlocker;
+                }
+                return null;
+            }
         };
         actionBar.occupyStatusBar(sheet != null && !BOTTOM_ACTION_BAR);
         containerView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, BOTTOM_ACTION_BAR ? Gravity.BOTTOM : Gravity.TOP));
@@ -4518,6 +4530,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 } else {
                     tick = 0.02f;
                 }
+                if (actionBar.lineProgressView.getVisibility() != View.VISIBLE) {
+                    showLineProgressView();
+                }
                 actionBar.lineProgressView.setProgress(actionBar.lineProgressView.getCurrentProgress() + tick, true);
                 AndroidUtilities.runOnUIThread(lineProgressTickRunnable, 100);
             }
@@ -4527,7 +4542,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 actionBar.showSearch(false, true);
             } else if (actionBar.isAddressing()) {
                 actionBar.showAddress(false, true);
-            } else if (isFirstArticle() && pages[0].hasBackButton()) {
+            } else if (pages[0] != null && pages[0].hasBackButton()) {
                 pages[0].back();
             } else if (pagesStack.size() > 1) {
                 goBack();
@@ -5480,13 +5495,17 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         actionBar.setHeight(currentHeaderHeight);
         textSelectionHelper.setTopOffset(currentHeaderHeight);
         for (int i = 0; i < pages.length; i++) {
-            pages[i].listView.setTopGlowOffset(currentHeaderHeight);
+            pages[i].listView.setTopGlowOffset(currentHeaderHeight + (sheet != null ? Math.max(0, AndroidUtilities.statusBarHeight - dp(32)) : 0));
         }
     }
 
     private void checkScroll(int dy) {
         if (sheet != null && !sheet.attachedToActionBar) return;
-        setCurrentHeaderHeight(currentHeaderHeight - dy);
+        if (sheet != null && pages[0] != null && pages[0].isLocal() && pages[0].adapter.localFileBottomPaddingHeight > 0 && pages[0].layoutManager.findLastVisibleItemPosition() == pages[0].adapter.getItemCount() - 1) {
+            setCurrentHeaderHeight(dp(56));
+        } else {
+            setCurrentHeaderHeight(currentHeaderHeight - dy);
+        }
     }
 
     private void openPreviewsChat(TLRPC.User user, long wid) {
@@ -5795,11 +5814,31 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         return true;
     }
 
+    private void showLineProgressView() {
+        if (actionBar == null) {
+            return;
+        }
+        actionBar.lineProgressView.setVisibility(View.VISIBLE);
+        actionBar.lineProgressView.show();
+    }
+
+    private void hideLineProgressView() {
+        AndroidUtilities.cancelRunOnUIThread(lineProgressTickRunnable);
+        if (actionBar == null) {
+            return;
+        }
+        actionBar.lineProgressView.setProgress(0.0f, false);
+        actionBar.lineProgressView.setVisibility(View.INVISIBLE);
+    }
+
     private void showProgressView(boolean useLine, final boolean show) {
         if (useLine) {
             AndroidUtilities.cancelRunOnUIThread(lineProgressTickRunnable);
             if (show) {
                 actionBar.lineProgressView.setProgress(0.0f, false);
+                if (actionBar.lineProgressView.getVisibility() != View.VISIBLE) {
+                    showLineProgressView();
+                }
                 actionBar.lineProgressView.setProgress(0.3f, true);
                 AndroidUtilities.runOnUIThread(lineProgressTickRunnable, 100);
             } else {
@@ -5903,8 +5942,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             searchCountText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         }
         if (actionBar != null) {
-            actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getThemedColor(Theme.key_iv_background));
-            actionBar.setColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : getThemedColor(Theme.key_iv_background), true);
+            actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getChromeFallbackColor());
+            actionBar.setColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : getChromeFallbackColor(), true);
         }
         backgroundPaint.setColor(getThemedColor(Theme.key_iv_background));
     }
@@ -6990,6 +7029,16 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view;
             switch (viewType) {
+                case (Integer.MAX_VALUE - 2): {
+                    view = new View(context) {
+                        @Override
+                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(localFileBottomPaddingHeight, MeasureSpec.EXACTLY));
+                        }
+                    };
+                    view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                    break;
+                }
                 case (Integer.MAX_VALUE - 1): {
                     view = new View(context) {
                         @Override
@@ -7415,6 +7464,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 position--;
             }
             if (position == localBlocks.size()) {
+                if (isLocalFilePage()) {
+                    return Integer.MAX_VALUE - 2;
+                }
                 return currentPage != null && currentPage.cached_page != null && currentPage.cached_page.web ? 91 : 90;
             }
             return getTypeForBlock(localBlocks.get(position));
@@ -7429,7 +7481,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             int count = 0;
             if (currentPage != null && currentPage.cached_page != null) {
                 count += localBlocks.size();
-                if (currentPage.cached_page.local == null) {
+                if (currentPage.cached_page.local == null || padding) {
                     count++;
                 }
             }
@@ -7437,6 +7489,10 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 count++;
             }
             return count;
+        }
+
+        private boolean isLocalFilePage() {
+            return currentPage != null && currentPage.cached_page != null && currentPage.cached_page.local != null;
         }
 
         private boolean isBlockOpened(TL_pageBlockDetailsChild child) {
@@ -7479,14 +7535,20 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 localBlocks.add(originalBlock);
             }
 
-            if (localBlocks.size() < 100)
+            if (localBlocks.size() < 100) {
                 calculateContentHeight();
-            else itemHeights = null;
+            } else {
+                itemHeights = null;
+                sumItemHeights = null;
+                fullHeight = 0;
+                localFileBottomPaddingHeight = 0;
+            }
         }
 
         public int[] itemHeights;
         public int[] sumItemHeights;
         public int fullHeight;
+        private int localFileBottomPaddingHeight;
 
         public void calculateContentHeight() {
             Utilities.globalQueue.cancelRunnable(calculateContentHeightRunnable);
@@ -7495,8 +7557,11 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         private final Runnable calculateContentHeightRunnable = () -> {
             final ArrayList<TL_iv.PageBlock> blocks = new ArrayList<>(localBlocks);
-            final int itemCount = blocks.size() + (sheet != null && sheet.halfSize() ? 1 : 0);
+            final boolean hasPadding = WebpageAdapter.this.padding;
+            final boolean hasLocalFileBottomPadding = isLocalFilePage() && hasPadding;
+            final int itemCount = blocks.size() + (hasPadding ? 1 : 0) + (hasLocalFileBottomPadding ? 1 : 0);
             int fullHeight = 0;
+            int localFileBottomPaddingHeight = 0;
             final int[] itemHeights = new int[itemCount];
             final int[] sumItemHeights = new int[itemCount];
             if (pages[0] == null) return;
@@ -7510,7 +7575,15 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 } else {
                     final int position = ArticleViewer.WebpageAdapter.this.padding ? i - 1 : i;
                     TL_iv.PageBlock page = position < 0 || position >= blocks.size() ? null : blocks.get(position);
-                    if (page != null && page.cachedHeight != 0 && page.cachedWidth == View.MeasureSpec.getSize(widthSpec)) {
+                    if (hasLocalFileBottomPadding && position == blocks.size()) {
+                        int listHeight = listView.getHeight();
+                        if (listHeight <= 0) {
+                            listHeight = AndroidUtilities.displaySize.y;
+                        }
+                        final int headerHeight = actionBar == null || actionBar.getMeasuredHeight() <= 0 ? AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight() : actionBar.getMeasuredHeight();
+                        localFileBottomPaddingHeight = Math.max(0, listHeight - headerHeight - fullHeight + 1);
+                        itemHeights[i] = localFileBottomPaddingHeight;
+                    } else if (page != null && page.cachedHeight != 0 && page.cachedWidth == View.MeasureSpec.getSize(widthSpec)) {
                         itemHeights[i] = page.cachedHeight;
                     } else {
                         RecyclerView.ViewHolder viewHolder = createViewHolder(listView, getTypeForBlock(page));
@@ -7527,10 +7600,19 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 fullHeight += itemHeights[i];
             }
             final int finalFullHeight = fullHeight;
+            final int finalLocalFileBottomPaddingHeight = localFileBottomPaddingHeight;
             AndroidUtilities.runOnUIThread(() -> {
+                final boolean paddingChanged = this.localFileBottomPaddingHeight != finalLocalFileBottomPaddingHeight;
+                this.localFileBottomPaddingHeight = finalLocalFileBottomPaddingHeight;
                 this.fullHeight = finalFullHeight;
                 this.itemHeights = itemHeights;
                 this.sumItemHeights = sumItemHeights;
+                if (paddingChanged && isLocalFilePage()) {
+                    final RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(getItemCount() - 1);
+                    if (holder != null && holder.getItemViewType() == Integer.MAX_VALUE - 2) {
+                        holder.itemView.requestLayout();
+                    }
+                }
                 updatePages();
             });
         };
@@ -7547,6 +7629,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             textBlocks.clear();
             textToBlocks.clear();
             channelBlock = null;
+            localFileBottomPaddingHeight = 0;
             notifyDataSetChanged();
         }
 
@@ -13902,7 +13985,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         private final WebpageAdapter adapter;
 
         private DrawingText textLayout;
-        private HorizontalScrollView scrollView;
+        private PreformattedScrollView scrollView;
         private View textContainer;
 
         private TL_iv.pageBlockPreformatted currentBlock;
@@ -13913,7 +13996,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             this.parent = parent;
             this.adapter = adapter;
 
-            scrollView = new HorizontalScrollView(context) {
+            scrollView = new PreformattedScrollView(context) {
                 @Override
                 public boolean onInterceptTouchEvent(MotionEvent ev) {
 //                    if (textContainer.getMeasuredWidth() > getMeasuredWidth()) {
@@ -13941,7 +14024,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                     int height = 0;
                     int width = 1;
                     if (currentBlock != null) {
-                        if (text == null) {
+                        if (currentBlock instanceof MarkdownUtils.PreformattedChunk) {
+                            text = ((MarkdownUtils.PreformattedChunk) currentBlock).getHighlightedText();
+                        } else if (text == null) {
                             text = getText(parent, adapter, this, currentBlock.text, currentBlock.text, currentBlock, dp(5000));
                             if (!TextUtils.isEmpty(currentBlock.language)) {
                                 text = CodeHighlighting.getHighlighted(text, currentBlock.language);
@@ -13957,7 +14042,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                     } else {
                         height = 1;
                     }
-                    setMeasuredDimension(width + dp(32), height);
+                    setMeasuredDimension(scrollView.adjustContentWidth(width + dp(32)), height);
                 }
 
                 @Override
@@ -13998,6 +14083,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         public void setBlock(TL_iv.pageBlockPreformatted block) {
             text = null;
             currentBlock = block;
+            scrollView.setBlock(block);
             scrollView.setScrollX(0);
             textContainer.requestLayout();
         }
@@ -14032,7 +14118,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             if (currentBlock == null) {
                 return;
             }
-            canvas.drawRect(0, dp(8), getMeasuredWidth(), getMeasuredHeight() - dp(8), preformattedBackgroundPaint);
+            canvas.drawRect(0, scrollView.getPaddingTop(), getMeasuredWidth(), getMeasuredHeight() - scrollView.getPaddingBottom(), preformattedBackgroundPaint);
         }
 
         @Override
@@ -14673,8 +14759,11 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         return null; // sheet != null ? sheet.resourcesProvider : null;
     }
 
-    public boolean isFirstArticle() {
-        return pagesStack.size() > 0 && pagesStack.get(0) instanceof TLRPC.WebPage;
+    private int getChromeFallbackColor() {
+        if (Theme.isCurrentThemeMonet()) {
+            return getThemedColor(Theme.key_windowBackgroundWhite);
+        }
+        return Theme.isCurrentThemeDark() ? 0xFF1F1F1F : 0xFFFFFFFF;
     }
 
     private final AnimatedColor page0Background = new AnimatedColor(() -> AndroidUtilities.runOnUIThread(this::updatePages), 320, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -14688,20 +14777,18 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         final float page0Alpha = pages[0].getVisibility() != View.VISIBLE ? 0 : 1f - pages[0].getTranslationX() / pages[0].getWidth();
         final float page1Alpha = 1f - page0Alpha;
 
+        final boolean isLocal = pages[0].isLocal();
         actionBar.setProgress(0, pages[0].getProgress());
         actionBar.setProgress(1, pages[1].getProgress());
         actionBar.setTransitionProgress(page1Alpha);
+        if (isLocal) {
+            hideLineProgressView();
+        }
         if (!actionBar.isAddressing() && !actionBar.isSearching() && (windowView.movingPage || windowView.openingPage)) {
-            if (isFirstArticle() || pagesStack.size() > 1) {
-                final float backButton = lerp(pages[0].hasBackButton() || pagesStack.size() > 1 ? 1f : 0, pages[1].hasBackButton() || pagesStack.size() > 2 ? 1f : 0, page1Alpha);
-                actionBar.backButtonDrawable.setRotation(1f - backButton, false);
-                actionBar.forwardButtonDrawable.setState(false); // pages[0].hasForwardButton());
-                actionBar.setBackButtonCached(backButton > .5f);
-            } else {
-//                actionBar.backButtonDrawable.setRotation(1f - backButton, false);
-                actionBar.forwardButtonDrawable.setState(false); // pages[0].hasForwardButton());
-                actionBar.setBackButtonCached(false); // backButton > .5f);
-            }
+            final float backButton = lerp(pages[0].hasBackButton() || pagesStack.size() > 1 ? 1f : 0, pages[1].hasBackButton() || pagesStack.size() > 2 ? 1f : 0, page1Alpha);
+            actionBar.backButtonDrawable.setRotation(1f - backButton, false);
+            actionBar.forwardButtonDrawable.setState(false); // pages[0].hasForwardButton());
+            actionBar.setBackButtonCached(backButton > .5f);
             actionBar.setHasForward(pages[0].hasForwardButton());
             actionBar.setIsLocal(pages[0].isLocal());
             actionBar.setIsLoaded(pages[0].getWebView() != null && pages[0].getWebView().isPageLoaded());
@@ -14758,8 +14845,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         public ErrorContainer errorContainer;
 
         public boolean backButton, forwardButton;
-        public int webActionBarColor = getThemedColor(Theme.key_iv_background);
-        public int webBackgroundColor = getThemedColor(Theme.key_iv_background);
+        public int webActionBarColor = getChromeFallbackColor();
+        public int webBackgroundColor = getChromeFallbackColor();
 
         public WebInstantView.Loader currentInstantLoader;
 
@@ -14787,14 +14874,17 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
                     super.onLayout(changed, l, t, r, b);
                     overrideProgress = -1;
+                    if (PageLayout.this == pages[0] && sheet != null) {
+                        sheet.updateActionBarShadow(true);
+                    }
                 }
             };
             listView.setClipToPadding(false);
             if (BOTTOM_ACTION_BAR) {
                 listView.setPadding(0, (int) (AndroidUtilities.statusBarHeight * 1.25f), 0, dp(24));
             } else {
-                listView.setPadding(0, dp(56), 0, 0);
-                listView.setTopGlowOffset(dp(56));
+                listView.setPadding(0, dp(56) + (sheet != null ? Math.max(0, AndroidUtilities.statusBarHeight - dp(32)) : 0), 0, 0);
+                listView.setTopGlowOffset(dp(56) + (sheet != null ? Math.max(0, AndroidUtilities.statusBarHeight - dp(32)) : 0));
             }
             ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
             listView.setAdapter(adapter = new WebpageAdapter(context, sheet != null && sheet.halfSize()));
@@ -14864,14 +14954,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                     forwardButton = !last;
                     updateTitle(true);
                     if (PageLayout.this == pages[0] && !actionBar.isAddressing() && !actionBar.isSearching() && !(windowView.movingPage || windowView.openingPage)) {
-                        if (isFirstArticle() || pagesStack.size() > 1) {
-                            actionBar.backButtonDrawable.setRotation(backButton || pagesStack.size() > 1 ? 0 : 1, true);
-                            actionBar.setBackButtonCached(backButton || pagesStack.size() > 1);
-                            actionBar.forwardButtonDrawable.setState(false); // hasForwardButton());
-                        } else {
-                            actionBar.setBackButtonCached(false);
-                            actionBar.forwardButtonDrawable.setState(false);
-                        }
+                        actionBar.backButtonDrawable.setRotation(backButton || pagesStack.size() > 1 ? 0 : 1, true);
+                        actionBar.setBackButtonCached(backButton || pagesStack.size() > 1);
+                        actionBar.forwardButtonDrawable.setState(false); // hasForwardButton());
                         actionBar.setHasForward(forwardButton);
                         actionBar.setIsTonsite(pages[0] != null && pages[0].isTonsite());
                         actionBar.setIsLocal(pages[0] != null && pages[0].isLocal());
@@ -14908,9 +14993,12 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 }
             });
             webViewContainer.setWebViewProgressListener(progress -> {
-                if (PageLayout.this == pages[0]) {
+                if (PageLayout.this == pages[0] && isWeb()) {
                     if (actionBar.lineProgressView.getCurrentProgress() > progress) {
                         actionBar.lineProgressView.setProgress(0, false);
+                    }
+                    if (actionBar.lineProgressView.getVisibility() != View.VISIBLE) {
+                        showLineProgressView();
                     }
                     actionBar.lineProgressView.setProgress(progress, true);
                 }
@@ -15063,6 +15151,21 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                         webView.reload();
                     }
                 });
+                errorContainer.backButtonView.setOnClickListener(v -> {
+                    BotWebViewContainer.MyWebView webView = webViewContainer.getWebView();
+                    if (webView != null) {
+                        webView.goBack();
+                    }
+                });
+                errorContainer.proceedButtonView.setOnClickListener(v -> {
+                    BotWebViewContainer.MyWebView webView = webViewContainer.getWebView();
+                    if (webView != null) {
+                        if (webView.adBlocker != null) {
+                            webView.adBlocker.allowBlockedPage();
+                        }
+                        webView.reload();
+                    }
+                });
                 AndroidUtilities.updateViewVisibilityAnimated(errorContainer, errorShown, 1f, false);
             }
             return errorContainer;
@@ -15106,18 +15209,18 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         public int getBackgroundColor() {
             if (isWeb() && SharedConfig.adaptableColorInBrowser) {
                 if (errorShown) {
-                    return getThemedColor(Theme.key_iv_background);
+                    return getChromeFallbackColor();
                 }
                 return webBackgroundColor;
             }
-            return getThemedColor(Theme.key_iv_background);
+            return getChromeFallbackColor();
         }
 
         public int getActionBarColor() {
             if (isWeb() && SharedConfig.adaptableColorInBrowser) {
                 return webActionBarColor;
             }
-            return getThemedColor(Theme.key_iv_background);
+            return getChromeFallbackColor();
         }
 
         private String lastUrl, lastFormattedUrl;
@@ -15362,8 +15465,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             setWeb(null);
             webViewContainer.destroyWebView();
             webViewContainer.resetWebView();
-            webActionBarColor = getThemedColor(Theme.key_iv_background);
-            webBackgroundColor = getThemedColor(Theme.key_iv_background);
+            webActionBarColor = getChromeFallbackColor();
+            webBackgroundColor = getChromeFallbackColor();
             if (errorContainer != null) {
                 errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(webBackgroundColor) <= .721f, true);
                 errorContainer.setBackgroundColor(webBackgroundColor);
@@ -15850,7 +15953,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 actionBar.showAddress(false, true);
                 return true;
             }
-            if (isFirstArticle() && pages[0].hasBackButton()) {
+            if (pages[0] != null && pages[0].hasBackButton()) {
                 pages[0].back();
                 return true;
             }
@@ -15933,6 +16036,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                     public void onAnimationEnd(Animator animation) {
                         openProgress = open ? 1f : 0f;
                         updateTranslation();
+                        updateActionBarShadow(true);
                         checkNavColor();
                         if (callback != null) {
                             callback.run();
@@ -15952,11 +16056,27 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             } else {
                 openProgress = open ? 1f : 0f;
                 updateTranslation();
+                updateActionBarShadow(true);
                 if (callback != null) {
                     callback.run();
                 }
                 checkFullyVisible();
                 if (open) animationsLock.unlock();
+            }
+        }
+
+        private void updateActionBarShadow(boolean invalidate) {
+            if (actionBar == null || windowView == null || !windowView.isAttachedToWindow()) {
+                return;
+            }
+            final float open = Math.min(openProgress, 1f - dismissProgress);
+            final int top = getListTop() - getListPaddingTop();
+            final boolean drawShadow = top < (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight()) && open > .95f && top + getListPaddingTop() <= AndroidUtilities.statusBarHeight + currentHeaderHeight;
+            if (actionBar.drawShadow != drawShadow) {
+                actionBar.drawShadow = drawShadow;
+            }
+            if (invalidate) {
+                actionBar.invalidate();
             }
         }
 
@@ -16028,7 +16148,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         public int getBackgroundColor() {
             if (!SharedConfig.adaptableColorInBrowser) {
-                return Theme.getColor(Theme.key_iv_navigationBackground);
+                return getChromeFallbackColor();
             }
             final float page0Alpha = pages[0].getVisibility() != View.VISIBLE ? 0 : 1f - pages[0].getTranslationX() / pages[0].getWidth();
             return ColorUtils.blendARGB(pages[0].getBackgroundColor(), pages[1].getBackgroundColor(), 1f - page0Alpha);
@@ -16036,7 +16156,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         public int getActionBarColor() {
             if (!SharedConfig.adaptableColorInBrowser) {
-                return Theme.getColor(Theme.key_iv_background);
+                return getChromeFallbackColor();
             }
             final float page0Alpha = pages[0].getVisibility() != View.VISIBLE ? 0 : 1f - pages[0].getTranslationX() / pages[0].getWidth();
             return ColorUtils.blendARGB(pages[0].getActionBarColor(), pages[1].getActionBarColor(), 1f - page0Alpha);
@@ -16112,7 +16232,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                     Sheet.this.attachedToActionBar = attachedToActionBar;
                     checkNavColor();
                 }
-                final float attachedActionBar = this.attachedActionBar.set(attachedToActionBar);
+                final float attachedActionBar = this.attachedActionBar.set(attachedToActionBar, attachedToActionBar && pages[0] != null && pages[0].isLocal() && !pages[0].listView.canScrollVertically(1));
                 if (Sheet.this.fullyAttachedToActionBar != (attachedActionBar >= .999f)) {
                     Sheet.this.fullyAttachedToActionBar = (attachedActionBar >= .999f);
                     checkFullyVisible();
@@ -16145,7 +16265,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 AndroidUtilities.rectTmp.left = pages[0].getX();
                 canvas.drawRect(AndroidUtilities.rectTmp, backgroundPaint);
 
-                actionBar.drawShadow = attachedToActionBar && top + getListPaddingTop() <= AndroidUtilities.statusBarHeight + currentHeaderHeight;
+                updateActionBarShadow(false);
                 if (attachedActionBar > 0) {
                     canvas.save();
                     float t = lerp(top + getListPaddingTop() + 1, 0, attachedActionBar);
@@ -16370,6 +16490,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         private final TextView descriptionView;
         private final TextView codeView;
         public final ButtonWithCounterView buttonView;
+        private final ButtonWithCounterView backButtonView;
+        private final ButtonWithCounterView proceedButtonView;
 
         public ErrorContainer(Context context) {
             super(context);
@@ -16403,10 +16525,30 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             codeView.setAlpha(.4f);
             layout.addView(codeView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT));
 
+            LinearLayout buttonsLayout = new LinearLayout(context);
+            buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
+            layout.addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 12, 0, 0));
+
             buttonView = new ButtonWithCounterView(context, null);
             buttonView.setMinWidth(dp(140));
             buttonView.setText(LocaleController.getString(R.string.Refresh), false);
-            layout.addView(buttonView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 40, Gravity.LEFT, 0, 12, 0, 0));
+            buttonsLayout.addView(buttonView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 40, Gravity.LEFT, 0, 12, 0, 0));
+
+            backButtonView = new ButtonWithCounterView(context, null);
+            backButtonView.setMinWidth(dp(140));
+            backButtonView.setText(LocaleController.getString(R.string.PageBlockedGoBack), false);
+            buttonsLayout.addView(backButtonView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 40, Gravity.LEFT, 0, 12, 0, 0));
+            backButtonView.setVisibility(GONE);
+
+            proceedButtonView = new ButtonWithCounterView(context, null);
+            proceedButtonView.setMinWidth(dp(140));
+            proceedButtonView.setText(LocaleController.getString(R.string.PageBlockedProceed), false);
+            buttonsLayout.addView(proceedButtonView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 40, Gravity.LEFT, 12, 12, 0, 0));
+            proceedButtonView.setVisibility(GONE);
+        }
+
+        public ButtonWithCounterView getButtonView() {
+            return buttonView;
         }
 
         private ValueAnimator darkAnimator;
@@ -16440,6 +16582,19 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         }
 
         public void set(String url, int code, String description) {
+            if (code == 590) {
+                titleView.setText(getString(R.string.PageBlocked));
+                descriptionView.setText(AndroidUtilities.replaceTags(formatString(R.string.PageBlockedDescription, url)));
+                codeView.setVisibility(GONE);
+                buttonView.setVisibility(GONE);
+                backButtonView.setVisibility(VISIBLE);
+                proceedButtonView.setVisibility(VISIBLE);
+                return;
+            }
+            codeView.setVisibility(VISIBLE);
+            buttonView.setVisibility(VISIBLE);
+            backButtonView.setVisibility(GONE);
+            proceedButtonView.setVisibility(GONE);
             titleView.setText(getString(R.string.WebErrorTitle));
             url = BotWebViewContainer.magic2tonsite(url);
             CharSequence cs = AndroidUtilities.replaceTags(url == null || Uri.parse(url) == null || Uri.parse(url).getAuthority() == null ? getString(R.string.WebErrorInfo) : formatString(R.string.WebErrorInfoDomain, Uri.parse(url).getAuthority()));

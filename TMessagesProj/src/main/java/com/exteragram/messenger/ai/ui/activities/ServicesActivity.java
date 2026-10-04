@@ -235,7 +235,9 @@ public class ServicesActivity extends BasePreferencesActivity implements Notific
             }
             if (!service.isSelected()) {
                 AiConfig.setSelectedServices(service);
-                listView.adapter.update(true);
+                if (listView.adapter != null) {
+                    listView.adapter.update(true);
+                }
             }
             return;
         }
@@ -279,9 +281,9 @@ public class ServicesActivity extends BasePreferencesActivity implements Notific
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
         AlertDialog dialog = builder.create();
         showDialog(dialog);
-        TextView button = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        View button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (button instanceof TextView) {
+            ((TextView) button).setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 

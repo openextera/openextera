@@ -3593,10 +3593,18 @@ public class AndroidUtilities {
         SpringAnimation springAnimation = new SpringAnimation(view, DynamicAnimation.TRANSLATION_X, translationX)
                 .setSpring(new SpringForce(translationX).setStiffness(600f))
                 .setStartVelocity(-shift * 100)
+                .addUpdateListener((animation, value, velocity) -> {
+                    if (view.getParent() instanceof View) {
+                        ((View) view.getParent()).invalidate();
+                    }
+                })
                 .addEndListener((animation, canceled, value, velocity) -> {
                     if (endCallback != null) endCallback.run();
 
                     view.setTranslationX(translationX);
+                    if (view.getParent() instanceof View) {
+                        ((View) view.getParent()).invalidate();
+                    }
                     view.setTag(R.id.spring_tag, null);
                     view.setTag(R.id.spring_was_translation_x_tag, null);
                 });

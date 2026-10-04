@@ -11798,8 +11798,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             if (onClose) {
                 requestAudioFocus(false);
+                videoPlayer.releasePlayerDeferred(1000);
+            } else {
+                videoPlayer.releasePlayer(true);
             }
-            videoPlayer.releasePlayer(true);
             videoPlayer = null;
         } else {
             playerWasPlaying = false;

@@ -10,7 +10,6 @@ import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
 import android.webkit.CookieManager;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -18,11 +17,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
-import androidx.annotation.Keep;
-
-import com.exteragram.messenger.ExteraConfig;
-import com.exteragram.messenger.adblock.AdBlockClient;
-import com.exteragram.messenger.adblock.data.BlockResult;
+import com.exteragram.messenger.adblock.WebAdBlocker;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -36,53 +31,12 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 
 public class ReverseImageSearchSheet extends BottomSheet {
 
     private static final int OPEN_IN_BROWSER = 1;
-
-    private static final String ELEMENTS_OBSERVER_SCRIPT =
-            "    function getAllClassesAndIds() {\n" +
-            "        let elements = document.getElementsByTagName('*');\n" +
-            "        let classes = new Set();\n" +
-            "        let ids = new Set();\n" +
-            "\n" +
-            "        for (let element of elements) {\n" +
-            "            if (element.classList.length > 0) {\n" +
-            "                element.classList.forEach(cls => classes.add(cls));\n" +
-            "            }\n" +
-            "            if (element.id) {\n" +
-            "                ids.add(element.id);\n" +
-            "            }\n" +
-            "        }\n" +
-            "\n" +
-            "        return {\n" +
-            "            classes: Array.from(classes),\n" +
-            "            ids: Array.from(ids)\n" +
-            "        };\n" +
-            "    }\n" +
-            "\n" +
-            "    const observer = new MutationObserver(function(mutations) {\n" +
-            "        let result = getAllClassesAndIds();\n" +
-            "        Android.onElementsFound(JSON.stringify(result));\n" +
-            "    });\n" +
-            "\n" +
-            "    observer.observe(document, {\n" +
-            "        childList: true,\n" +
-            "        subtree: true,\n" +
-            "        attributes: true,\n" +
-            "        attributeFilter: ['class', 'id']\n" +
-            "    });\n" +
-            "\n" +
-            "    let result = getAllClassesAndIds();\n" +
-            "    Android.onElementsFound(JSON.stringify(result));\n";
 
     public enum Provider {
         YANDEX("Yandex", "https://yandex.com/images/"),
@@ -100,8 +54,7 @@ public class ReverseImageSearchSheet extends BottomSheet {
     }
 
     private final Provider provider;
-    private final boolean adblockEnabled;
-    private final AdblockBridge adblockBridge = new AdblockBridge();
+    private final WebAdBlocker adBlocker;
     private final CircularProgressIndicator spinner;
     private WebView webView;
 
@@ -116,7 +69,6 @@ public class ReverseImageSearchSheet extends BottomSheet {
     @SuppressLint("SetJavaScriptEnabled")
     public ReverseImageSearchSheet(Context context, File file, Provider provider, Theme.ResourcesProvider resourcesProvider) {
         super(context, false, resourcesProvider);
-        this.adblockEnabled = ExteraConfig.getEnableAdBlock();
         this.provider = provider;
         setApplyTopPadding(false);
         setApplyBottomPadding(false);
@@ -150,31 +102,14 @@ public class ReverseImageSearchSheet extends BottomSheet {
             settings.setDatabasePath(databaseDir.getAbsolutePath());
         }
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
-        if (adblockEnabled) {
-            webView.addJavascriptInterface(adblockBridge, "Android");
-        }
+        adBlocker = new WebAdBlocker(webView);
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                if (adblockEnabled && request != null && !request.isForMainFrame()) {
-                    BlockResult result = AdBlockClient.isAdRequest(request, !TextUtils.isEmpty(currentUrl) ? currentUrl : request.getUrl().toString());
-                    if (result != null && result.isMatched()) {
-                        String redirect = result.getRedirect();
-                        if (TextUtils.isEmpty(redirect)) {
-                            return new WebResourceResponse("text/plain", "utf-8", 500, "Blocked", null, null);
-                        }
-                        if (redirect.startsWith("data:")) {
-                            try {
-                                String mimeType = redirect.substring(redirect.indexOf(":") + 1, redirect.indexOf(";"));
-                                String data = redirect.substring(redirect.indexOf(",") + 1);
-                                HashMap<String, String> headers = new HashMap<>();
-                                headers.put("Content-Type", mimeType);
-                                headers.put("Access-Control-Allow-Origin", "*");
-                                return new WebResourceResponse(mimeType, null, 200, "OK", headers, new ByteArrayInputStream(Base64.decode(data, Base64.DEFAULT)));
-                            } catch (Exception e) {
-                                return new WebResourceResponse("text/plain", "utf-8", 500, "Blocked", null, null);
-                            }
-                        }
+                if (request != null && !request.isForMainFrame()) {
+                    WebResourceResponse response = adBlocker.interceptRequest(request);
+                    if (response != null) {
+                        return response;
                     }
                 }
                 return super.shouldInterceptRequest(view, request);
@@ -198,6 +133,7 @@ public class ReverseImageSearchSheet extends BottomSheet {
                 super.onPageStarted(view, url, favicon);
                 pageStartCount++;
                 onUrlChanged(url);
+                adBlocker.onPageStarted(url);
             }
 
             @Override
@@ -216,9 +152,7 @@ public class ReverseImageSearchSheet extends BottomSheet {
                 } else if (pageStartCount > injectedAtStartCount) {
                     reveal();
                 }
-                if (adblockEnabled) {
-                    applyCosmetic(url);
-                }
+                adBlocker.injectCosmetics(url);
                 hideProviderAds(view);
             }
 
@@ -349,64 +283,6 @@ public class ReverseImageSearchSheet extends BottomSheet {
                 break;
         }
         cookieManager.flush();
-    }
-
-    private void applyCosmetic(String url) {
-        if (webView == null || url == null) {
-            return;
-        }
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            return;
-        }
-        AdBlockClient.CosmeticHide cosmeticHide = AdBlockClient.getCosmeticHide(url);
-        adblockBridge.setCosmeticHide(cosmeticHide);
-        if (cosmeticHide == null) {
-            return;
-        }
-        if (!TextUtils.isEmpty(cosmeticHide.getHideCss())) {
-            webView.evaluateJavascript(cosmeticHide.getHideCss(), null);
-        }
-        if (!TextUtils.isEmpty(cosmeticHide.getInjectedScript())) {
-            webView.evaluateJavascript(cosmeticHide.getInjectedScript(), null);
-        }
-        if (!cosmeticHide.isGenericHide()) {
-            webView.evaluateJavascript(ELEMENTS_OBSERVER_SCRIPT, null);
-        }
-    }
-
-    public class AdblockBridge {
-
-        private final Set<String> hiddenSelectors = Collections.synchronizedSet(new HashSet<>());
-        private final Object lock = new Object();
-        private volatile AdBlockClient.CosmeticHide cosmeticHide;
-
-        private AdblockBridge() {
-        }
-
-        public void setCosmeticHide(AdBlockClient.CosmeticHide cosmeticHide) {
-            synchronized (lock) {
-                hiddenSelectors.clear();
-                this.cosmeticHide = cosmeticHide;
-            }
-        }
-
-        @Keep
-        @JavascriptInterface
-        public void onElementsFound(String json) {
-            synchronized (lock) {
-                if (cosmeticHide == null) {
-                    return;
-                }
-                String script = AdBlockClient.getCosmeticHideContinuous(cosmeticHide, hiddenSelectors, json);
-                if (!TextUtils.isEmpty(script)) {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (webView != null) {
-                            webView.evaluateJavascript(script, null);
-                        }
-                    });
-                }
-            }
-        }
     }
 
     private static boolean isProviderHost(Provider provider, String host) {

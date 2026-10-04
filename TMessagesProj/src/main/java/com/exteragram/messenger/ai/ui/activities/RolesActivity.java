@@ -53,7 +53,7 @@ public class RolesActivity extends BasePreferencesActivity implements Notificati
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.rolesUpdated) {
+        if (id == NotificationCenter.rolesUpdated && listView.adapter != null) {
             listView.adapter.update(true);
         }
     }
@@ -145,9 +145,9 @@ public class RolesActivity extends BasePreferencesActivity implements Notificati
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
         AlertDialog dialog = builder.create();
         showDialog(dialog);
-        TextView button = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        View button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (button instanceof TextView) {
+            ((TextView) button).setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 
@@ -159,7 +159,9 @@ public class RolesActivity extends BasePreferencesActivity implements Notificati
         if (wasSelected) {
             AiConfig.setSelectedAiRole(AiController.getInstance().getSuggestedRoles().get(0));
         }
-        listView.adapter.update(true);
+        if (listView.adapter != null) {
+            listView.adapter.update(true);
+        }
     }
 
     private void selectRole(Role role) {
@@ -167,7 +169,9 @@ public class RolesActivity extends BasePreferencesActivity implements Notificati
             return;
         }
         AiConfig.setSelectedAiRole(role);
-        listView.adapter.update(true);
+        if (listView.adapter != null) {
+            listView.adapter.update(true);
+        }
     }
 
     private void showRoleAlert(Role role) {
@@ -181,7 +185,7 @@ public class RolesActivity extends BasePreferencesActivity implements Notificati
         boolean editing = role != null && !role.isSuggestion();
         new AIEditorAlert.CreateAiStyleAlert(activity, getResourceProvider())
                 .setLocalStyle(name, prompt, emojiId, editing, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH, (newName, newPrompt, newEmojiId) -> {
-                    Role newRole = new Role(newName, newPrompt).setEmojiId(newEmojiId);
+                    Role newRole = new Role(newName, newPrompt).setEmojiId(newEmojiId != null ? newEmojiId : 0L);
                     boolean wasSelected = role != null && role.isSelected();
                     boolean success;
                     if (role != null && !role.isSuggestion()) {

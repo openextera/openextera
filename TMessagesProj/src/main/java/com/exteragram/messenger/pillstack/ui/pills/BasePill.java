@@ -16,6 +16,8 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
+import com.exteragram.messenger.pillstack.core.PillStackConfig;
+
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -88,22 +90,24 @@ public abstract class BasePill extends FrameLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (!stackVisible) {
-            return;
-        }
         long refreshInterval = getRefreshInterval();
         if (refreshInterval <= 0) {
             return;
         }
-        long lastUpdateTime = globalLastUpdateTimes.get(getPillId(), 0L);
-        if (lastUpdateTime != 0) {
-            long elapsed = SystemClock.elapsedRealtime() - lastUpdateTime;
-            if (elapsed < refreshInterval) {
-                postDelayed(autoRefreshRunnable, refreshInterval - elapsed);
-                return;
+        if (PillStackConfig.checkAndClearPendingUpdate(getPillId())) {
+            onUpdateData(true);
+            scheduleNextUpdate();
+        } else if (stackVisible) {
+            long lastUpdateTime = globalLastUpdateTimes.get(getPillId(), 0L);
+            if (lastUpdateTime != 0) {
+                long elapsed = SystemClock.elapsedRealtime() - lastUpdateTime;
+                if (elapsed < refreshInterval) {
+                    postDelayed(autoRefreshRunnable, refreshInterval - elapsed);
+                    return;
+                }
             }
+            autoRefreshRunnable.run();
         }
-        autoRefreshRunnable.run();
     }
 
     @Override
@@ -117,14 +121,17 @@ public abstract class BasePill extends FrameLayout {
             return;
         }
         stackVisible = visible;
-        if (!visible) {
-            removeCallbacks(autoRefreshRunnable);
-        } else if (getRefreshInterval() > 0) {
+        if (visible) {
+            if (getRefreshInterval() <= 0 || !isAttachedToWindow()) {
+                return;
+            }
             if (isRefreshDue()) {
                 onUpdateData(false);
             }
             scheduleNextUpdate();
+            return;
         }
+        removeCallbacks(autoRefreshRunnable);
     }
 
     public void markDataUpdated() {
@@ -170,7 +177,7 @@ public abstract class BasePill extends FrameLayout {
     public void updateLoadingColors() {
         if (loadingDrawable != null) {
             int color = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
-            loadingDrawable.setColors(Theme.multAlpha(color, 0.05f), Theme.multAlpha(color, 0.15f));
+            loadingDrawable.setColors(Theme.multAlpha(color, 0.05f), Theme.multAlpha(color, 0.15f), Theme.multAlpha(color, 0.1f), Theme.multAlpha(color, 0.25f));
         }
     }
 
@@ -188,6 +195,10 @@ public abstract class BasePill extends FrameLayout {
         if (loadingDrawable != null && (loadingDrawable.getAlpha() > 0 || !loadingDrawable.isDisappearing())) {
             View target = loadingTargetView != null ? loadingTargetView : this;
             rectF.set(target.getLeft(), target.getTop(), target.getRight(), target.getBottom());
+            if (loadingDrawable.stroke) {
+                float inset = loadingDrawable.strokePaint.getStrokeWidth() / 2f;
+                rectF.inset(inset, inset);
+            }
             loadingDrawable.setBounds(rectF);
             loadingDrawable.draw(canvas);
             invalidate();

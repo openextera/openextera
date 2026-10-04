@@ -38,6 +38,7 @@ import org.telegram.ui.LaunchActivity;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -239,7 +240,7 @@ public class IconPacksEditorActivity extends BasePreferencesActivity implements 
 
     @Override
     public String getTitle() {
-        return iconPack == null ? LocaleController.getString(R.string.NewIconPack) : iconPack.getName();
+        return iconPack == null || iconPack.getName() == null ? LocaleController.getString(R.string.NewIconPack) : iconPack.getName();
     }
 
     private ArrayList<UItem> getPackItems() {
@@ -252,7 +253,7 @@ public class IconPacksEditorActivity extends BasePreferencesActivity implements 
         for (int i = 0; i < size; i++) {
             UItem cached = cachedIconItems.get(i);
             items.add(EditorIconCell.Factory.asIcon(cached.id, cached.text, iconPack));
-            lowerNames[i] = cached.text == null ? "" : cached.text.toString().toLowerCase();
+            lowerNames[i] = cached.text == null ? "" : cached.text.toString().toLowerCase(Locale.getDefault());
         }
         packItems = items;
         packItemLowerNames = lowerNames;
@@ -266,7 +267,7 @@ public class IconPacksEditorActivity extends BasePreferencesActivity implements 
             return;
         }
         ArrayList<UItem> packItems = getPackItems();
-        String lowerQuery = searching && !TextUtils.isEmpty(query) ? query.toLowerCase() : null;
+        String lowerQuery = searching && !TextUtils.isEmpty(query) ? query.toLowerCase(Locale.getDefault()) : null;
         Map<String, String> icons = iconPack == null ? null : iconPack.getIcons();
         for (int i = 0; i < packItems.size(); i++) {
             if (lowerQuery != null && !packItemLowerNames[i].contains(lowerQuery)) {

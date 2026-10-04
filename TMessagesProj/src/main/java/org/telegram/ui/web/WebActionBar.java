@@ -39,6 +39,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
+import com.exteragram.messenger.adblock.WebAdBlocker;
+import com.exteragram.messenger.adblock.ui.AdBlockMenuItem;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.Emoji;
@@ -127,6 +130,10 @@ public class WebActionBar extends FrameLayout {
     public static final int forward_item = 9;
     public static final int instant_item = 10;
 
+    public WebAdBlocker getAdBlocker() {
+        return null;
+    }
+
     public WebActionBar(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
@@ -200,17 +207,16 @@ public class WebActionBar extends FrameLayout {
             Utilities.CallbackReturn<Integer, Runnable> click = id -> () -> menuListener.run(id);
             ItemOptions o = ItemOptions.makeOptions((ViewGroup) getParent(), menuButton);
             o.setDimAlpha(0);
-            o.setColors(menuTextColor, menuIconColor);
+            final boolean monet = Theme.isCurrentThemeMonet();
+            final boolean dark = !monet && Theme.isCurrentThemeDark();
+            final int backgroundColor = monet ? Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider) : dark ? 0xFF1F1F1F : 0xFFFFFFFF;
+            final int textColor = monet ? Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider) : dark ? 0xFFFFFFFF : 0xFF000000;
+            o.setColors(textColor, monet ? Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider) : Theme.multAlpha(textColor, .6f));
             o.translate(0, -dp(52));
             o.setMinWidth(200);
-            o.setSelectorColor(Theme.blendOver(menuBackgroundColor, Theme.multAlpha(menuTextColor, .1f)));
-            if (AndroidUtilities.computePerceivedBrightness(menuBackgroundColor) > .721f) {
-                o.setBackgroundColor(0xFFFFFFFF);
-                o.setGapBackgroundColor(0xFFF0F0F0);
-            } else {
-                o.setBackgroundColor(0xFF1F1F1F);
-                o.setGapBackgroundColor(0xFF121212);
-            }
+            o.setSelectorColor(monet ? Theme.getColor(Theme.key_listSelector, resourcesProvider) : Theme.blendOver(backgroundColor, Theme.multAlpha(textColor, .1f)));
+            o.setBackgroundColor(backgroundColor);
+            o.setGapBackgroundColor(monet ? Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider) : dark ? 0xFF121212 : 0xFFF0F0F0);
             if (menuType == ArticleViewer.PageLayout.TYPE_ARTICLE) {
                 o.add(R.drawable.msg_openin, getString(R.string.OpenInExternalApp), click.run(open_item));
                 o.add(R.drawable.msg_search, getString(R.string.Search), click.run(search_item));
@@ -218,6 +224,7 @@ public class WebActionBar extends FrameLayout {
                 o.add(R.drawable.msg_settings_old, getString(R.string.Settings), click.run(settings_item));
             } else if (menuType == ArticleViewer.PageLayout.TYPE_WEB) {
                 if (!isTonsite) {
+                    AdBlockMenuItem.addTo(o, getAdBlocker());
                     o.add(R.drawable.msg_openin, getString(R.string.OpenInExternalApp), click.run(open_item));
                     o.addGap();
                 }

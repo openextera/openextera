@@ -66,6 +66,8 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.pip.PipSource;
@@ -92,7 +94,7 @@ import org.telegram.ui.Stories.recorder.LivePlayerView;
 
 import java.util.ArrayList;
 
-public class StoryViewer implements NotificationCenter.NotificationCenterDelegate, BaseFragment.AttachedSheet, IPipSourceDelegate {
+public class StoryViewer implements NotificationCenter.NotificationCenterDelegate, BaseFragment.AttachedSheet, IPipSourceDelegate, AudioManager.OnAudioFocusChangeListener {
 
     public static boolean animationInProgress;
 
@@ -192,6 +194,10 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     Uri lastUri;
     PeerStoriesView.VideoPlayerSharedScope currentPlayerScope;
     private boolean isClosed = true;
+    private final AudioManager audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
+    private volatile boolean audioFocusPaused;
+    private volatile boolean audioFocusRequested;
+    private volatile boolean hasAudioFocus;
     private boolean isRecording;
     AnimationNotificationsLocker locker = new AnimationNotificationsLocker();
     private boolean isWaiting;
@@ -431,6 +437,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
         isClosed = false;
+        requestAudioFocus(false);
         unreadStateChanged = false;
 
         BaseFragment fragment = LaunchActivity.getLastFragment();
@@ -1547,6 +1554,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     switchToLive(false, uri != null);
                     playerSavedPosition = 0;
+                    if (!sameUri) {
+                        audioFocusPaused = false;
+                    }
                     updatePlayingMode();
                 }
 
@@ -2222,6 +2232,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         isInTouchMode = b;
         if (isInTouchMode) {
             volumeControl.hide();
+        } else if (audioFocusPaused) {
+            audioFocusPaused = false;
+            updateLiveVolume();
         }
         updatePlayingMode();
     }
@@ -2258,14 +2271,75 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             isLikesReactions ||
             progressToDismiss != 0 ||
             storiesIntro != null ||
+            audioFocusPaused ||
             ATTACH_TO_FRAGMENT && fragment != null && fragment.getLastStoryViewer() != this
         );
+    }
+
+    private void updateLiveVolume() {
+        if (livePlayer != null) {
+            livePlayer.setVolume(audioFocusPaused ? 0f : progressToOpen * (1.0f - progressToDismiss));
+        }
+    }
+
+    private void requestAudioFocus(boolean request) {
+        if (audioManager == null) {
+            return;
+        }
+        if (request && SharedConfig.pauseMusicOnMedia) {
+            if (!hasAudioFocus && audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                hasAudioFocus = true;
+                audioFocusRequested = true;
+            }
+        } else if (audioFocusRequested) {
+            hasAudioFocus = false;
+            audioFocusPaused = false;
+            audioFocusRequested = false;
+            audioManager.abandonAudioFocus(this);
+            updateLiveVolume();
+            MediaController.getInstance().tryResumePausedAudio();
+        }
+    }
+
+    @Override
+    public void onAudioFocusChange(int focusChange) {
+        AndroidUtilities.runOnUIThread(() -> {
+            if (isClosed || !SharedConfig.pauseMusicOnMedia) {
+                requestAudioFocus(false);
+                return;
+            }
+            if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                audioFocusPaused = false;
+                hasAudioFocus = true;
+                audioFocusRequested = true;
+                updateLiveVolume();
+                updatePlayingMode();
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                hasAudioFocus = false;
+                audioFocusPaused = true;
+                if (playerHolder != null && playerHolder.isPlaying()) {
+                    playerHolder.pause();
+                }
+                updateLiveVolume();
+                updatePlayingMode();
+            }
+        });
     }
 
     public void updatePlayingMode() {
         updatePipSource();
         if (storiesViewPager == null) {
             return;
+        }
+        final boolean hasIncomingLive = livePlayer != null && !livePlayer.outgoing;
+        if ((hasIncomingLive || playerHolder != null) && isShowing && !isClosed) {
+            if (hasIncomingLive || playerHolder.audioTrackState == 1) {
+                if (!hasAudioFocus && !audioFocusPaused) {
+                    requestAudioFocus(true);
+                }
+            } else if (hasAudioFocus && playerHolder.audioTrackState == 2) {
+                requestAudioFocus(false);
+            }
         }
         boolean pause = isPaused();
         if (ATTACH_TO_FRAGMENT && (fragment.isPaused() || !fragment.isLastFragment())) {
@@ -2344,9 +2418,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             if (peerStoriesView != null) {
                 peerStoriesView.progressToDismissUpdated();
             }
-            if (livePlayer != null) {
-                livePlayer.setVolume((1.0f - progressToDismiss) * progressToOpen);
-            }
+            updateLiveVolume();
         }
 
         if (windowView != null) {
@@ -2379,9 +2451,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             if (containerView != null) {
                 containerView.checkHwAcceleration(progressToOpen);
             }
-            if (livePlayer != null) {
-                livePlayer.setVolume((1.0f - progressToDismiss) * progressToOpen);
-            }
+            updateLiveVolume();
             checkNavBarColor();
             if (windowView != null) {
                 windowView.invalidate();
@@ -2416,9 +2486,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                 if (peerStoriesView != null) {
                     peerStoriesView.updatePosition();
                 }
-                if (livePlayer != null) {
-                    livePlayer.setVolume((1.0f - progressToDismiss) * progressToOpen);
-                }
+                updateLiveVolume();
 
                 if (showViewsAfterOpening) {
                     showViewsAfterOpening = false;
@@ -2537,9 +2605,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             if (windowView != null) {
                 windowView.invalidate();
             }
-            if (livePlayer != null) {
-                livePlayer.setVolume((1.0f - progressToDismiss) * progressToOpen);
-            }
+            updateLiveVolume();
         });
         if (!backAnimation) {
             fromX = fromY = 0;
@@ -2638,6 +2704,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             playerHolder.release(null);
             playerHolder = null;
         }
+        requestAudioFocus(false);
         if (liveView != null) {
             liveView.setScope(0, null);
         }
@@ -2672,6 +2739,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         isClosed = true;
         invalidateOutRect = true;
         updatePlayingMode();
+        requestAudioFocus(false);
         startCloseAnimation(backAnimation);
         if (unreadStateChanged) {
             unreadStateChanged = false;
@@ -3065,6 +3133,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         if (storiesIntro != null) {
             storiesIntro.stopAnimation();
         }
+        requestAudioFocus(false);
     }
 
     public interface PlaceProvider {
@@ -3137,6 +3206,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
 
     public class VideoPlayerHolder extends VideoPlayerHolderBase {
 
+        volatile int audioTrackState = 0;
         boolean logBuffering;
 
         public VideoPlayerHolder(SurfaceView surfaceView, TextureView textureView) {
@@ -3187,6 +3257,23 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                     });
                 }
             }
+        }
+
+        @Override
+        public void onAudioTrackChanged(int state) {
+            audioTrackState = state;
+            if (state == 0) {
+                return;
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (playerHolder != this) {
+                    return;
+                }
+                if (state == 1) {
+                    audioFocusPaused = false;
+                }
+                updatePlayingMode();
+            });
         }
     }
 

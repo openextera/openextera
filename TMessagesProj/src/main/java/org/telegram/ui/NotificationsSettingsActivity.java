@@ -33,6 +33,9 @@ import androidx.annotation.Keep;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.exteragram.messenger.notifications.AccountNotifications;
+import com.exteragram.messenger.notifications.AccountNotificationsActivity;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
@@ -100,6 +103,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     @Keep
     private int accountsAllRow;
     private int accountsInfoRow;
+    private int accountsListRow;
 
     private int notificationsServiceRow;
     private int notificationsServiceConnectionRow;
@@ -169,10 +173,12 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         if (UserConfig.getActivatedAccountsCount() > 1) {
             accountsSectionRow = rowCount++;
             accountsAllRow = rowCount++;
+            accountsListRow = rowCount++;
             accountsInfoRow = rowCount++;
         } else {
             accountsSectionRow = -1;
             accountsAllRow = -1;
+            accountsListRow = -1;
             accountsInfoRow = -1;
         }
 
@@ -741,18 +747,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 enabled = preferences.getBoolean("AllAccounts", true);
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putBoolean("AllAccounts", !enabled);
-                editor.commit();
+                editor.apply();
                 SharedConfig.showNotificationsForAllAccounts = !enabled;
-                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                    if (SharedConfig.showNotificationsForAllAccounts) {
-                        NotificationsController.getInstance(a).showNotifications();
-                    } else {
-                        if (a == currentAccount) {
-                            NotificationsController.getInstance(a).showNotifications();
-                        } else {
-                            NotificationsController.getInstance(a).hideNotifications();
-                        }
-                    }
+                AccountNotifications.applyAll();
+                adapter.notifyItemChanged(accountsListRow);
+            } else if (position == accountsListRow) {
+                if (SharedConfig.showNotificationsForAllAccounts) {
+                    presentFragment(new AccountNotificationsActivity());
                 }
             } else if (position == notificationsServiceRow) {
                 SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
@@ -938,7 +939,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     position == badgeNumberSection || position == otherSection2Row || position == resetSection2Row ||
                     position == callsSection2Row || position == callsSectionRow || position == badgeNumberSection2Row ||
                     position == accountsSectionRow || position == accountsInfoRow || position == resetNotificationsSectionRow ||
-                    position == eventsSection2Row);
+                    position == eventsSection2Row) && (position != accountsListRow || SharedConfig.showNotificationsForAllAccounts);
         }
 
         @Override
@@ -1032,7 +1033,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     } else if (position == callsVibrateRow) {
                         checkCell.setTextAndCheck(getString("Vibrate", R.string.Vibrate), preferences.getBoolean("EnableCallVibrate", true), true);
                     } else if (position == accountsAllRow) {
-                        checkCell.setTextAndCheck(getString("AllAccounts", R.string.AllAccounts), MessagesController.getGlobalNotificationsSettings().getBoolean("AllAccounts", true), false);
+                        checkCell.setTextAndCheck(getString("AllAccounts", R.string.AllAccounts), MessagesController.getGlobalNotificationsSettings().getBoolean("AllAccounts", true), true);
                     }
                     break;
                 }
@@ -1147,7 +1148,9 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 case 5: {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                    if (position == callsRingtoneRow) {
+                    if (position == accountsListRow) {
+                        textCell.setTextAndValue(getString(R.string.AccountNotifications), LocaleController.formatString(R.string.AccountNotificationsCount, AccountNotifications.getEnabledCount(), AccountNotifications.getAccounts().size()), false);
+                    } else if (position == callsRingtoneRow) {
                         String value = preferences.getString("CallsRingtone", getString("DefaultRingtone", R.string.DefaultRingtone));
                         if (value.equals("NoSound")) {
                             value = getString("NoSound", R.string.NoSound);
@@ -1181,6 +1184,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         textCell.setTextAndValue(getString("RepeatNotifications", R.string.RepeatNotifications), value, updateRepeatNotifications, false);
                         updateRepeatNotifications = false;
                     }
+                    textCell.setEnabled(position != accountsListRow || SharedConfig.showNotificationsForAllAccounts);
                     break;
                 }
                 case 6: {

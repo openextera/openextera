@@ -64,7 +64,7 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
     }
 
     private void updateAdapter() {
-        if (listView != null && listView.adapter != null) {
+        if (fragmentView != null && listView.adapter != null) {
             listView.adapter.update(true);
         }
     }
@@ -305,9 +305,9 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
             .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
             .create();
         dialog.show();
-        TextView button = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        View button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (button instanceof TextView) {
+            ((TextView) button).setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 }

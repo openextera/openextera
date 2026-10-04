@@ -151,7 +151,8 @@ public class MessagesPreviewCell extends LinearLayout implements CustomPreferenc
             }
             message.date = date + 60;
             message.dialog_id = 1;
-            message.flags = 33027;
+            message.flags = 34051;
+            message.forwards = 67;
             message.edit_date = date + 120;
             message.from_id = new TLRPC.TL_peerUser();
             message.from_id.user_id = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
@@ -160,6 +161,7 @@ public class MessagesPreviewCell extends LinearLayout implements CustomPreferenc
             message.peer_id = new TLRPC.TL_peerUser();
             message.peer_id.user_id = 0;
             messageObjects[0] = new MessageObject(UserConfig.selectedAccount, message, true, false);
+            messageObjects[0].viewsReloaded = true;
             messageObjects[0].forceAvatar = true;
             messageObjects[0].resetLayout();
             messageObjects[0].eventId = 1;
@@ -222,6 +224,7 @@ public class MessagesPreviewCell extends LinearLayout implements CustomPreferenc
                 }
             });
             cells[i].isChat = false;
+            cells[i].hideViews = type == TYPE_MESSAGE;
             cells[i].setFullyDraw(true);
             cells[i].setMessageObject(messageObjects[i], null, false, false, false);
             addView(cells[i], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));

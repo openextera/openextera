@@ -1,5 +1,6 @@
 package com.exteragram.messenger.icons
 
+import android.content.res.AssetManager
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
 import com.exteragram.messenger.icons.ui.picker.IconObserver
@@ -9,6 +10,8 @@ import org.telegram.messenger.FileLog
 class ExteraResources(
     private val original: Resources,
 ) : Resources(original.assets, original.displayMetrics, original.configuration) {
+
+    val sourceAssets: AssetManager = original.assets
 
     init {
         IconManager.initialize()

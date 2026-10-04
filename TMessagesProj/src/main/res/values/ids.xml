@@ -69,4 +69,5 @@
     <item name="menu_code" type="id"/>
     <item name="menu_markdown" type="id"/>
     <item name="round_section_tag" type="id"/>
+    <item name="section_offsets_tag" type="id"/>
 </resources>

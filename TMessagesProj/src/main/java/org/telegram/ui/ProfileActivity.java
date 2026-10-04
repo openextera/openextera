@@ -4203,6 +4203,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         searchItem.clearFocusOnSearchView();
                     }
                     if (searchMode) {
+                        searchAdapter.prepareExteraItems();
                         searchItem.getSearchField().setText("");
                     }
                     return searchExpandTransition(searchMode);
@@ -15049,6 +15050,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             updateSearchArray();
         }
 
+        private boolean exteraItemsIncluded;
+
+        public void prepareExteraItems() {
+            if (exteraItemsIncluded) {
+                return;
+            }
+            SettingsRegistry.getInstance().getSearchResults(this);
+            searchArray = onCreateSearchArray(fragment);
+            recentSearches.clear();
+            updateSearchArray();
+        }
+
         private void updateSearchArray() {
             HashMap<Integer, SearchResult> resultHashMap = new HashMap<>();
             for (int a = 0; a < searchArray.length; a++) {
@@ -15105,7 +15118,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         public SearchResult[] onCreateSearchArray(final BaseFragment f) {
             final int currentAccount = f.getCurrentAccount();
             final Theme.ResourcesProvider resourcesProvider = f.getResourceProvider();
-            final SearchResult[] exteraResults = SettingsRegistry.getInstance().getSearchResults(this);
+            final boolean searchIndexReady = SettingsRegistry.getInstance().isSearchIndexReady();
+            exteraItemsIncluded = searchIndexReady;
+            final SearchResult[] exteraResults = searchIndexReady ? SettingsRegistry.getInstance().getSearchResults(this) : new SearchResult[0];
             final SearchResult[] telegramResults = new SearchResult[]{
                     new SearchResult(500, getString(R.string.EditName), 0, () -> f.presentFragment(new ChangeNameActivity(resourcesProvider))),
                     new SearchResult(501, getString(R.string.ChangePhoneNumber), 0, () -> f.presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER))).withLink("tg://settings/edit/change-number"),

@@ -17,7 +17,6 @@ import com.exteragram.messenger.badges.BadgesController;
 import com.exteragram.messenger.components.BoostyBottomSheet;
 import com.exteragram.messenger.components.SupporterBottomSheet;
 import com.exteragram.messenger.export.ui.ExportActivity;
-import com.exteragram.messenger.plugins.PluginsController;
 import com.exteragram.messenger.utils.network.RemoteUtils;
 import com.exteragram.messenger.utils.system.VibratorUtils;
 
@@ -49,8 +48,9 @@ import java.util.Set;
 
 public class OtherPreferencesActivity extends BasePreferencesActivity {
 
-    private List<Donate> donates = new ArrayList<>();
-    private final List<BoostySubscriberDTO> subscribers = new ArrayList<>();
+    private List<Donate> donates = Collections.emptyList();
+    private final ArrayList<BoostySubscriberDTO> subscribers = new ArrayList<>();
+    private final IconInfo defaultDonateIcon = new IconInfo(R.drawable.msg_payment_card, 0);
 
     public enum OtherItem {
         CRASHLYTICS,
@@ -70,7 +70,7 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
         Set<String> values = RemoteUtils.getStringSetConfigValue("donates", Collections.emptySet());
         ArrayList<Donate> result = new ArrayList<>();
         for (String value : values) {
-            String[] parts = value.split("#");
+            String[] parts = value.split("#", -1);
             if (parts.length == 2) {
                 result.add(new Donate(parts[0], parts[1]));
             }
@@ -91,36 +91,14 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
 
     @Override
     public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        donates = getDonates();
         boolean dark = Theme.isCurrentThemeDark();
         Map<String, IconInfo> icons = new LinkedHashMap<>();
         icons.put("mastercard", new IconInfo(R.drawable.mastercard_icon, dark ? Color.WHITE : Color.BLACK));
         icons.put("tonkeeper", new IconInfo(R.drawable.ton_icon, dark ? 0xFF27364D : 0xFF10161F));
         icons.put("space", new IconInfo(R.drawable.ton_space_icon, 0xFF30A9F6));
         icons.put("boosty", new IconInfo(R.drawable.boosty_icon, dark ? 0xFFEEEEEE : 0xFF242B2C));
-
-        donates = getDonates();
-        if (!donates.isEmpty()) {
-            items.add(UItem.asHeader(LocaleController.getString(R.string.Support)));
-            for (int i = 0; i < donates.size(); i++) {
-                Donate donate = donates.get(i);
-                String name = donate.name().toLowerCase();
-                IconInfo iconInfo = new IconInfo(R.drawable.msg_payment_card, 0);
-                for (Map.Entry<String, IconInfo> entry : icons.entrySet()) {
-                    if (name.contains(entry.getKey())) {
-                        iconInfo = entry.getValue();
-                        break;
-                    }
-                }
-                UItem item = UItem.asButton(OtherItem.DONATE.getId() + i, donate.name()).setSearchable(this);
-                if (iconInfo.iconColor() == 0) {
-                    item.setIcon(iconInfo.iconResId());
-                } else {
-                    item.setColorfulIcon(iconInfo.iconResId(), iconInfo.iconColor());
-                }
-                items.add(item);
-            }
-            items.add(UItem.asShadow(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.GetBadgeInfo), () -> SupporterBottomSheet.showAlert(this, null))));
-        }
+        addDonateSection(items, LocaleController.getString(R.string.Support), donates, icons, 0);
 
         // Firebase is not used in OpenExtera: these switches only keep their preference values.
         items.add(UItem.asHeader("Google"));
@@ -129,9 +107,8 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
         items.add(UItem.asShadow(LocaleController.getString(R.string.AnalyticsInfo)));
 
         items.add(UItem.asButton(OtherItem.EXPORT_SETTINGS.getId(), R.drawable.msg_settings, LocaleController.getString(R.string.ExportSettings)).setSearchable(this).setLinkAlias("exportSettings", this));
-        // TODO(openextera): the lite decompile lost the plugin predicate (plugins are stubbed in lite), verify
-        long pluginsCount = PluginsController.getInstance().getPlugins().values().stream().filter(Objects::nonNull).count();
-        if (BadgesController.INSTANCE.isDeveloper() && pluginsCount <= 1) {
+        // lite 12.10.6 evaluates a plugin predicate here that R8 folded away (plugins are stubbed in lite)
+        if (BadgesController.INSTANCE.isDeveloper()) {
             items.add(UItem.asButton(OtherItem.EXPORT_DATA.getId(), R.drawable.msg_archive, LocaleController.getString(R.string.ExportData)).setSearchable(this).setLinkAlias("exportData", this));
         }
         items.add(UItem.asButton(OtherItem.RESET_SETTINGS.getId(), R.drawable.msg_reset, LocaleController.getString(R.string.ResetSettings)).setSearchable(this).setLinkAlias("resetSettings", this));
@@ -153,7 +130,11 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
         int id = item.id;
         int donateId = OtherItem.DONATE.getId();
         if (id >= donateId && id < donateId + donates.size()) {
-            handleDonateClick(donates.get(id - donateId));
+            Donate donate = getDonate(id);
+            if (donate != null) {
+                handleDonateClick(donate);
+            }
+            return;
         }
         if (id <= 0 || id >= donateId) {
             return;
@@ -180,6 +161,43 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
         }
     }
 
+    private void addDonateSection(ArrayList<UItem> items, String header, List<Donate> list, Map<String, IconInfo> icons, int idOffset) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        items.add(UItem.asHeader(header));
+        for (int i = 0; i < list.size(); i++) {
+            Donate donate = list.get(i);
+            String name = donate.name().toLowerCase(Locale.ROOT);
+            IconInfo iconInfo = null;
+            for (Map.Entry<String, IconInfo> entry : icons.entrySet()) {
+                if (name.contains(entry.getKey())) {
+                    iconInfo = entry.getValue();
+                    break;
+                }
+            }
+            if (iconInfo == null) {
+                iconInfo = defaultDonateIcon;
+            }
+            UItem item = UItem.asButton(OtherItem.DONATE.getId() + idOffset + i, donate.name()).setSearchable(this);
+            if (iconInfo.iconColor() == 0) {
+                item.setIcon(iconInfo.iconResId());
+            } else {
+                item.setColorfulIcon(iconInfo.iconResId(), iconInfo.iconColor());
+            }
+            items.add(item);
+        }
+        items.add(UItem.asShadow(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.GetBadgeInfo), () -> SupporterBottomSheet.showAlert(this, null))));
+    }
+
+    private Donate getDonate(int id) {
+        int index = id - OtherItem.DONATE.getId();
+        if (index < 0 || index >= donates.size()) {
+            return null;
+        }
+        return donates.get(index);
+    }
+
     private void handleResetSettingsClick() {
         AlertDialog dialog = new AlertDialog.Builder(getParentActivity())
                 .setMessage(AndroidUtilities.replaceTags(LocaleController.getString(R.string.ResetPreferencesInfo)))
@@ -196,9 +214,9 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
                 })
                 .create();
         showDialog(dialog);
-        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
-        if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        View button = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button instanceof TextView) {
+            ((TextView) button).setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 
@@ -209,6 +227,7 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
         builder.setPositiveButton(LocaleController.getString(R.string.Deactivate), (d, which) -> {
             AlertDialog progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.setCanCancel(false);
+            progressDialog.show();
             Utilities.globalQueue.postRunnable(() -> {
                 TL_account.deleteAccount req = new TL_account.deleteAccount();
                 req.reason = "ЭКСТЕРАГРАМ";
@@ -222,7 +241,7 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
                         getMessagesController().performLogout(0);
                     } else if (error == null || error.code != -1000) {
                         String message = LocaleController.getString(R.string.ErrorOccurred);
-                        if (error != null) {
+                        if (error != null && error.text != null) {
                             message += "\n" + error.text;
                         }
                         AlertDialog.Builder errorBuilder = new AlertDialog.Builder(getParentActivity());
@@ -233,12 +252,15 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
                     }
                 }));
             }, 500);
-            progressDialog.show();
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
         AlertDialog dialog = builder.create();
         dialog.setOnShowListener(d -> {
-            TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+            View view = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+            if (!(view instanceof TextView)) {
+                return;
+            }
+            TextView button = (TextView) view;
             button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
             button.setEnabled(false);
             CharSequence buttonText = button.getText();
@@ -259,7 +281,7 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
     }
 
     private void handleDonateClick(Donate donate) {
-        String name = donate.name().toLowerCase();
+        String name = donate.name().toLowerCase(Locale.getDefault());
         if (name.contains("ton")) {
             String url = "ton://transfer/" + donate.details() + "?text=" + UserConfig.getInstance(currentAccount).getClientUserId();
             if (!Browser.isInternalUri(Uri.parse(url), new boolean[]{false})) {
@@ -287,7 +309,8 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
     }
 
     private boolean handleDonateLongClick(UItem item, View view) {
-        if (AndroidUtilities.addToClipboard(donates.get(item.id - OtherItem.DONATE.getId()).details())) {
+        Donate donate = getDonate(item.id);
+        if (donate != null && AndroidUtilities.addToClipboard(donate.details())) {
             BulletinFactory.of(this).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
         }
         view.performHapticFeedback(VibratorUtils.getType(HapticFeedbackConstants.KEYBOARD_TAP), HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
@@ -322,12 +345,12 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
 
         @Override
         public int hashCode() {
-            return iconResId * 31 + iconColor;
+            return Integer.hashCode(iconResId) * 31 + Integer.hashCode(iconColor);
         }
 
         @Override
         public String toString() {
-            return "IconInfo[iconResId=" + iconResId + ", iconColor=" + iconColor + "]";
+            return "IconInfo(iconResId=" + iconResId + ", iconColor=" + iconColor + ")";
         }
     }
 
@@ -359,12 +382,12 @@ public class OtherPreferencesActivity extends BasePreferencesActivity {
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, details);
+            return name.hashCode() * 31 + details.hashCode();
         }
 
         @Override
         public String toString() {
-            return "Donate[name=" + name + ", details=" + details + "]";
+            return "Donate(name=" + name + ", details=" + details + ")";
         }
     }
 }

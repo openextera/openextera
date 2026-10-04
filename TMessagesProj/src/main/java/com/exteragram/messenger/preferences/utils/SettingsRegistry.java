@@ -248,9 +248,17 @@ public class SettingsRegistry {
         }
     }
 
-    private void createEntriesIfNeeded() {
+    public boolean isSearchIndexReady() {
+        return entriesFetched && TextUtils.equals(entriesLangCode, getCurrentLangCode());
+    }
+
+    private static String getCurrentLangCode() {
         LocaleController.LocaleInfo localeInfo = LocaleController.getInstance().getCurrentLocaleInfo();
-        String langCode = localeInfo == null ? "" : localeInfo.getKey();
+        return localeInfo == null ? "" : localeInfo.getKey();
+    }
+
+    private void createEntriesIfNeeded() {
+        String langCode = getCurrentLangCode();
         if (entriesFetched) {
             if (TextUtils.equals(entriesLangCode, langCode)) {
                 return;

@@ -39,6 +39,8 @@ import androidx.annotation.NonNull;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.ProxyDisableCondition;
 import com.exteragram.messenger.appicons.AppIconController;
+import com.exteragram.messenger.debug.HeapMonitor;
+import com.exteragram.messenger.debug.LoadMonitor;
 import com.exteragram.messenger.icons.IconManager;
 import com.exteragram.messenger.maps.yandex.YandexLocationProvider;
 import com.exteragram.messenger.maps.yandex.YandexMapsProvider;
@@ -428,6 +430,8 @@ public class ApplicationLoader extends Application implements androidx.work.Conf
         AppIconController.fixLauncherIconIfNeeded();
         ProxyRotationController.init();
         ProxyPingController.init();
+        HeapMonitor.init();
+        LoadMonitor.init();
 
         //if (BuildConfig.DEBUG_PRIVATE_VERSION) {
         //    Choreographer60FpsContent.getInstance().addFrameCallback(debugEverySecondChecks, 1);

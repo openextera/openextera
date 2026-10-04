@@ -1,7 +1,11 @@
 package com.exteragram.messenger.utils;
 
+import android.text.SpannableString;
 import android.text.TextUtils;
 
+import com.exteragram.messenger.components.PreformattedScrollView;
+
+import org.telegram.messenger.CodeHighlighting;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.MessageObject;
 import org.telegram.tgnet.tl.TL_iv;
@@ -177,6 +181,7 @@ public abstract class MarkdownUtils {
             blocks.add(block);
             return;
         }
+        HighlightSource source = new HighlightSource(text, language == null ? "" : language);
         int start = 0;
         while (start < text.length()) {
             int end = Math.min(text.length(), start + chunkLength);
@@ -186,11 +191,61 @@ public abstract class MarkdownUtils {
                     end = lineBreak + 1;
                 }
             }
-            TL_iv.pageBlockPreformatted block = new TL_iv.pageBlockPreformatted();
-            block.text = plain(text.substring(start, end));
-            block.language = language == null ? "" : language;
-            blocks.add(block);
+            blocks.add(new PreformattedChunk(source, start, end));
             start = end;
+        }
+    }
+
+    public static final class PreformattedChunk extends TL_iv.pageBlockPreformatted {
+        private final HighlightSource source;
+        private final int start;
+        private final int end;
+        private final String plainText;
+        private CharSequence highlightedText;
+        public final boolean joinsPrevious;
+        public final boolean joinsNext;
+        public final PreformattedScrollView.Group scrollGroup;
+
+        private PreformattedChunk(HighlightSource source, int start, int end) {
+            this.source = source;
+            this.start = start;
+            this.end = end;
+            plainText = source.text.substring(start, end);
+            joinsPrevious = start > 0;
+            joinsNext = end < source.text.length();
+            scrollGroup = source.scrollGroup;
+            text = plain(plainText);
+            language = source.language;
+        }
+
+        public CharSequence getHighlightedText() {
+            if (highlightedText == null) {
+                SpannableString highlighted = source.getHighlighted();
+                if (highlighted instanceof CodeHighlighting.LockedSpannableString && !((CodeHighlighting.LockedSpannableString) highlighted).ready) {
+                    return plainText;
+                }
+                highlightedText = highlighted.subSequence(start, end);
+            }
+            return highlightedText;
+        }
+    }
+
+    public static final class HighlightSource {
+        final String text;
+        final String language;
+        final PreformattedScrollView.Group scrollGroup = new PreformattedScrollView.Group();
+        private SpannableString highlighted;
+
+        public HighlightSource(String text, String language) {
+            this.text = text;
+            this.language = language;
+        }
+
+        public SpannableString getHighlighted() {
+            if (highlighted == null) {
+                highlighted = CodeHighlighting.getHighlighted(text, language);
+            }
+            return highlighted;
         }
     }
 

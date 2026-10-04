@@ -62,7 +62,6 @@ import org.telegram.messenger.utils.DrawableUtils;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -1287,25 +1286,15 @@ public abstract class AiResponseAlert extends BottomSheet implements Notificatio
             if (client.isGenerating()) {
                 return;
             }
+            ItemOptions options = ItemOptions.makeOptions(containerView, resourcesProvider, modelSelector, false, false, true)
+                    .setDrawScrim(false)
+                    .setDimAlpha(0)
+                    .setMaxHeight(AndroidUtilities.dp(336))
+                    .setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)
+                    .translate(LocaleController.isRTL ? AndroidUtilities.dp(8) : -AndroidUtilities.dp(8), 0);
             ArrayList<Service> services = availableServices();
-            ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext()) {
-                @Override
-                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    if (services.size() >= 6) {
-                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(336), MeasureSpec.EXACTLY));
-                    } else {
-                        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                    }
-                }
-            };
-            Drawable background = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert).mutate();
-            background.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-            popupLayout.setBackground(background);
-
-            Runnable[] dismissPopup = new Runnable[1];
-            for (int i = 0; i < services.size(); i++) {
-                Service service = services.get(i);
-                ActionBarMenuSubItem item = new ActionBarMenuSubItem(getContext(), 2, i == 0, i == services.size() - 1, resourcesProvider);
+            for (Service service : services) {
+                ActionBarMenuSubItem item = new ActionBarMenuSubItem(getContext(), 2, false, false, resourcesProvider);
                 item.setText(service.getModel());
                 item.setSubtext(service.isOnDevice() ? LocaleController.getString(R.string.AIOnDevice) : service.getUrl());
                 item.subtextView.setPadding(0, 0, service.isSelected() ? AndroidUtilities.dp(34) : 0, 0);
@@ -1313,9 +1302,7 @@ public abstract class AiResponseAlert extends BottomSheet implements Notificatio
                 item.setItemHeight(56);
                 item.setChecked(service.isSelected());
                 item.setOnClickListener(v -> {
-                    if (dismissPopup[0] != null) {
-                        dismissPopup[0].run();
-                    }
+                    options.dismiss();
                     if (service.isSelected()) {
                         return;
                     }
@@ -1325,32 +1312,9 @@ public abstract class AiResponseAlert extends BottomSheet implements Notificatio
                     showLoadingView();
                     generate();
                 });
-                popupLayout.addView(item);
+                options.add(item);
             }
-
-            ActionBarPopupWindow popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-            dismissPopup[0] = popupWindow::dismiss;
-            popupWindow.setPauseNotifications(true);
-            popupWindow.setDismissAnimationDuration(220);
-            popupWindow.setOutsideTouchable(true);
-            popupWindow.setClippingEnabled(true);
-            popupWindow.setAnimationStyle(R.style.PopupContextAnimation);
-            popupWindow.setFocusable(true);
-
-            int[] location = new int[2];
-            modelSelector.getLocationInWindow(location);
-            popupLayout.measure(
-                    MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.AT_MOST),
-                    MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST)
-            );
-            int popupHeight = popupLayout.getMeasuredHeight();
-            int y;
-            if (location[1] > AndroidUtilities.displaySize.y * 0.9f - popupHeight) {
-                y = location[1] - popupHeight + AndroidUtilities.dp(8);
-            } else {
-                y = location[1] + modelSelector.getMeasuredHeight() - AndroidUtilities.dp(8);
-            }
-            popupWindow.showAtLocation(containerView, Gravity.LEFT | Gravity.TOP, location[0] - AndroidUtilities.dp(8), y);
+            options.show();
         }
 
         public void openRoleSelect() {

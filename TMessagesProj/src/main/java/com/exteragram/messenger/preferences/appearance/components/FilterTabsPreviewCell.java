@@ -8,6 +8,7 @@ import android.view.MotionEvent;
 import android.widget.FrameLayout;
 
 import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.TabCounterMode;
 import com.exteragram.messenger.preferences.components.CustomPreferenceCell;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -69,10 +70,10 @@ public class FilterTabsPreviewCell extends FrameLayout implements CustomPreferen
 
             @Override
             public int getTabCounter(int tabId) {
-                if (ExteraConfig.getTabCounter()) {
-                    return idsWithCounters.computeIfAbsent(tabId, id -> 0);
+                if (ExteraConfig.getTabCounterMode() == TabCounterMode.HIDDEN) {
+                    return 0;
                 }
-                return 0;
+                return idsWithCounters.computeIfAbsent(tabId, id -> 0);
             }
 
             @Override

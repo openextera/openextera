@@ -386,7 +386,14 @@ public class LiteMode {
     public static class BatteryReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            lastBatteryLevelChecked = 0;
+            int level = intent.getIntExtra("level", -1);
+            int scale = intent.getIntExtra("scale", -1);
+            if (level >= 0 && scale > 0) {
+                lastBatteryLevelCached = level * 100 / scale;
+                lastBatteryLevelChecked = System.currentTimeMillis();
+            } else {
+                lastBatteryLevelChecked = 0;
+            }
             getValue();
         }
     }

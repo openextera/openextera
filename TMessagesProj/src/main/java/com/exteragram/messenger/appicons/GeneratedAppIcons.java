@@ -20,7 +20,7 @@ public final class GeneratedAppIcons {
             AppIcon.of("avatar", "com.exteragram.messenger.AvatarIcon", "always", 0, "Avatar", 0, null, 0, "cIick_cIack", null, R.mipmap.ic_launcher_avatar_background, false, R.mipmap.ic_launcher_avatar_foreground, R.drawable.ic_monochrome),
             AppIcon.of("candy", "com.exteragram.messenger.CandyIcon", "always", 0, "Candy", 0, null, 0, "impulz3", null, R.mipmap.ic_launcher_candy_background, false, R.mipmap.ic_launcher_candy_foreground, R.drawable.ic_monochrome_candy),
             AppIcon.of("guitar", "com.exteragram.messenger.GuitarIcon", "always", 0, "Guitar", 0, null, 0, "nekto_nkt", null, R.mipmap.ic_launcher_guitar_background, false, R.mipmap.ic_launcher_guitar_foreground, R.drawable.ic_monochrome),
-            AppIcon.of("sus", "com.exteragram.messenger.SusIcon", "always", R.string.AppIconSus, null, R.string.AppIconSusInfo, null, 0, "exteraGram", null, R.color.ic_background_sus, true, R.mipmap.ic_launcher_sus_foreground, 0),
+            AppIcon.of("sus", "com.exteragram.messenger.SusIcon", "always", R.string.AppIconSus, null, 0, null, 0, "MilesBlooper", null, R.color.ic_background_sus, true, R.mipmap.ic_launcher_sus_foreground, R.drawable.ic_monochrome),
             AppIcon.of("frog", "com.exteragram.messenger.FrogIcon", "always", 0, "Frog", 0, null, 0, "cIick_cIack", null, R.mipmap.ic_launcher_frog_background, false, R.mipmap.ic_launcher_frog_foreground, R.drawable.ic_monochrome),
             AppIcon.of("hamster", "com.exteragram.messenger.HamsterIcon", "always", 0, "Hamster", 0, null, 0, "whatwherewhywhen", null, R.mipmap.ic_launcher_hamster_background, false, R.mipmap.ic_launcher_hamster_foreground, R.drawable.ic_monochrome),
             AppIcon.of("sponge", "com.exteragram.messenger.SpongeIcon", "always", 0, "Sponge", 0, null, 0, "nneeuurr", null, R.mipmap.ic_launcher_sponge_background, false, R.mipmap.ic_launcher_sponge_foreground, R.drawable.ic_monochrome),
@@ -41,7 +41,7 @@ public final class GeneratedAppIcons {
             AppIcon.of("aurora", "com.exteragram.messenger.AuroraIcon", "always", R.string.AppIconAurora, null, R.string.AppIconAuroraInfo, null, 0, "exteraGram", null, R.mipmap.ic_launcher_aurora_background, false, R.mipmap.ic_launcher_aurora_foreground, R.drawable.ic_monochrome),
             AppIcon.of("osu", "com.exteragram.messenger.OsuIcon", "always", 0, "osu!", 0, null, 0, "ataeshi", null, R.mipmap.ic_launcher_osu_background, false, R.mipmap.ic_launcher_osu_foreground, R.drawable.ic_monochrome),
             AppIcon.of("google", "com.exteragram.messenger.GoogleIcon", "always", R.string.AppIconGoogle, null, R.string.AppIconGoogleInfo, null, 0, "exteraGram", null, R.color.white, true, R.mipmap.ic_launcher_google_foreground, R.drawable.ic_monochrome_google),
-            AppIcon.of("google26", "com.exteragram.messenger.Google26Icon", "always", 0, "Google ’26", 0, null, 0, "slucket", null, R.color.white, true, R.mipmap.ic_launcher_google26_foreground, R.drawable.ic_monochrome)
+            AppIcon.of("google26", "com.exteragram.messenger.Google26Icon", "always", 0, "Google ’26", 0, null, 0, "Slucket", null, R.color.white, true, R.mipmap.ic_launcher_google26_foreground, R.drawable.ic_monochrome)
         };
     }
 }

@@ -11,7 +11,6 @@ import org.telegram.ui.Components.UItem;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
 public final class SwitchGroup {
@@ -116,7 +115,7 @@ public final class SwitchGroup {
 
     public void fill(ArrayList<UItem> items) {
         int checkedCount = count(true);
-        UItem item = UItem.asExteraExpandableSwitch(id, title(), String.format(Locale.US, "%d/%d", checkedCount, count(false)), this::onSwitchClick)
+        UItem item = UItem.asExteraExpandableSwitch(id, title(), String.format("%d/%d", checkedCount, count(false)), this::onSwitchClick)
                 .setChecked(checkedCount > 0)
                 .setCollapsed(!expanded);
         if (searchable) {
@@ -137,8 +136,9 @@ public final class SwitchGroup {
 
     public void onClick(UItem item) {
         if (item.id == id) {
-            expanded = !expanded;
-            item.setCollapsed(expanded);
+            boolean wasExpanded = expanded;
+            expanded = !wasExpanded;
+            item.setCollapsed(wasExpanded);
             fragment.listView.adapter.update(true);
             return;
         }

@@ -5,9 +5,10 @@ import com.exteragram.messenger.adblock.interop.AdBlock;
 import com.exteragram.messenger.adblock.interop.NativeAdBlock;
 import com.exteragram.messenger.utils.network.RemoteUtils;
 
-import org.telegram.messenger.FileLog;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DispatchQueue;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
 
 public abstract class AdBlockManager {
 
@@ -20,54 +21,102 @@ public abstract class AdBlockManager {
             "https://filters.adtidy.org/extension/ublock/filters/11.txt",
             "https://filters.adtidy.org/extension/ublock/filters/2_without_easylist.txt",
             "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easylist.txt",
+            "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt",
             "https://cdn.jsdelivr.net/gh/dimisa-RUAdList/RUAdListCDN@main/lists/ruadlist.ubo.min.txt"
     };
 
-    public static void initialize() {
-        if (!RemoteUtils.getBooleanConfigValue("use_adblock", false) || !ExteraConfig.getEnableAdBlock() || !NativeAdBlock.loadLibraries()) {
-            return;
-        }
-        if (ScriptletsManager.getInstance().isDownloaded()) {
-            continueInitialize();
-            return;
-        }
-        ScriptletsManager.getInstance().download(new ScriptletsManager.DownloadCallback() {
-            @Override
-            public void onProgress(int downloaded, int total) {
-                FileLog.d("scriptlet download progress: " + downloaded + "/" + total);
-                if (downloaded == total) {
-                    continueInitialize();
-                }
-            }
+    private static final long PRELOAD_DELAY = 10000;
 
-            @Override
-            public void onError() {
-                FileLog.e("unable to download all scriptlets");
-                continueInitialize();
+    private static boolean loading;
+    private static DispatchQueue queue;
+    private static final ArrayList<Runnable> readyCallbacks = new ArrayList<>();
+
+    private static synchronized DispatchQueue getQueue() {
+        if (queue == null) {
+            queue = new DispatchQueue("AdBlockManager");
+        }
+        return queue;
+    }
+
+    public static boolean isAvailable() {
+        return RemoteUtils.getBooleanConfigValue("use_adblock", false) && !NativeAdBlock.isLoadFailed();
+    }
+
+    public static boolean isActive() {
+        return ExteraConfig.getEnableAdBlock() && AdBlock.isReady();
+    }
+
+    public static void initialize() {
+        if (ExteraConfig.getEnableAdBlock()) {
+            getQueue().postRunnable(() -> load(null));
+        }
+    }
+
+    public static void preload() {
+        if (ExteraConfig.getEnableAdBlock()) {
+            getQueue().postRunnable(() -> load(null), PRELOAD_DELAY);
+        }
+    }
+
+    public static void setEnabled(boolean enabled, Runnable onReady) {
+        ExteraConfig.setEnableAdBlock(enabled);
+        getQueue().postRunnable(() -> {
+            if (enabled) {
+                load(onReady);
+            } else {
+                readyCallbacks.clear();
+                AdBlock.destroy();
             }
         });
     }
 
-    private static void continueInitialize() {
-        if (SubscriptionsManager.getInstance().getSubscriptions().isEmpty()) {
-            addDefaultFilters();
+    private static void load(Runnable onReady) {
+        if (!ExteraConfig.getEnableAdBlock()) {
+            return;
+        }
+        if (AdBlock.isReady()) {
+            if (onReady != null) {
+                AndroidUtilities.runOnUIThread(onReady);
+            }
+            return;
+        }
+        if (!RemoteUtils.getBooleanConfigValue("use_adblock", false) || !NativeAdBlock.loadLibraries()) {
+            return;
+        }
+        if (onReady != null) {
+            readyCallbacks.add(onReady);
+        }
+        if (loading) {
+            return;
+        }
+        loading = true;
+        ScriptletsManager scriptletsManager = ScriptletsManager.getInstance();
+        if (!scriptletsManager.isDownloaded()) {
+            scriptletsManager.download(success -> getQueue().postRunnable(AdBlock::applyResources));
+        }
+        SubscriptionsManager subscriptionsManager = SubscriptionsManager.getInstance();
+        if (subscriptionsManager.hasFilters()) {
+            build();
+            subscriptionsManager.update(FILTERS, null);
         } else {
-            SubscriptionsManager.getInstance().initialize(AdBlock::reload);
+            subscriptionsManager.update(FILTERS, () -> getQueue().postRunnable(AdBlockManager::build));
         }
     }
 
-    private static void addDefaultFilters() {
-        AtomicInteger completed = new AtomicInteger(0);
-        for (String url : FILTERS) {
-            SubscriptionsManager.getInstance().subscribe(url, success -> {
-                if (success) {
-                    FileLog.d("filter loaded: " + url);
-                } else {
-                    FileLog.e("filter failed to load: " + url);
-                }
-                if (completed.incrementAndGet() == FILTERS.length) {
-                    FileLog.d("all filters loaded");
-                    AdBlock.reload();
+    private static void build() {
+        loading = false;
+        if (ExteraConfig.getEnableAdBlock()) {
+            AdBlock.build();
+        }
+        if (readyCallbacks.isEmpty()) {
+            return;
+        }
+        ArrayList<Runnable> callbacks = new ArrayList<>(readyCallbacks);
+        readyCallbacks.clear();
+        if (AdBlock.isReady()) {
+            AndroidUtilities.runOnUIThread(() -> {
+                for (int i = 0; i < callbacks.size(); i++) {
+                    callbacks.get(i).run();
                 }
             });
         }

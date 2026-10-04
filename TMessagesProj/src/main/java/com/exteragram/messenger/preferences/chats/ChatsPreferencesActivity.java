@@ -101,7 +101,6 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
         GENERATE,
         DETAILS,
         GROUP_MESSAGE_MENU,
-        MESSAGE_REACTIONS,
         GROUPS,
         CHANNELS,
         PRIVATE_CHATS,
@@ -128,7 +127,8 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
         PAUSE_ON_MINIMIZE,
         PAUSE_ON_MINIMIZE_VIDEO,
         PAUSE_ON_MINIMIZE_VOICE,
-        PAUSE_ON_MINIMIZE_ROUND;
+        PAUSE_ON_MINIMIZE_ROUND,
+        SHOW_FORWARDS_COUNT;
 
         public int getId() {
             return ordinal() + 1;
@@ -272,7 +272,9 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
             @Override
             public void updateStickerPreview() {
                 parentLayout.rebuildFragments(0);
-                stickerSizeCell.invalidate();
+                if (stickerSizeCell != null) {
+                    stickerSizeCell.invalidate();
+                }
             }
         };
         doubleTapCell = new DoubleTapCell(context);
@@ -291,8 +293,12 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
             animator.addUpdateListener(a -> {
                 float value = (float) a.getAnimatedValue();
                 ExteraConfig.setStickerSize(value);
-                stickerSizeCell.seekBar.setProgress(value);
-                stickerSizeCell.invalidate();
+                if (stickerSizeCell != null && stickerSizeCell.seekBar != null) {
+                    stickerSizeCell.seekBar.setProgress(value);
+                }
+                if (stickerSizeCell != null) {
+                    stickerSizeCell.invalidate();
+                }
             });
             animator.start();
         });
@@ -377,6 +383,7 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
         items.add(UItem.asCheck(ChatsItem.REMOVE_MESSAGE_TAIL.getId(), LocaleController.getString(R.string.RemoveMessageTail)).setChecked(ExteraConfig.getRemoveMessageTail()).setSearchable(this).setLinkAlias("removeMessageTail", this));
         items.add(UItem.asCheck(ChatsItem.REPLACE_EDITED_WITH_ICON.getId(), LocaleController.formatString(R.string.ReplaceEditedWithIcon, LocaleController.getString(R.string.EditedMessage))).setChecked(ExteraConfig.getReplaceEditedWithIcon()).setSearchable(this).setLinkAlias("replaceEditedWithIcon", this));
         items.add(UItem.asCheck(ChatsItem.SHOW_ONLINE_STATUS.getId(), LocaleController.getString(R.string.ShowOnlineStatus)).setChecked(ExteraConfig.getShowOnlineStatus()).setSearchable(this).setLinkAlias("showOnlineStatus", this));
+        items.add(UItem.asCheck(ChatsItem.SHOW_FORWARDS_COUNT.getId(), LocaleController.getString(R.string.ShowForwardsCount)).setChecked(ExteraConfig.getShowForwardsCount()).setSearchable(this).setLinkAlias("showForwardsCount", this));
         items.add(UItem.asCheck(ChatsItem.HIDE_SHARE_BUTTON.getId(), LocaleController.formatString(R.string.HideShareButton, LocaleController.getString(R.string.ShareFile))).setChecked(ExteraConfig.getHideShareButton()).setSearchable(this).setLinkAlias("hideShareButton", this));
         items.add(UItem.asCheck(ChatsItem.SHOW_RESULTS_BEFORE_VOTING.getId(), LocaleController.getString(R.string.ShowPollResultsBeforeVoting), LocaleController.getString(R.string.ShowPollResultsBeforeVotingHint), true).setChecked(ExteraConfig.getShowResultsBeforeVoting()).setSearchable(this).setLinkAlias("showResultsBeforeVoting", this));
         messageMenu.fill(items);
@@ -432,7 +439,9 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
             case STICKER_TIME:
                 showListDialog(item, stickerTimeModes, LocaleController.getString(R.string.StickerTimeMode), ExteraConfig.getStickerTimeMode().ordinal(), which -> {
                     ExteraConfig.setStickerTimeMode(StickerTimeMode.getEntries().get(which));
-                    stickerSizeCell.invalidate();
+                    if (stickerSizeCell != null) {
+                        stickerSizeCell.invalidate();
+                    }
                     parentLayout.rebuildFragments(0);
                 });
                 break;
@@ -514,17 +523,30 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
                 break;
             case REPLACE_EDITED_WITH_ICON:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setReplaceEditedWithIcon);
-                messagesPreviewCell.refreshMessages();
+                if (messagesPreviewCell != null) {
+                    messagesPreviewCell.refreshMessages();
+                }
                 break;
             case SHOW_ONLINE_STATUS:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setShowOnlineStatus);
-                messagesPreviewCell.refreshMessages();
+                if (messagesPreviewCell != null) {
+                    messagesPreviewCell.refreshMessages();
+                }
+                break;
+            case SHOW_FORWARDS_COUNT:
+                toggleBooleanSettingAndRefresh(item, ExteraConfig::setShowForwardsCount);
+                if (messagesPreviewCell != null) {
+                    messagesPreviewCell.refreshMessages();
+                }
+                parentLayout.rebuildFragments(AndroidUtilities.isTablet() ? INavigationLayout.REBUILD_FLAG_REBUILD_LAST : 0);
                 break;
             case REMOVE_MESSAGE_TAIL:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setRemoveMessageTail);
                 Theme.chat_msgInDrawable = null;
                 Theme.createChatResources(getParentActivity(), false);
-                messagesPreviewCell.refreshMessages();
+                if (messagesPreviewCell != null) {
+                    messagesPreviewCell.refreshMessages();
+                }
                 break;
             case SHOW_RESULTS_BEFORE_VOTING:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setShowResultsBeforeVoting);
@@ -532,7 +554,9 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
                 break;
             case HIDE_SHARE_BUTTON:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setHideShareButton);
-                messagesPreviewCell.refreshMessages();
+                if (messagesPreviewCell != null) {
+                    messagesPreviewCell.refreshMessages();
+                }
                 break;
             case MESSAGE_MENU:
             case COPY_PHOTO:
@@ -610,11 +634,16 @@ public class ChatsPreferencesActivity extends BasePreferencesActivity {
     }
 
     private void updateReplySettings() {
-        stickerSizeCell.invalidate();
+        if (stickerSizeCell != null) {
+            stickerSizeCell.invalidate();
+        }
         parentLayout.rebuildFragments(0);
     }
 
     private void handleDoubleTapActionButtonClick(boolean outgoing) {
+        if (doubleTapCell == null) {
+            return;
+        }
         doubleTapCell.updateIcons(outgoing ? 2 : 1, true);
         doubleTapCell.invalidate();
     }

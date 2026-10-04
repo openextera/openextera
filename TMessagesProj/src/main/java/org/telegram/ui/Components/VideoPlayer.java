@@ -1418,6 +1418,19 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         return player != null;
     }
 
+    public void releasePlayerDeferred(long delay) {
+        final ExoPlayer exoPlayer = player;
+        if (exoPlayer != null) {
+            player = null;
+            exoPlayer.removeAnalyticsListener(this);
+            exoPlayer.removeListener(this);
+            exoPlayer.removeVideoListener(this);
+            exoPlayer.stop();
+            AndroidUtilities.runOnUIThread(exoPlayer::release, delay);
+        }
+        releasePlayer(true);
+    }
+
     public void releasePlayer(boolean async) {
         activePlayers.remove(playerId);
         if (player != null) {

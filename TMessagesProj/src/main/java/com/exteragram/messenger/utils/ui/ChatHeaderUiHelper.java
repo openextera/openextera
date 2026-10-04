@@ -8,8 +8,10 @@ import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.debug.DebugConfig;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessageObject;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatActivityTopPanelLayout;
 import org.telegram.ui.Components.ChatAvatarContainer;
@@ -81,6 +83,40 @@ public abstract class ChatHeaderUiHelper {
             fadeView.setFadeZoneTop(topFadeZone);
         }
         fadeView.setFadeHeightTop(getChatTopFadeHeight(material3));
+    }
+
+    public static boolean scrimReachesTopFade(ChatActivityFadeView fadeView, ViewGroup listView, View scrimView, MessageObject.GroupedMessages scrimGroup, float scrimTop) {
+        float fadeZoneTop = fadeView.getFadeZoneTop();
+        if (scrimTop >= fadeZoneTop) {
+            return false;
+        }
+        for (int i = 0, count = listView.getChildCount(); i < count; i++) {
+            View child = listView.getChildAt(i);
+            ChatMessageCell cell = child instanceof ChatMessageCell ? (ChatMessageCell) child : null;
+            if (child != scrimView && (scrimGroup == null || cell == null || cell.getCurrentMessagesGroup() != scrimGroup)) {
+                continue;
+            }
+            if (child.getAlpha() == 0f) {
+                continue;
+            }
+            if ((cell != null && cell.getTransitionParams().animateBackgroundBoundsInner) || listView.getY() + child.getY() < fadeZoneTop) {
+                return true;
+            }
+        }
+        if (scrimGroup != null) {
+            MessageObject.GroupedMessages.TransitionParams transitionParams = scrimGroup.transitionParams;
+            ChatMessageCell cell = transitionParams.cell;
+            if (cell != null) {
+                float top = transitionParams.top + transitionParams.offsetTop;
+                if (!transitionParams.backgroundChangeBounds) {
+                    top += cell.getTranslationY();
+                }
+                if (listView.getY() + top < fadeZoneTop) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static int getScaledChatTopFadeZone(ActionBar actionBar, int fadeZone, boolean material3) {

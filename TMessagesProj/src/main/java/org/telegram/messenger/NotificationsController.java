@@ -44,6 +44,7 @@ import android.media.SoundPool;
 import android.net.Uri;
 import android.os.Build;
 
+import com.exteragram.messenger.notifications.AccountNotifications;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.icons.IconManager;
 import com.exteragram.messenger.utils.AppUtils;
@@ -1731,7 +1732,7 @@ public class NotificationsController extends BaseController implements Notificat
             if (!UserConfig.getInstance(a).isClientActivated()) {
                 continue;
             }
-            if (!SharedConfig.showNotificationsForAllAccounts && UserConfig.selectedAccount != a) {
+            if (!AccountNotifications.shouldShow(a)) {
                 continue;
             }
 
@@ -4108,7 +4109,7 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     private void showOrUpdateNotification(boolean notifyAboutLast) {
-        if (!getUserConfig().isClientActivated() || pushMessages.isEmpty() && storyPushMessages.isEmpty() || !SharedConfig.showNotificationsForAllAccounts && currentAccount != UserConfig.selectedAccount) {
+        if (!getUserConfig().isClientActivated() || pushMessages.isEmpty() && storyPushMessages.isEmpty() || !AccountNotifications.shouldShow(currentAccount)) {
             dismissNotification();
             return;
         }

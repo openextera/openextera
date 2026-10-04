@@ -7,7 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.RecordingCanvas;
 import android.graphics.RectF;
 import android.os.Build;
-import android.text.TextUtils;
+import android.os.Parcelable;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -61,6 +61,7 @@ public abstract class BasePreferencesActivity extends BaseFragment {
 
     private float headerFadeAlpha;
     private ValueAnimator headerFadeAnimator;
+    private Parcelable recyclerViewState;
     private boolean headerFadeShown;
 
     private IBlur3Capture iBlur3Capture;
@@ -152,6 +153,10 @@ public abstract class BasePreferencesActivity extends BaseFragment {
         listView.setClipToPadding(false);
         listView.setPadding(0, getListTopPadding(AndroidUtilities.statusBarHeight), 0, 0);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        if (recyclerViewState != null) {
+            layoutManager.onRestoreInstanceState(recyclerViewState);
+            recyclerViewState = null;
+        }
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -268,7 +273,17 @@ public abstract class BasePreferencesActivity extends BaseFragment {
 
     private void setHeaderFadeAlpha(float alpha) {
         headerFadeAlpha = alpha;
-        fadeView.setFadeTopAlpha(Math.round(alpha * 255));
+        if (fadeView != null) {
+            fadeView.setFadeTopAlpha(Math.round(alpha * 255));
+        }
+    }
+
+    @Override
+    public void clearViews() {
+        if (fragmentView != null && layoutManager != null) {
+            recyclerViewState = layoutManager.onSaveInstanceState();
+        }
+        super.clearViews();
     }
 
     @Override
@@ -366,7 +381,7 @@ public abstract class BasePreferencesActivity extends BaseFragment {
 
     public boolean onLongClick(UItem item, View view, int position, float x, float y) {
         String link = SettingsRegistry.getInstance().getFirstSettingLink(getClass(), item);
-        if (TextUtils.isEmpty(link)) {
+        if (link == null) {
             return false;
         }
         showCopyLinkOptions(view, link);
@@ -374,14 +389,15 @@ public abstract class BasePreferencesActivity extends BaseFragment {
     }
 
     public void showCopyLinkOptions(View view, String link) {
-        ItemOptions.makeOptions(this, view)
+        ItemOptions options = ItemOptions.makeOptions(this, view);
+        options
                 .setLongPressSelectionEnabled(false)
                 .add(R.drawable.msg_copy, LocaleController.getString(R.string.CopyLink), () -> {
                     if (AndroidUtilities.addToClipboard(link)) {
                         BulletinFactory.of(this).createCopyBulletin(LocaleController.getString(R.string.LinkCopied)).show();
                     }
                 })
-                .add(R.drawable.msg_share, LocaleController.getString(R.string.ShareLink), () -> showDialog(new ShareAlert(getContext(), null, link, false, link, false, getResourceProvider()) {
+                .add(R.drawable.msg_share, LocaleController.getString(R.string.ShareLink), () -> showDialog(new ShareAlert(options.getContext(), null, link, false, link, false, getResourceProvider()) {
                     @Override
                     protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
                         if (!showToast) {

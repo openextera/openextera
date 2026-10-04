@@ -115,6 +115,10 @@ public class DispatchQueue extends Thread {
         }
     }
 
+    public void onLooperPrepared() {
+
+    }
+
     public void handleMessage(Message inputMessage) {
 
     }
@@ -138,6 +142,7 @@ public class DispatchQueue extends Thread {
         if (threadPriority != THREAD_PRIORITY_DEFAULT) {
             Process.setThreadPriority(threadPriority);
         }
+        onLooperPrepared();
         Looper.loop();
     }
 

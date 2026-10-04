@@ -136,7 +136,6 @@ public class CachePill extends BasePill implements NotificationCenter.Notificati
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        onUpdateData(PillStackConfig.checkAndClearPendingUpdate(getPillId()));
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pillStackSettingsChanged);
     }
 

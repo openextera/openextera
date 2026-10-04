@@ -111,9 +111,6 @@ public abstract class RatePill extends BasePill implements NotificationCenter.No
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (PillStackConfig.checkAndClearPendingUpdate(getPillId()) || cache.cachedPrice.get() == null || isRefreshDue()) {
-            onUpdateData(true);
-        }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pillStackSettingsChanged);
     }
 
@@ -276,7 +273,7 @@ public abstract class RatePill extends BasePill implements NotificationCenter.No
     @Override
     public void updateLoadingColors() {
         if (loadingDrawable != null) {
-            loadingDrawable.setColors(Theme.multAlpha(Color.WHITE, 0.1f), Theme.multAlpha(Color.WHITE, 0.3f));
+            loadingDrawable.setColors(Theme.multAlpha(Color.WHITE, 0.1f), Theme.multAlpha(Color.WHITE, 0.3f), Theme.multAlpha(Color.WHITE, 0.2f), Theme.multAlpha(Color.WHITE, 0.45f));
         }
     }
 }

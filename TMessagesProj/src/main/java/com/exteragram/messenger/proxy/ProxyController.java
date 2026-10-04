@@ -473,11 +473,8 @@ public final class ProxyController {
         proxyNames.clear();
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
-        String proxyAddress = preferences.getString("proxy_ip", "");
-        String proxyUser = preferences.getString("proxy_user", "");
-        String proxyPassword = preferences.getString("proxy_pass", "");
-        String proxySecret = preferences.getString("proxy_secret", "");
-        int proxyPort = preferences.getInt("proxy_port", 1080);
+        ProxySettings savedSettings = ProxySettings.fromSharedPreferences(preferences);
+        boolean savedValid = savedSettings.isValid();
 
         boolean needSave = false;
         String list = preferences.getString("proxy_list", null);
@@ -500,7 +497,7 @@ public final class ProxyController {
                                     .setSecret(info.settings.getSecret())
                                     .build();
                         }
-                        addLoadedProxy(info, proxyAddress, proxyPort, proxyUser, proxyPassword);
+                        addLoadedProxy(info, savedSettings, savedValid);
                     }
                 } else if (version == SCHEMA_WITH_NAMES) {
                     count = data.readInt32(false);
@@ -509,7 +506,7 @@ public final class ProxyController {
                         SharedConfig.ProxyInfo info = readProxyInfo(data);
                         info.ping = data.readInt64(false);
                         info.availableCheckTime = SharedConfig.ProxyInfo.normalizeAvailableCheckTime(data.readInt64(false));
-                        addLoadedProxy(info, proxyAddress, proxyPort, proxyUser, proxyPassword);
+                        addLoadedProxy(info, savedSettings, savedValid);
                         String key = getProxyKey(info);
                         String normalizedName = normalizeName(name);
                         if (!TextUtils.isEmpty(key) && !TextUtils.isEmpty(normalizedName)) {
@@ -523,20 +520,20 @@ public final class ProxyController {
                         SharedConfig.ProxyInfo info = readProxyInfo(data);
                         info.ping = data.readInt64(false);
                         info.availableCheckTime = SharedConfig.ProxyInfo.normalizeAvailableCheckTime(data.readInt64(false));
-                        addLoadedProxy(info, proxyAddress, proxyPort, proxyUser, proxyPassword);
+                        addLoadedProxy(info, savedSettings, savedValid);
                     }
                 } else {
                     FileLog.e("Unknown proxy schema version: " + version);
                 }
             } else {
                 for (int a = 0; a < count; a++) {
-                    addLoadedProxy(readProxyInfo(data), proxyAddress, proxyPort, proxyUser, proxyPassword);
+                    addLoadedProxy(readProxyInfo(data), savedSettings, savedValid);
                 }
             }
             data.cleanup();
         }
-        if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
-            currentProxy = new SharedConfig.ProxyInfo(buildSettings(proxyAddress, proxyPort, proxyUser, proxyPassword, proxySecret));
+        if (currentProxy == null && savedValid) {
+            currentProxy = new SharedConfig.ProxyInfo(savedSettings);
             proxyList.add(0, currentProxy);
         }
 
@@ -576,13 +573,9 @@ public final class ProxyController {
         syncProxyList();
     }
 
-    private void addLoadedProxy(SharedConfig.ProxyInfo info, String address, int port, String user, String password) {
+    private void addLoadedProxy(SharedConfig.ProxyInfo info, ProxySettings savedSettings, boolean savedValid) {
         proxyList.add(0, info);
-        if (currentProxy == null && !TextUtils.isEmpty(address)
-                && address.equals(info.settings.getAddress())
-                && port == info.settings.getPort()
-                && user.equals(info.settings.getUser())
-                && password.equals(info.settings.getPassword())) {
+        if (currentProxy == null && savedValid && savedSettings.equals(info.settings)) {
             currentProxy = info;
         }
     }

@@ -218,7 +218,7 @@ public class WeatherSettingsActivity extends BasePreferencesActivity {
                 break;
             case ID_ENABLE_LOCATION:
                 Weather.getUserLocation(true, location -> {
-                    if (location != null && listView != null && listView.adapter != null) {
+                    if (location != null && fragmentView != null && listView.adapter != null) {
                         listView.adapter.update(true);
                     }
                 });
@@ -246,11 +246,12 @@ public class WeatherSettingsActivity extends BasePreferencesActivity {
     private void updateLocationSetting(boolean useCurrentLocation) {
         PillStackConfig.setUseCurrentLocation(useCurrentLocation);
         PillStackConfig.notifySettingsChanged(PillType.WEATHER.getId());
-        if (listView == null || listView.adapter == null) {
-            return;
+        if (fragmentView != null) {
+            updateMapPreview();
+            if (listView.adapter != null) {
+                listView.adapter.update(true);
+            }
         }
-        updateMapPreview();
-        listView.adapter.update(true);
     }
 
     private void openMapPicker() {

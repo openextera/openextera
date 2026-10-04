@@ -3522,6 +3522,17 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                             outRect.top += dp(2);
                         }
                         if (last) outRect.bottom = padding;
+
+                        Rect saved = (Rect) view.getTag(R.id.section_offsets_tag);
+                        if (saved == null) {
+                            view.setTag(R.id.section_offsets_tag, saved = new Rect());
+                        }
+                        saved.set(outRect);
+                    } else if (viewHolder.isRemoved()) {
+                        final Object tag = view.getTag(R.id.section_offsets_tag);
+                        if (tag instanceof Rect) {
+                            outRect.set((Rect) tag);
+                        }
                     }
                 }
             }

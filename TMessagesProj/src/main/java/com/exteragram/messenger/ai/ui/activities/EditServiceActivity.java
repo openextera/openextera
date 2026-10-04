@@ -53,6 +53,7 @@ public class EditServiceActivity extends BasePreferencesActivity {
             new ServicePreset("Gemini", "https://generativelanguage.googleapis.com/v1beta", "gemini-3.5-flash"),
             new ServicePreset("OpenAI", "https://api.openai.com/v1", "gpt-5.4-mini"),
             new ServicePreset("OpenRouter", "https://openrouter.ai/api/v1", "openai/gpt-5.4-mini"),
+            new ServicePreset("Perplexity", "https://api.perplexity.ai/v1/agent", "perplexity/glm-5.3-flash"),
             new ServicePreset(null, null, null)
     };
 
@@ -389,7 +390,7 @@ public class EditServiceActivity extends BasePreferencesActivity {
         Service service = new Service(getFieldText(urlCell), getFieldText(modelCell), getFieldText(keyCell), reasoningEnabled);
         Service existing = findExistingService(service);
         boolean reasoningChanged = currentService != null && currentService.isReasoningEnabled() != reasoningEnabled;
-        if (existing != null && existing != currentService) {
+        if (existing != null && !Objects.equals(existing, currentService)) {
             if (currentService != null) {
                 BulletinFactory.of(this).createErrorBulletin(LocaleController.getString(R.string.ServiceDuplicate)).show();
             } else {
@@ -668,9 +669,9 @@ public class EditServiceActivity extends BasePreferencesActivity {
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
         AlertDialog dialog = builder.create();
         showDialog(dialog);
-        TextView button = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        View button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (button instanceof TextView) {
+            ((TextView) button).setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 

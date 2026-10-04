@@ -30,6 +30,7 @@ import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 
 import com.exteragram.messenger.feed.FeedController;
+import com.exteragram.messenger.utils.chats.FolderCounters;
 import com.exteragram.messenger.utils.text.LocaleUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -2991,6 +2992,7 @@ public class MessagesStorage extends BaseController {
                     FileLog.d("bots = " + bots[b][0] + ", " + bots[b][1]);
                 }
             }*/
+            FolderCounters.getInstance(currentAccount).update(dialogFilters, usersDict, encUsersDict, encryptedChatsByUsersCount, chatsDict, mutedDialogs, archivedDialogs, dialogsWithMentions);
             for (int a = 0, N = dialogFilters.size(); a < N + 2; a++) {
                 final boolean isFilter = a < N;
                 final boolean isMain = a == N;
@@ -6771,6 +6773,7 @@ public class MessagesStorage extends BaseController {
             mainUnreadCount = pendingMainUnreadCount;
             archiveUnreadCount = pendingArchiveUnreadCount;
         });
+        FolderCounters.getInstance(currentAccount).scheduleRecount();
     }
 
     private boolean isUserCollapsedInCommunity(LongSparseArray<TLRPC.Chat> chatsDict, TLRPC.User user) {
@@ -11561,6 +11564,33 @@ public class MessagesStorage extends BaseController {
             }
             if (onDone != null) {
                 onDone.run();
+            }
+        });
+    }
+
+    public void deleteChannelHistoryWithoutPts(long channelId) {
+        storageQueue.postRunnable(() -> {
+            long dialogId = -channelId;
+            SQLiteCursor cursor = null;
+            try {
+                cursor = database.queryFinalized("SELECT pts FROM dialogs WHERE did = " + dialogId);
+                boolean hasPts = cursor.next() && cursor.intValue(0) != 0;
+                cursor.dispose();
+                cursor = null;
+                if (hasPts) {
+                    return;
+                }
+                database.executeFast("DELETE FROM messages_v2 WHERE uid = " + dialogId).stepThis().dispose();
+                database.executeFast("DELETE FROM messages_holes WHERE uid = " + dialogId).stepThis().dispose();
+                database.executeFast("DELETE FROM media_v4 WHERE uid = " + dialogId).stepThis().dispose();
+                database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + dialogId).stepThis().dispose();
+                database.executeFast("UPDATE media_counts_v2 SET old = 1 WHERE uid = " + dialogId).stepThis().dispose();
+            } catch (Exception e) {
+                checkSQLException(e);
+            } finally {
+                if (cursor != null) {
+                    cursor.dispose();
+                }
             }
         });
     }

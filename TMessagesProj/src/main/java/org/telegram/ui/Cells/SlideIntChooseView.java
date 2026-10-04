@@ -418,5 +418,18 @@ public class SlideIntChooseView extends FrameLayout {
             }
             return getMax() - getMin();
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (!(obj instanceof Options)) return false;
+            Options options = (Options) obj;
+            return style == options.style && min == options.min && max == options.max && betweenSteps == options.betweenSteps && Arrays.equals(steps, options.steps);
+        }
+
+        @Override
+        public int hashCode() {
+            return (((((style * 31 + min) * 31) + max) * 31 + betweenSteps) * 31) + Arrays.hashCode(steps);
+        }
     }
 }

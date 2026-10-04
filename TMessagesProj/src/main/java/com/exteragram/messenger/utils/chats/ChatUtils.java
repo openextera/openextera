@@ -143,7 +143,7 @@ public class ChatUtils {
     }
 
     public static boolean applyChannelPostContent(TLRPC.Message target, TLRPC.Message source) {
-        if (target == null || source == null) {
+        if (target == null || source == null || target.fwd_from == null || target.fwd_from.saved_from_msg_id != source.id || !MessageObject.peersEqual(target.fwd_from.saved_from_peer, source.peer_id)) {
             return false;
         }
         boolean changed = reactionsChanged(target.reactions, source.reactions)

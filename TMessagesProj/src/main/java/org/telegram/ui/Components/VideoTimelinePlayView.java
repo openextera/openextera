@@ -48,6 +48,7 @@ public class VideoTimelinePlayView extends View {
     private float playProgress = 0.5f;
     private float pressDx;
     private boolean isLivePhoto;
+    private int videoPathGeneration;
     private ParcelFileDescriptor fd;
     private MediaMetadataRetriever mediaMetadataRetriever;
     private VideoTimelineViewDelegate delegate;
@@ -306,8 +307,11 @@ public class VideoTimelinePlayView extends View {
 
     public void setVideoPath(String path, long pathOffset, float left, float right, long livePhotoTimestampUs) {
         destroy();
-        mediaMetadataRetriever = new MediaMetadataRetriever();
+        final int generation = ++videoPathGeneration;
         isLivePhoto = pathOffset > 0;
+        videoLength = 0;
+        videoWidth = 0;
+        videoHeight = 0;
         progressLeft = left;
         progressRight = right;
         if (playProgress < progressLeft) {
@@ -315,43 +319,87 @@ public class VideoTimelinePlayView extends View {
         } else if (playProgress > progressRight) {
             playProgress = progressRight;
         }
-        try {
-            if (pathOffset > 0) {
-                final File file = new File(path);
-                fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
-                mediaMetadataRetriever.setDataSource(fd.getFileDescriptor(), pathOffset, file.length() - pathOffset);
-            } else {
-                mediaMetadataRetriever.setDataSource(path);
+        Utilities.globalQueue.postRunnable(() -> {
+            final MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            ParcelFileDescriptor descriptor = null;
+            long length = 0;
+            int width = 0;
+            int height = 0;
+            try {
+                if (pathOffset > 0) {
+                    final File file = new File(path);
+                    descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+                    retriever.setDataSource(descriptor.getFileDescriptor(), pathOffset, file.length() - pathOffset);
+                } else {
+                    retriever.setDataSource(path);
+                }
+                String value;
+                value = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                if (value != null) {
+                    length = Long.parseLong(value);
+                }
+                value = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+                if (value != null) {
+                    width = Integer.parseInt(value);
+                }
+                value = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+                if (value != null) {
+                    height = Integer.parseInt(value);
+                }
+                value = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                if (value != null) {
+                    int orientation = Integer.parseInt(value);
+                    if (orientation == 90 || orientation == 270) {
+                        int temp = width;
+                        width = height;
+                        height = temp;
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
             }
-            String value;
-            value = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-            if (value != null) {
-                videoLength = Long.parseLong(value);
-            }
-            value = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
-            if (value != null) {
-                videoWidth = Integer.parseInt(value);
-            }
-            value = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
-            if (value != null) {
-                videoHeight = Integer.parseInt(value);
-            }
-            value = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
-            if (value != null) {
-                int orientation = Integer.parseInt(value);
-                if (orientation == 90 || orientation == 270) {
-                    int temp = videoWidth;
-                    videoWidth = videoHeight;
-                    videoHeight = temp;
+            final ParcelFileDescriptor finalDescriptor = descriptor;
+            final long finalLength = length;
+            final int finalWidth = width;
+            final int finalHeight = height;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (generation != videoPathGeneration) {
+                    releaseRetriever(retriever, finalDescriptor);
+                    return;
+                }
+                mediaMetadataRetriever = retriever;
+                fd = finalDescriptor;
+                videoLength = finalLength;
+                videoWidth = finalWidth;
+                videoHeight = finalHeight;
+                if (isLivePhoto) {
+                    progressPreview = (float) ((livePhotoTimestampUs / 1000.0) / finalLength);
+                }
+                invalidate();
+            });
+        });
+        invalidate();
+    }
+
+    private static void releaseRetriever(MediaMetadataRetriever retriever, ParcelFileDescriptor descriptor) {
+        Utilities.globalQueue.postRunnable(() -> {
+            synchronized (sync) {
+                try {
+                    if (descriptor != null) {
+                        descriptor.close();
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                try {
+                    if (retriever != null) {
+                        retriever.release();
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
             }
-            if (isLivePhoto) {
-                progressPreview = (float) ((livePhotoTimestampUs / 1000.0) / videoLength);
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        invalidate();
+        });
     }
 
     public long getLength() {
@@ -449,23 +497,11 @@ public class VideoTimelinePlayView extends View {
     }
 
     public void destroy() {
-        synchronized (sync) {
-            try {
-                if (fd != null) {
-                    fd.close();
-                    fd = null;
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            try {
-                if (mediaMetadataRetriever != null) {
-                    mediaMetadataRetriever.release();
-                    mediaMetadataRetriever = null;
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
+        videoPathGeneration++;
+        if (mediaMetadataRetriever != null || fd != null) {
+            releaseRetriever(mediaMetadataRetriever, fd);
+            mediaMetadataRetriever = null;
+            fd = null;
         }
         for (int a = 0; a < frames.size(); a++) {
             BitmapFrame bitmap = frames.get(a);

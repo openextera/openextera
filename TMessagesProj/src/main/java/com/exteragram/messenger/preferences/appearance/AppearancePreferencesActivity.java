@@ -1,13 +1,13 @@
 package com.exteragram.messenger.preferences.appearance;
 
 import android.content.Context;
-import android.os.Parcelable;
 import android.view.View;
 import android.widget.ImageView;
 
 import com.exteragram.messenger.DividerStyle;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.GlassOutlineStyle;
+import com.exteragram.messenger.TabCounterMode;
 import com.exteragram.messenger.TabIconsMode;
 import com.exteragram.messenger.appicons.AppIcon;
 import com.exteragram.messenger.appicons.AppIconController;
@@ -22,6 +22,7 @@ import com.exteragram.messenger.preferences.appearance.components.ChatListPrevie
 import com.exteragram.messenger.preferences.appearance.components.FabShapeCell;
 import com.exteragram.messenger.preferences.appearance.components.FilterTabsPreviewCell;
 import com.exteragram.messenger.preferences.utils.SettingsRegistry;
+import com.exteragram.messenger.utils.chats.FolderCounters;
 import com.exteragram.messenger.utils.network.RemoteUtils;
 import com.exteragram.messenger.utils.text.LocaleUtils;
 
@@ -30,6 +31,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.BulletinFactory;
@@ -53,9 +55,9 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
 
     private CharSequence[] titles;
     private CharSequence[] tabIcons;
+    private CharSequence[] tabCounterModes;
     private CharSequence[] dividerStyles;
     private CharSequence[] glassOutlineStyles;
-    private Parcelable recyclerViewState;
 
     private final SwitchGroup md3Styles = SwitchGroup.of(this, AppearanceItem.MD3_STYLES.getId(), R.string.MaterialDesign3)
             .searchable()
@@ -95,7 +97,6 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
         SECTION_RADIUS,
         SEPARATED_HEADERS,
         DIVIDER_STYLE,
-        TABLET_MODE,
         MD3_STYLES,
         NEW_LOADING_STYLE,
         NEW_SLIDER_STYLE,
@@ -104,8 +105,6 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
         USE_SYSTEM_EMOJI,
         GOOEY_AVATAR_ANIMATION,
         CUSTOM_THEMES,
-        PREDICTIVE_BACK_ANIMATION,
-        SPRING_ANIMATIONS,
         GLASS_OUTLINE_STYLE,
         FORCE_BLUR,
         GLASS_MESSAGE_MENU,
@@ -130,6 +129,11 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
                 LocaleController.getString(R.string.TabTitleStyleTextWithIcons),
                 LocaleController.getString(R.string.TabTitleStyleTextOnly),
                 LocaleController.getString(R.string.TabTitleStyleIconsOnly)
+        };
+        tabCounterModes = new CharSequence[]{
+                LocaleController.getString(R.string.FilterAllChats),
+                LocaleController.getString(R.string.TabCounterUnmuted),
+                LocaleController.getString(R.string.BlurOff)
         };
         dividerStyles = new CharSequence[]{
                 LocaleController.getString(R.string.DividerStyleHidden),
@@ -185,12 +189,12 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
         items.add(UItem.asHeader(LocaleController.getString(R.string.Filters)));
         items.add(UItem.asCustom(AppearanceItem.FOLDERS_PREVIEW.getId(), filterTabsPreviewCell));
         items.add(UItem.asButton(AppearanceItem.TAB_TITLE.getId(), LocaleController.getString(R.string.TabTitleStyle), tabIcons[ExteraConfig.getTabIcons().ordinal()]).setSearchable(this).setLinkAlias("tabTitleStyle", this));
-        items.add(UItem.asCheck(AppearanceItem.TAB_COUNTER.getId(), LocaleController.getString(R.string.TabCounter)).setChecked(ExteraConfig.getTabCounter()).setSearchable(this).setLinkAlias("tabCounter", this));
+        items.add(UItem.asButton(AppearanceItem.TAB_COUNTER.getId(), LocaleController.getString(R.string.TabCounter), tabCounterModes[ExteraConfig.getTabCounterMode().ordinal()]).setSearchable(this).setLinkAlias("tabCounter", this));
         items.add(UItem.asCheck(AppearanceItem.HIDE_ALL_CHATS.getId(), LocaleController.formatString(R.string.HideAllChats, LocaleController.getString(R.string.FilterAllChats))).setChecked(ExteraConfig.getHideAllChats()).setSearchable(this).setLinkAlias("hideAllChats", this));
         items.add(UItem.asShadow(LocaleController.getString(R.string.FoldersInfo)));
 
         items.add(UItem.asButtonWithSubtext(AppearanceItem.APP_NAVIGATION_SETTINGS.getId(), R.drawable.msg_newphone, LocaleController.getString(R.string.AppNavigation), LocaleController.getString(R.string.AppNavigationInfo), 64, 60).setSearchable(this).setLinkAlias("appNavigationSettings", this));
-        items.add(UItem.asButtonWithSubtext(AppearanceItem.APP_ICON.getId(), R.drawable.menu_edit_appearance, LocaleController.getString(R.string.AppIcon), AppIconController.getSelectedIcon().getTitle().toString(), 64, 60).setSearchable(this).setLinkAlias("appIcon", this).onBind(view -> {
+        items.add(UItem.asButtonWithSubtext(AppearanceItem.APP_ICON.getId(), R.drawable.menu_edit_appearance, LocaleController.getString(R.string.AppIcon), AppIconController.getSelectedIcon().getTitle(), 64, 60).setSearchable(this).setLinkAlias("appIcon", this).onBind(view -> {
             if (view instanceof TextCell) {
                 TextCell textCell = (TextCell) view;
                 ImageView valueImageView = textCell.getValueImageView();
@@ -284,8 +288,10 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
                 });
                 break;
             case TAB_COUNTER:
-                toggleBooleanSettingAndRefresh(item, ExteraConfig::setTabCounter);
-                handleTabCounterClick();
+                showListDialog(item, tabCounterModes, LocaleController.getString(R.string.TabCounter), ExteraConfig.getTabCounterMode().ordinal(), which -> {
+                    ExteraConfig.setTabCounterMode(TabCounterMode.getEntries().get(which));
+                    handleTabCounterClick();
+                });
                 break;
             case HIDE_ALL_CHATS:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setHideAllChats);
@@ -340,7 +346,9 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
                 break;
             case FORCE_SNOW:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setForceSnow);
-                chatListPreviewCell.invalidate();
+                if (chatListPreviewCell != null) {
+                    chatListPreviewCell.invalidate();
+                }
                 break;
             case GLASS_OUTLINE_STYLE:
                 showListDialog(item, glassOutlineStyles, LocaleController.getString(R.string.GlassOutlineStyle), ExteraConfig.getGlassOutlineStyle().ordinal(), which -> {
@@ -383,10 +391,18 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
         Theme.applyCommonTheme();
         listView.invalidate();
         listView.invalidateItemDecorations();
-        avatarCornersPreviewCell.invalidate();
-        chatListPreviewCell.invalidate();
-        fabShapeCell.invalidate();
-        filterTabsPreviewCell.invalidate();
+        if (avatarCornersPreviewCell != null) {
+            avatarCornersPreviewCell.invalidate();
+        }
+        if (chatListPreviewCell != null) {
+            chatListPreviewCell.invalidate();
+        }
+        if (fabShapeCell != null) {
+            fabShapeCell.invalidate();
+        }
+        if (filterTabsPreviewCell != null) {
+            filterTabsPreviewCell.invalidate();
+        }
         parentLayout.rebuildFragments(0);
     }
 
@@ -407,7 +423,9 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
     }
 
     private void handleActionBarTitleClick() {
-        chatListPreviewCell.updateStatus(true);
+        if (chatListPreviewCell != null) {
+            chatListPreviewCell.updateStatus(true);
+        }
         getNotificationCenter().postNotificationName(NotificationCenter.currentUserPremiumStatusChanged);
     }
 
@@ -416,6 +434,7 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
     }
 
     private void handleTabCounterClick() {
+        FolderCounters.Companion.recountAll();
         getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
     }
 
@@ -437,17 +456,7 @@ public class AppearancePreferencesActivity extends BasePreferencesActivity {
 
     private void handleUseSystemFontsClick() {
         AndroidUtilities.clearTypefaceCache();
-        rebuildListWithStateRestore();
-    }
-
-    private void rebuildListWithStateRestore() {
-        if (listView.getLayoutManager() != null) {
-            recyclerViewState = listView.getLayoutManager().onSaveInstanceState();
-        }
-        parentLayout.rebuildFragments(1);
-        if (listView.getLayoutManager() != null) {
-            listView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-        }
+        parentLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
     }
 
     private void handleForceBlurChange() {

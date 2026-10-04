@@ -263,6 +263,11 @@ public class VideoPlayerHolderBase {
                     }
                 }, surface != null ? 0 : surfaceView == null ? 16 : 32);
             }
+
+            @Override
+            public void onAudioTrackChanged(int state) {
+                VideoPlayerHolderBase.this.onAudioTrackChanged(state);
+            }
         });
         videoPlayer.setIsStory();
     }
@@ -527,6 +532,10 @@ public class VideoPlayerHolderBase {
 
     public boolean needRepeat() {
         return false;
+    }
+
+    public void onAudioTrackChanged(int state) {
+
     }
 
     public void seekTo(long position) {

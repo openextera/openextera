@@ -14,6 +14,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
+import android.util.SparseArray;
 import android.view.animation.DecelerateInterpolator;
 
 import com.exteragram.messenger.plugins.PluginsController;
@@ -181,7 +182,7 @@ public class MediaActionDrawable extends Drawable {
         applyShaderMatrix(true);
         int restoreCount = canvas.saveLayer(left, top, right, bottom, null);
         drawable.setColorFilter(whiteColorFilter);
-        drawable.setAlpha(alpha);
+        drawable.setAlpha(255);
         drawable.setBounds(left, top, right, bottom);
         drawable.draw(canvas);
         drawablePaint.set(paint2);
@@ -192,17 +193,29 @@ public class MediaActionDrawable extends Drawable {
         canvas.restoreToCount(restoreCount);
     }
 
+    private final SparseArray<Drawable[]> customIconDrawables = new SparseArray<>();
+
     private Drawable getCustomIconDrawable(int icon) {
+        Drawable source;
         if (icon == ICON_PLUGIN) {
-            return Theme.chat_pluginIcon;
+            source = Theme.chat_pluginIcon;
+        } else if (icon == ICON_EXTERA) {
+            source = Theme.chat_settingsIcon;
+        } else if (icon == ICON_ICONS) {
+            source = Theme.chat_stickersIcon;
+        } else {
+            source = PluginsController.getPluginFileIconDrawable(icon);
         }
-        if (icon == ICON_EXTERA) {
-            return Theme.chat_settingsIcon;
+        if (source == null) {
+            return null;
         }
-        if (icon == ICON_ICONS) {
-            return Theme.chat_stickersIcon;
+        Drawable[] cached = customIconDrawables.get(icon);
+        if (cached == null || cached[0] != source) {
+            Drawable.ConstantState state = source.getConstantState();
+            cached = new Drawable[] { source, state != null ? state.newDrawable().mutate() : source };
+            customIconDrawables.put(icon, cached);
         }
-        return PluginsController.getPluginFileIconDrawable(icon);
+        return cached[1];
     }
 
     public void setMini(boolean value) {

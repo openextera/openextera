@@ -8,18 +8,18 @@ import com.exteragram.messenger.utils.network.ExteraHttpClient;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueue;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,10 +40,6 @@ public class SubscriptionsManager {
     private final OkHttpClient client = ExteraHttpClient.INSTANCE.getClient();
     private final SharedPreferences prefs = PreferencesUtils.getPreferences("ublock_subscriptions");
 
-    public interface SubscriptionCallback {
-        void onComplete(boolean success);
-    }
-
     public static SubscriptionsManager getInstance() {
         if (instance == null) {
             instance = new SubscriptionsManager();
@@ -59,30 +55,36 @@ public class SubscriptionsManager {
         return new File(dir, Base64.encodeToString(url.getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP | Base64.URL_SAFE) + ".txt");
     }
 
-    public void initialize(Runnable onDone) {
+    public void update(String[] defaultUrls, Runnable onDone) {
         queue.postRunnable(() -> {
-            List<FilterMetadata> subscriptions = getSubscriptions();
+            LinkedHashSet<String> urls = new LinkedHashSet<>();
             long now = System.currentTimeMillis();
-            AtomicInteger processed = new AtomicInteger(0);
-            for (FilterMetadata metadata : subscriptions) {
-                if (now >= metadata.expires) {
-                    fetchSubscription(metadata.url, success -> {
-                        if (processed.incrementAndGet() == subscriptions.size()) {
-                            onDone.run();
-                        }
-                    });
-                } else if (processed.incrementAndGet() == subscriptions.size()) {
-                    onDone.run();
+            for (FilterMetadata metadata : getSubscriptions()) {
+                if (now >= metadata.expires || !getFileForUrl(metadata.url).exists()) {
+                    urls.add(metadata.url);
                 }
+            }
+            synchronized (lock) {
+                for (String url : defaultUrls) {
+                    if (!prefs.contains("metadata_" + url) && !prefs.contains("redirect_" + url)) {
+                        urls.add(url);
+                    }
+                }
+            }
+            for (String url : urls) {
+                fetchSubscription(url, 0);
+            }
+            if (onDone != null) {
+                onDone.run();
             }
         });
     }
 
-    public void subscribe(String url, SubscriptionCallback callback) {
-        queue.postRunnable(() -> fetchSubscription(url, callback));
+    public boolean hasFilters() {
+        return !getSubscriptionFilePaths().isEmpty();
     }
 
-    public void unsubscribe(String url) {
+    private void unsubscribe(String url) {
         synchronized (lock) {
             prefs.edit().remove("metadata_" + url).apply();
         }
@@ -122,39 +124,50 @@ public class SubscriptionsManager {
         return paths;
     }
 
-    private void fetchSubscription(String url, SubscriptionCallback callback) {
-        Request request = new Request.Builder()
-                .url(url)
-                .header("User-Agent", USER_AGENT)
-                .build();
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                if (callback != null) {
-                    AndroidUtilities.runOnUIThread(() -> callback.onComplete(false));
+    private boolean fetchSubscription(String url, int depth) {
+        try {
+            Request request = new Request.Builder()
+                    .url(url)
+                    .header("User-Agent", USER_AGENT)
+                    .build();
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    return false;
                 }
-                return;
-            }
-            String content = response.body().string();
-            String redirect = extractRedirect(content);
-            if (redirect != null) {
-                unsubscribe(url);
-                fetchSubscription(redirect, callback);
-                return;
-            }
-            FilterMetadata metadata = parseMetadata(url, content);
-            try (FileOutputStream out = new FileOutputStream(getFileForUrl(url))) {
-                out.write(content.getBytes(StandardCharsets.UTF_8));
-            }
-            synchronized (lock) {
-                prefs.edit().putString("metadata_" + url, metadata.toJson().toString()).apply();
-            }
-            if (callback != null) {
-                AndroidUtilities.runOnUIThread(() -> callback.onComplete(true));
+                String content = response.body().string();
+                String redirect = extractRedirect(content);
+                if (redirect != null) {
+                    if (depth >= 3 || !fetchSubscription(redirect, depth + 1)) {
+                        return false;
+                    }
+                    unsubscribe(url);
+                    synchronized (lock) {
+                        prefs.edit().putString("redirect_" + url, redirect).apply();
+                    }
+                    return true;
+                }
+                FilterMetadata metadata = parseMetadata(url, content);
+                File file = getFileForUrl(url);
+                File tmpFile = new File(file.getPath() + ".tmp");
+                try {
+                    try (FileOutputStream out = new FileOutputStream(tmpFile)) {
+                        out.write(content.getBytes(StandardCharsets.UTF_8));
+                    }
+                } catch (IOException e) {
+                    tmpFile.delete();
+                    return false;
+                }
+                if (!tmpFile.renameTo(file)) {
+                    tmpFile.delete();
+                    return false;
+                }
+                synchronized (lock) {
+                    prefs.edit().putString("metadata_" + url, metadata.toJson().toString()).apply();
+                }
+                return true;
             }
         } catch (Exception e) {
-            if (callback != null) {
-                AndroidUtilities.runOnUIThread(() -> callback.onComplete(false));
-            }
+            return false;
         }
     }
 

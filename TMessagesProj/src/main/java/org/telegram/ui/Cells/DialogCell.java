@@ -639,6 +639,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private final View emojiStatusView;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable botVerification;
+    private final View botVerificationView;
 
     private int drawScam;
 
@@ -715,7 +716,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         };
         addView(emojiStatusView);
         emojiStatus = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(emojiStatusView, dp(22));
-        botVerification = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(17));
+        botVerificationView = new View(context) {
+            @Override
+            protected void onDraw(@NonNull Canvas canvas) {
+                botVerification.setBounds(0, 0, getWidth(), getHeight());
+                botVerification.draw(canvas);
+            }
+        };
+        addView(botVerificationView);
+        botVerification = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(botVerificationView, dp(17));
         avatarImage.setAllowLoadingOnAttachedOnly(true);
         messageAvatarSpan = new AvatarSpan(this, currentAccount, 18);
         messageAvatarSpan.needDrawShadow = false;
@@ -990,6 +999,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY)
             );
         }
+        if (botVerificationView != null) {
+            botVerificationView.measure(
+                MeasureSpec.makeMeasureSpec(dp(17), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(dp(17), MeasureSpec.EXACTLY)
+            );
+        }
         if (checkBox != null) {
             checkBox.measure(
                 MeasureSpec.makeMeasureSpec(dp(24), MeasureSpec.EXACTLY),
@@ -1055,6 +1070,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
         if (emojiStatusView != null) {
             emojiStatusView.layout(0, 0, dp(22), dp(22));
+        }
+        if (botVerificationView != null) {
+            botVerificationView.layout(0, 0, dp(17), dp(17));
         }
         if (checkBox != null) {
             int paddingStart = dp(messagePaddingStart - (useForceThreeLines || SharedConfig.useThreeLinesLayout ? 26 : 28));
@@ -1841,10 +1859,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                     SpannableStringBuilder builder = (SpannableStringBuilder) messageString;
                                     if (thumbInsertIndex >= builder.length()) {
                                         builder.append(" ");
-                                        builder.setSpan(new FixedWidthSpan(dp(thumbsCount * (thumbSize + 2) - 2 + 5)), builder.length() - 1, builder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                        builder.setSpan(new ThumbnailSpan(dp(thumbsCount * (thumbSize + 2) - 2 + 5)), builder.length() - 1, builder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                     } else {
                                         builder.insert(thumbInsertIndex, " ");
-                                        builder.setSpan(new FixedWidthSpan(dp(thumbsCount * (thumbSize + 2) - 2 + 5)), thumbInsertIndex, thumbInsertIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                        builder.setSpan(new ThumbnailSpan(dp(thumbsCount * (thumbSize + 2) - 2 + 5)), thumbInsertIndex, thumbInsertIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                     }
                                 }
                             } else {
@@ -2037,7 +2055,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                     checkMessage = false;
                                     SpannableStringBuilder builder = (SpannableStringBuilder) messageString;
                                     builder.insert(0, " ");
-                                    builder.setSpan(new FixedWidthSpan(dp((thumbSize + 2) * thumbsCount - 2 + 5)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    builder.setSpan(new ThumbnailSpan(dp((thumbSize + 2) * thumbsCount - 2 + 5)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                     Emoji.replaceEmoji(builder, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt(), false);
                                     if (message.hasHighlightedWords()) {
                                         CharSequence s = AndroidUtilities.highlightText(builder, message.highlightedWords, resourcesProvider);
@@ -2995,6 +3013,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         return spannableStringBuilder;
     }
 
+    // exteraGram: a dedicated span type for the thumbnail placeholder, so other FixedWidthSpans in the
+    // preview text (e.g. the sender avatar) are not mistaken for it
+    public static class ThumbnailSpan extends FixedWidthSpan {
+        public ThumbnailSpan(int width) {
+            super(width);
+        }
+    }
+
     private void updateThumbsPosition() {
         if (thumbsCount > 0) {
             StaticLayout layout = isForumCell() ? buttonLayout : messageLayout;
@@ -3005,7 +3031,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             try {
                 CharSequence text = layout.getText();
                 if (text instanceof Spanned) {
-                    FixedWidthSpan[] spans = ((Spanned) text).getSpans(0, text.length(), FixedWidthSpan.class);
+                    ThumbnailSpan[] spans = ((Spanned) text).getSpans(0, text.length(), ThumbnailSpan.class);
                     if (spans != null && spans.length > 0) {
                         int spanOffset = ((Spanned) text).getSpanStart(spans[0]);
                         if (spanOffset < 0) {
@@ -3038,7 +3064,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         if (thumbsCount > 0) {
             SpannableStringBuilder builder = SpannableStringBuilder.valueOf(string);
             builder.insert(0, " ");
-            builder.setSpan(new FixedWidthSpan(dp((thumbSize + 2) * thumbsCount - 2 + 5)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(new ThumbnailSpan(dp((thumbSize + 2) * thumbsCount - 2 + 5)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             return builder;
         }
         return string;
@@ -3804,11 +3830,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             canvas.restore();
 
             emojiStatusView.setVisibility(View.INVISIBLE);
+            botVerificationView.setVisibility(View.INVISIBLE);
             return;
         }
 
         float gtx = 0, gty = 0;
         boolean emojiStatusVisible = false;
+        boolean botVerificationVisible = false;
 
         final boolean clipArchive = drawArchive && (currentDialogFolderId != 0 || isTopic && forumTopic != null && forumTopic.id == 1) && archivedChatsDrawable != null && translationX == 0.0f && parentFragment != null && parentFragment.hasHiddenArchive()
             && (parentFragment.rightSlidingDialogContainer == null || !parentFragment.rightSlidingDialogContainer.hasFragment());
@@ -4418,14 +4446,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     y -= dp(9);
                 }
                 if (botVerification != null) {
-                    botVerification.setBounds(
-                        nameLeft - dp(17 + 2),
-                        y + dp(-1),
-                        nameLeft - dp(2),
-                        y + dp(17 - 1)
-                    );
                     botVerification.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
-                    botVerification.draw(canvas);
+                    botVerificationView.setTranslationX(gtx + nameLeft - dp(17 + 2));
+                    botVerificationView.setTranslationY(gty + y + dp(-1));
+                    if (rightFragmentOpenedProgress > 0) {
+                        botVerification.setBounds(
+                            nameLeft - dp(17 + 2),
+                            y + dp(-1),
+                            nameLeft - dp(2),
+                            y + dp(17 - 1)
+                        );
+                        botVerification.draw(canvas);
+                    } else {
+                        botVerificationVisible = true;
+                    }
                 }
             }
             boolean drawMuted = drawUnmute || dialogMuted || isHiddenInCommunity;
@@ -4930,6 +4964,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         emojiStatusView.setVisibility(emojiStatusVisible ? View.VISIBLE : View.INVISIBLE);
+        botVerificationView.setVisibility(botVerificationVisible ? View.VISIBLE : View.INVISIBLE);
 
         if (needInvalidate) {
             invalidate();

@@ -360,7 +360,7 @@ public class TextSettingsCell extends FrameLayout {
             canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(3), AndroidUtilities.dp(3), paint);
             invalidate();
         }
-        valueTextView.setAlpha(1f - drawLoadingProgress);
+        valueTextView.setAlpha((1f - drawLoadingProgress) * (!isEnabled() && canDisable ? 0.5f : 1f));
         super.dispatchDraw(canvas);
 
         if (needDivider) {

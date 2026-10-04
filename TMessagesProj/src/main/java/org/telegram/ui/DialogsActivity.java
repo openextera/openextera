@@ -99,6 +99,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.exteragram.messenger.AvatarCornerType;
 import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.TabCounterMode;
 import com.exteragram.messenger.TabIconsMode;
 import com.exteragram.messenger.config.BottomNavigationBar;
 import com.exteragram.messenger.drawer.DrawerContainer;
@@ -106,6 +107,7 @@ import com.exteragram.messenger.utils.AppUtils;
 import com.exteragram.messenger.components.TranslateBeforeSendWrapper;
 import com.exteragram.messenger.translator.TranslatorUtils;
 import com.exteragram.messenger.utils.system.VibratorUtils;
+import com.exteragram.messenger.utils.chats.FolderCounters;
 import com.exteragram.messenger.utils.chats.MainMenuHelper;
 import com.exteragram.messenger.utils.text.LocaleUtils;
 import com.exteragram.messenger.utils.ui.AccountsUiHelper;
@@ -964,9 +966,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
-            if (Build.VERSION.SDK_INT >= 31 && scrollableViewNoiseSuppressor != null) {
-                blur3_InvalidateBlur();
-            }
+            blur3InvalidateDeferred = true;
 
             if (invalidateScrollY && (rightSlidingDialogContainer == null || !rightSlidingDialogContainer.hasFragment()) && progressToActionMode == 0) {
                 invalidateScrollY = false;
@@ -1102,6 +1102,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             updateContextViewPosition();
             updateStoriesViewAlpha(storiesAlpha);
+            blur3InvalidateDeferred = false;
+            blur3_InvalidateBlur();
             super.dispatchDraw(canvas);
             drawHeaderShadow(canvas, top + actionBarHeight);
 
@@ -1189,7 +1191,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         h += dp(SEARCH_FIELD_HEIGHT);
                     }
                     h += actionModeAdditionalHeight;
-                    if (actionBarColorAnimator == null) {
+                    if (actionBarColorAnimator == null && (child != viewPages[0] || !rightSlidingDialogContainer.hasFragment())) {
                         child.setTranslationY(0);
                     }
                     int transitionPadding = ((isSlideBackTransition) ? (int) (h * 0.05f) : 0);
@@ -3761,17 +3763,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 public int getTabCounter(int tabId) {
-                    if (initialDialogsType == DIALOGS_TYPE_FORWARD || !ExteraConfig.getTabCounter()) {
+                    if (initialDialogsType == DIALOGS_TYPE_FORWARD || ExteraConfig.getTabCounterMode() == TabCounterMode.HIDDEN) {
                         return 0;
                     }
                     if (tabId == filterTabsView.getDefaultTabId()) {
-                        return getMessagesStorage().getMainUnreadCount();
+                        return FolderCounters.getInstance(currentAccount).getMainUnreadCount();
                     }
                     ArrayList<MessagesController.DialogFilter> dialogFilters = getMessagesController().getDialogFilters();
                     if (tabId < 0 || tabId >= dialogFilters.size()) {
                         return 0;
                     }
-                    return getMessagesController().getDialogFilters().get(tabId).unreadCount;
+                    return FolderCounters.getInstance(currentAccount).getUnreadCount(dialogFilters.get(tabId));
                 }
 
                 @Override
@@ -14526,8 +14528,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         iBlur3Positions.add(iBlur3PositionMainTabs);
     }
 
+    private boolean blur3InvalidateDeferred;
+
     private void blur3_InvalidateBlur() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null || fragmentView == null || actionBar == null) {
+        if (blur3InvalidateDeferred || Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null || fragmentView == null || actionBar == null) {
             return;
         }
 

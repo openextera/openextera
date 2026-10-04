@@ -54,8 +54,8 @@ public class MainPreferencesActivity extends BasePreferencesActivity {
 
     @Override
     public View createView(Context context) {
-        View view = super.createView(context);
         headerSettingsCell = new HeaderSettingsCell(context);
+        View view = super.createView(context);
         return fragmentView = view;
     }
 

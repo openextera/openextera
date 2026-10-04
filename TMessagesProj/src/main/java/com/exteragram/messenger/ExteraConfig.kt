@@ -20,7 +20,7 @@ import com.exteragram.messenger.config.registeredKeys
 import com.exteragram.messenger.icons.IconManager
 import com.exteragram.messenger.plugins.PluginsController
 import com.exteragram.messenger.translator.TranslatorUtils
-import com.exteragram.messenger.utils.chats.ChatUtils
+import com.exteragram.messenger.utils.addIf
 import com.exteragram.messenger.utils.network.RemoteUtils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -113,7 +113,7 @@ object ExteraConfig {
     @JvmStatic var senderMiniAvatars by BooleanPref(true)
     @JvmStatic var titleText by IntegerPref(0)
     @JvmStatic var tabIcons by EnumPref(TabIconsMode.TITLES_ONLY)
-    @JvmStatic var tabCounter by BooleanPref(true)
+    @JvmStatic var tabCounterMode by EnumPref(TabCounterMode.ALL)
     @JvmStatic var hideAllChats by BooleanPref(false)
     @JvmStatic var squareFab by BooleanPref(true)
     @JvmStatic var sectionRadius by FloatPref(20f)
@@ -200,6 +200,7 @@ object ExteraConfig {
     @JvmStatic var removeMessageTail by BooleanPref(true)
     @JvmStatic var replaceEditedWithIcon by BooleanPref(true)
     @JvmStatic var showOnlineStatus by BooleanPref(false)
+    @JvmStatic var showForwardsCount by BooleanPref(false)
     @JvmStatic var hideShareButton by BooleanPref(true)
     @JvmStatic var showResultsBeforeVoting by BooleanPref(false)
     @JvmStatic var showCopyPhotoButton by BooleanPref(true)
@@ -312,7 +313,7 @@ object ExteraConfig {
                     controller.executeOnAppEvent("app_resume")
                 }
             }
-            ChatUtils.utilsQueue.postRunnable { AdBlockManager.initialize() }
+            AdBlockManager.preload()
             IconManager.prefetchCustomPacks()
         }
     }
@@ -393,6 +394,7 @@ object ExteraConfig {
             migrateTelegramAiInstantViewSummaries()
             migrateStickerTimeMode()
             migrateTransitionAnimation()
+            migrateTabCounterMode()
             TranslatorUtils.ensureTargetLanguageCompatibleWithProvider()
             configLoaded = true
         }
@@ -527,34 +529,24 @@ object ExteraConfig {
     fun getDefaultMainMenuLayout(): ArrayList<Int> {
         val layout = ArrayList<Int>()
         layout.add(MainMenuItem.ARCHIVE.id)
-        if (BottomNavigationBar.hidden()) {
-            layout.add(MainMenuItem.PROFILE.id)
-        }
+        layout.addIf(BottomNavigationBar.hidden(), MainMenuItem.PROFILE.id)
         layout.add(MainMenuItem.NEW_GROUP.id)
-        if (BottomNavigationBar.hidden()) {
-            layout.add(MainMenuItem.CONTACTS.id)
-        }
+        layout.addIf(BottomNavigationBar.hidden(), MainMenuItem.CONTACTS.id)
         layout.add(MainMenuItem.SAVED.id)
         layout.add(MainMenuItem.FEED.id)
         layout.add(MainMenuItem.BOTS.id)
-        if (BottomNavigationBar.hidden()) {
-            layout.add(MainMenuItem.SETTINGS.id)
-        }
+        layout.addIf(BottomNavigationBar.hidden(), MainMenuItem.SETTINGS.id)
         return layout
     }
 
     @JvmStatic
     fun ensureSettingsVisibility() {
-        if (!BottomNavigationBar.hidden()) {
-            return
-        }
         val settingsId = MainMenuItem.SETTINGS.id
-        if (mainMenuLayout.contains(settingsId)) {
-            return
+        if (BottomNavigationBar.hidden() && !mainMenuLayout.contains(settingsId)) {
+            mainMenuHiddenItems.remove(settingsId)
+            mainMenuLayout.add(settingsId)
+            saveMainMenuLayout()
         }
-        mainMenuHiddenItems.remove(settingsId)
-        mainMenuLayout.add(settingsId)
-        saveMainMenuLayout()
     }
 
     @JvmStatic
@@ -599,6 +591,15 @@ object ExteraConfig {
                 else -> TransitionAnimation.DEFAULT
             }
             editor.remove("springAnimations").remove("aospTransitions").apply()
+        }
+    }
+
+    private fun migrateTabCounterMode() {
+        if (preferences.contains("tabCounter")) {
+            if (!preferences.getBoolean("tabCounter", true)) {
+                tabCounterMode = TabCounterMode.HIDDEN
+            }
+            editor.remove("tabCounter").apply()
         }
     }
 

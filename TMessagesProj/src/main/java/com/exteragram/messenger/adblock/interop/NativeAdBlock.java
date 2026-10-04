@@ -1,12 +1,15 @@
 package com.exteragram.messenger.adblock.interop;
 
-import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.adblock.data.BlockResult;
 import com.exteragram.messenger.adblock.data.FilterListMetadata;
 import com.exteragram.messenger.adblock.data.UrlCosmeticResources;
 
+import org.telegram.messenger.FileLog;
+
 // JNI bridge to libetgadblock.so (adblock-rust). Method names and signatures must match the native library.
 public class NativeAdBlock {
+
+    private static volatile Boolean loaded;
 
     public static native long createFilterSet(String[] rules);
 
@@ -26,13 +29,20 @@ public class NativeAdBlock {
 
     public static native String[] getHiddenSelectors(long enginePtr, String[] classes, String[] ids, String[] exceptions);
 
-    public static boolean loadLibraries() {
-        try {
-            System.loadLibrary("etgadblock");
-            return true;
-        } catch (Throwable e) {
-            ExteraConfig.setEnableAdBlock(false);
-            return false;
+    public static synchronized boolean loadLibraries() {
+        if (loaded == null) {
+            try {
+                System.loadLibrary("etgadblock");
+                loaded = Boolean.TRUE;
+            } catch (Throwable e) {
+                FileLog.e(e);
+                loaded = Boolean.FALSE;
+            }
         }
+        return loaded;
+    }
+
+    public static boolean isLoadFailed() {
+        return Boolean.FALSE.equals(loaded);
     }
 }

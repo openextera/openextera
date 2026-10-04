@@ -11,7 +11,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.exteragram.messenger.ExteraConfig
 import com.exteragram.messenger.components.CheckBoxRow
-import com.exteragram.messenger.components.VerticalImageSpan
 import com.exteragram.messenger.icons.IconManager
 import com.exteragram.messenger.icons.IconPack
 import com.exteragram.messenger.utils.text.LocaleUtils
@@ -74,14 +73,13 @@ class InstallIconPackBottomSheet(
         val installedPack = IconManager.findPackById(iconPack.id)
         val isUpdate = installedPack != null
 
-        val grayTextKey = Theme.key_windowBackgroundWhiteGrayText
         val infoView = EffectsTextView(context, resourcesProvider).apply {
             gravity = Gravity.CENTER_HORIZONTAL
             typeface = AndroidUtilities.regular()
             movementMethod = AndroidUtilities.LinkMovementMethodMy()
             setLinkTextColor(getThemedColor(Theme.key_dialogTextLink))
             setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f)
-            setTextColor(getThemedColor(grayTextKey))
+            setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText))
         }
 
         var info = SpannableStringBuilder(LocaleController.getString(R.string.PluginVersion)).append(" ")
@@ -89,7 +87,7 @@ class InstallIconPackBottomSheet(
         if (installedPack != null) {
             val oldVersion = installedPack.version
             info.append(oldVersion).append(" -> ").append(iconPack.version)
-            info = VerticalImageSpan.createSpan(context, R.drawable.msg_mini_arrow_mediathin, info.toString(), "->", grayTextKey, resourcesProvider)
+            info = LocaleUtils.replaceArrows(context, info, R.drawable.msg_mini_arrow_mediathin)
             info.setSpan(StrikethroughSpan(), versionStart, versionStart + oldVersion.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         } else if (iconPack.version.isNotEmpty()) {
             info.append(iconPack.version)

@@ -227,9 +227,12 @@ public class ExportActivity extends BasePreferencesActivity implements Notificat
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         super.onActivityResultFragment(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_OPEN_EXPORT && resultCode == Activity.RESULT_OK) {
+        if (requestCode == REQUEST_CODE_OPEN_EXPORT && resultCode == Activity.RESULT_OK && data != null) {
             try {
                 Uri treeUri = data.getData();
+                if (treeUri == null) {
+                    return;
+                }
                 Uri documentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, DocumentsContract.getTreeDocumentId(treeUri));
                 presentFragment(new DialogsView(AndroidPickerUtils.getPath(getParentActivity(), documentUri)));
             } catch (Exception e) {

@@ -217,6 +217,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.Timer;
 import org.telegram.messenger.TranslateController;
+import org.telegram.messenger.utils.Choreographer60FpsContent;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -11391,7 +11392,14 @@ public class ChatActivity extends BaseFragment implements
             final TLRPC.ChatFull chatFull = getFeedChannelInfo(messageObject);
             return chatFull == null || ChatObject.reactionIsAvailable(chatFull, reaction);
         }
-        return dialog_id >= 0 || chatInfo != null && ChatObject.reactionIsAvailable(chatInfo, reaction);
+        if (!messageObject.isForwardedChannelPost()) {
+            return dialog_id >= 0 || chatInfo != null && ChatObject.reactionIsAvailable(chatInfo, reaction);
+        }
+        final TLRPC.ChatFull chatFull = getMessagesController().getChatFull(-messageObject.getFromChatId());
+        if (chatFull == null) {
+            getMessagesController().loadFullChat(-messageObject.getFromChatId(), classGuid, false);
+        }
+        return chatFull != null && ChatObject.reactionIsAvailable(chatFull, reaction);
     }
 
     private boolean disabledReactions() {
@@ -11415,16 +11423,12 @@ public class ChatActivity extends BaseFragment implements
         return currentChat == null || ChatObject.isChannelAndNotMegaGroup(currentChat) || ChatObject.canUserDoAction(currentChat, ChatObject.ACTION_SEND_REACTIONS);
     }
 
-    private ReactionsLayoutInBubble.VisibleReaction getQuickReaction() {
+    private ReactionsLayoutInBubble.VisibleReaction getQuickReaction(MessageObject messageObject) {
         final String emoticon = SwipeAction.quickReactionEmoticon(currentAccount);
-        if (emoticon == null) {
+        if (emoticon == null || !isReactionAvailable(messageObject, emoticon)) {
             return null;
         }
-        boolean available = dialog_id >= 0;
-        if (!available && chatInfo != null) {
-            available = ChatObject.reactionIsAvailable(chatInfo, emoticon);
-        }
-        return available ? ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(emoticon) : null;
+        return ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(emoticon);
     }
 
     private MessageObject getEditableMessageFromGroup(MessageObject.GroupedMessages group) {
@@ -11568,7 +11572,7 @@ public class ChatActivity extends BaseFragment implements
     public List<SwipeAction> collectSwipeActions(MessageObject messageObject, boolean canReply) {
         final long availableActions = getAvailableMessageActions(messageObject);
         final List<SwipeAction> enabledActions = SwipeAction.enabled();
-        final ReactionsLayoutInBubble.VisibleReaction quickReaction = enabledActions.contains(SwipeAction.REACTION) ? getQuickReaction() : null;
+        final ReactionsLayoutInBubble.VisibleReaction quickReaction = enabledActions.contains(SwipeAction.REACTION) ? getQuickReaction(messageObject) : null;
         final ArrayList<SwipeAction> actions = new ArrayList<>();
         for (SwipeAction action : enabledActions) {
             if (isFeedSearch() && !FeedMessageUtils.isAllowedSwipeAction(action.actionId)) {
@@ -11611,7 +11615,7 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         if (action == SwipeAction.REACTION) {
-            final ReactionsLayoutInBubble.VisibleReaction quickReaction = getQuickReaction();
+            final ReactionsLayoutInBubble.VisibleReaction quickReaction = getQuickReaction(messageObject);
             if (quickReaction != null) {
                 ReactionsEffectOverlay.removeCurrent(false);
                 selectReaction(slidingView, messageObject, null, null, 0, 0, quickReaction, true, false, false, false);
@@ -12105,11 +12109,20 @@ public class ChatActivity extends BaseFragment implements
         if (this.scrimView != null) {
             if (this.scrimView instanceof ChatActionCell) {
                 ((ChatActionCell) this.scrimView).setInvalidateWithParent(null);
+            } else if (this.scrimView instanceof ChatMessageCell) {
+                ((ChatMessageCell) this.scrimView).getPhotoImage().setLayerNum(0);
             }
         }
         this.scrimView = scrimView;
         if (this.scrimView instanceof ChatActionCell) {
             ((ChatActionCell) this.scrimView).setInvalidateWithParent(fragmentView);
+        } else if (this.scrimView instanceof ChatMessageCell) {
+            final ImageReceiver photoImage = ((ChatMessageCell) this.scrimView).getPhotoImage();
+            photoImage.setLayerNum(512);
+            final AnimatedFileDrawable animation = photoImage.getAnimation();
+            if (animation != null && !animation.isRunning() && photoImage.getAllowStartAnimation() && NotificationCenter.getGlobalInstance().getCurrentHeavyOperationFlags() != 0) {
+                animation.checkRepeat();
+            }
         }
     }
     public void dimBehindView(boolean enable) {
@@ -19316,6 +19329,13 @@ public class ChatActivity extends BaseFragment implements
                     } else {
                         scrimGroup = null;
                     }
+                    final int fadeLayer;
+                    if (scrimViewReaction == null && chatActivityFadeView != null && chatActivityFadeView.getVisibility() == View.VISIBLE && ChatHeaderUiHelper.scrimReachesTopFade(chatActivityFadeView, chatListView, scrimView, scrimGroup, listTop)) {
+                        fadeLayer = canvas.saveLayer(0, listTop, getMeasuredWidth(), getMeasuredHeight(), null);
+                    } else {
+                        fadeLayer = -1;
+                    }
+                    boolean scrimReachesTop = false;
                     boolean groupedBackgroundWasDraw = false;
                     int count = chatListView.getChildCount();
                     for (int num = 0; num < count; num++) {
@@ -19384,7 +19404,7 @@ public class ChatActivity extends BaseFragment implements
                         }
 
                         if (cell != null && cell.getPhotoImage().isAnimationRunning()) {
-                            invalidate();
+                            Choreographer60FpsContent.getInstance().postInvalidateView(this);
                         }
 
                         float viewClipLeft = chatListView.getLeft();
@@ -19423,6 +19443,7 @@ public class ChatActivity extends BaseFragment implements
                         }
 
                         if (viewClipTop < viewClipBottom) {
+                            scrimReachesTop |= viewClipTop <= listTop;
                             if (child.getAlpha() != 1f) {
                                 canvas.saveLayerAlpha(viewClipLeft, viewClipTop, viewClipRight, viewClipBottom, (int) (255 * child.getAlpha()), Canvas.ALL_SAVE_FLAG);
                             } else {
@@ -19606,6 +19627,10 @@ public class ChatActivity extends BaseFragment implements
                             drawChildElement(canvas, listTop, cell, 4);
                         }
                         drawReactionsAfter.clear();
+                    }
+                    if (fadeLayer != -1) {
+                        chatActivityFadeView.drawOverScrim(canvas, 0, listTop, getMeasuredWidth(), getMeasuredHeight(), scrimBlurBitmapPaint != null ? 0f : scrimPaintAlpha * scrimViewAlpha, scrimReachesTop);
+                        canvas.restoreToCount(fadeLayer);
                     }
                 }
 
@@ -36502,7 +36527,7 @@ public class ChatActivity extends BaseFragment implements
         } else if (actionBar != null && actionBar.isActionModeShowed()) {
             if (invoked) clearSelectionMode();
             return false;
-        } else if (chatActivityEnterView != null && chatActivityEnterView.isPopupShowing()) {
+        } else if (chatActivityEnterView != null && chatActivityEnterView.isPopupShowing() && !chatActivityEnterView.isPersistentBotKeyboardShowing()) {
             if (invoked) chatActivityEnterView.hidePopup(true);
             return false;
 //        } else if (chatActivityEnterView != null && chatActivityEnterView.hasBotWebView() && chatActivityEnterView.botCommandsMenuIsShowing() && chatActivityEnterView.onBotWebViewBackPressed()) {
@@ -37626,6 +37651,9 @@ public class ChatActivity extends BaseFragment implements
                 TLRPC.Message message = discussionMessage.messages.get(a);
                 if (message instanceof TLRPC.TL_messageEmpty) {
                     continue;
+                }
+                if (originalMessage != null) {
+                    ChatUtils.applyChannelPostContent(message, originalMessage.messageOwner);
                 }
                 message.isThreadMessage = true;
                 arrayList.add(new MessageObject(UserConfig.selectedAccount, message, true, true));

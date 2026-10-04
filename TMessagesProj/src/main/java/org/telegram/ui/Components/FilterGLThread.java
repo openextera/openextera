@@ -38,7 +38,7 @@ public class FilterGLThread extends DispatchQueue {
     private EGLDisplay eglDisplay;
     private EGLContext eglContext;
     private EGLSurface eglSurface;
-    private boolean initied;
+    private volatile boolean initied;
     private boolean isVideo;
 
     private volatile int surfaceWidth;
@@ -618,9 +618,8 @@ public class FilterGLThread extends DispatchQueue {
     }
 
     @Override
-    public void run() {
+    public void onLooperPrepared() {
         initied = initGL();
-        super.run();
     }
 
     public void requestRender(final boolean updateBlur) {

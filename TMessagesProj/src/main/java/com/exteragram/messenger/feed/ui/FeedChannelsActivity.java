@@ -26,6 +26,7 @@ import org.telegram.ui.Components.UniversalAdapter;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Locale;
 
 public class FeedChannelsActivity extends BasePreferencesActivity implements NotificationCenter.NotificationCenterDelegate {
 
@@ -34,12 +35,18 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
     private static final int MENU_DESELECT_ALL = 2;
     private static final int MENU_OTHER = 3;
 
-    private static final int ID_INCLUDE_ARCHIVED = Integer.MAX_VALUE;
-    private static final int ID_BOTTOM_TAB = Integer.MAX_VALUE - 1;
-    private static final int ID_WIDE_POSTS = Integer.MAX_VALUE - 2;
-    private static final int ID_UNREAD_COUNTER = Integer.MAX_VALUE - 3;
+    private static final Comparator<TLRPC.Chat> BY_TITLE = Comparator.comparing(chat -> chat.title == null ? "" : chat.title.toLowerCase(Locale.ROOT));
 
-    private static final Comparator<TLRPC.Chat> BY_TITLE = Comparator.comparing(chat -> chat.title == null ? "" : chat.title.toLowerCase());
+    public enum SettingItem {
+        FEED_TAB,
+        WIDE_POSTS,
+        UNREAD_COUNTER,
+        ARCHIVE;
+
+        public int getId() {
+            return ordinal() + 1000;
+        }
+    }
 
     private final ArrayList<TLRPC.Chat> channels = new ArrayList<>();
     private ActionBarMenuItem otherItem;
@@ -113,7 +120,7 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
 
             @Override
             public void onTextChanged(EditText editText) {
-                query = editText.getText().toString().trim().toLowerCase();
+                query = editText.getText().toString().trim().toLowerCase(Locale.getDefault());
                 if (listView != null) {
                     listView.adapter.update(true);
                 }
@@ -175,17 +182,17 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
         boolean noQuery = TextUtils.isEmpty(query);
         if (noQuery) {
             items.add(UItem.asHeader(LocaleController.getString(R.string.General)));
-            items.add(UItem.asCheck(ID_BOTTOM_TAB, LocaleController.getString(R.string.FeedBottomTab), LocaleController.getString(R.string.FeedBottomTabInfo), true).setChecked(ExteraConfig.getShowFeedTab()).setSearchable(this).setLinkAlias("feedBottomTab", this));
-            items.add(UItem.asCheck(ID_WIDE_POSTS, LocaleController.getString(R.string.WidePostsInFeed)).setChecked(ExteraConfig.getWidePostsInFeed()).setSearchable(this).setLinkAlias("feedWidePosts", this));
-            items.add(UItem.asCheck(ID_UNREAD_COUNTER, LocaleController.getString(R.string.FeedUnreadCounter)).setChecked(ExteraConfig.getShowFeedUnreadCounter()).setSearchable(this).setLinkAlias("feedUnreadCounter", this));
-            items.add(UItem.asCheck(ID_INCLUDE_ARCHIVED, LocaleController.getString(R.string.FeedIncludeArchived)).setChecked(feedConfig.isIncludeArchived()).setSearchable(this).setLinkAlias("feedIncludeArchived", this));
+            items.add(UItem.asCheck(SettingItem.FEED_TAB.getId(), LocaleController.getString(R.string.FeedBottomTab), LocaleController.getString(R.string.FeedBottomTabInfo), true).setChecked(ExteraConfig.getShowFeedTab()).setSearchable(this).setLinkAlias("feedBottomTab", this));
+            items.add(UItem.asCheck(SettingItem.WIDE_POSTS.getId(), LocaleController.getString(R.string.WidePostsInFeed)).setChecked(ExteraConfig.getWidePostsInFeed()).setSearchable(this).setLinkAlias("feedWidePosts", this));
+            items.add(UItem.asCheck(SettingItem.UNREAD_COUNTER.getId(), LocaleController.getString(R.string.FeedUnreadCounter)).setChecked(ExteraConfig.getShowFeedUnreadCounter()).setSearchable(this).setLinkAlias("feedUnreadCounter", this));
+            items.add(UItem.asCheck(SettingItem.ARCHIVE.getId(), LocaleController.getString(R.string.FeedIncludeArchived)).setChecked(feedConfig.isIncludeArchived()).setSearchable(this).setLinkAlias("feedIncludeArchived", this));
             items.add(UItem.asShadow(LocaleController.getString(R.string.FeedIncludeArchivedInfo)));
         }
         ArrayList<UItem> shown = new ArrayList<>();
         ArrayList<UItem> hidden = new ArrayList<>();
         for (int i = 0; i < channels.size(); i++) {
             TLRPC.Chat chat = channels.get(i);
-            if (!noQuery && (chat.title == null || !chat.title.toLowerCase().contains(query))) {
+            if (!noQuery && (chat.title == null || !chat.title.toLowerCase(Locale.getDefault()).contains(query))) {
                 continue;
             }
             boolean excluded = feedConfig.isExcluded(-chat.id);
@@ -214,24 +221,37 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
             toggleBooleanSettingAndRefresh(item, checked -> FeedConfig.getInstance(currentAccount).setExcluded(-chat.id, !checked));
             return;
         }
-        if (item.id == ID_BOTTOM_TAB) {
-            ExteraConfig.setShowFeedTab(!ExteraConfig.getShowFeedTab());
-            if (listView != null) {
-                listView.adapter.update(true);
+        SettingItem settingItem = null;
+        for (SettingItem entry : SettingItem.values()) {
+            if (entry.getId() == item.id) {
+                settingItem = entry;
+                break;
             }
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.feedTabVisibleToggled);
-        } else if (item.id == ID_WIDE_POSTS) {
-            toggleBooleanSettingAndRefresh(item, ExteraConfig::setWidePostsInFeed);
-            parentLayout.rebuildFragments(AndroidUtilities.isTablet() ? 1 : 0);
-        } else if (item.id == ID_UNREAD_COUNTER) {
-            toggleBooleanSettingAndRefresh(item, checked -> {
-                ExteraConfig.setShowFeedUnreadCounter(checked);
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, 0);
-            });
-        } else if (item.id == ID_INCLUDE_ARCHIVED) {
-            FeedConfig feedConfig = FeedConfig.getInstance(currentAccount);
-            feedConfig.setIncludeArchived(!feedConfig.isIncludeArchived());
-            reloadChannels();
+        }
+        if (settingItem == null) {
+            return;
+        }
+        switch (settingItem) {
+            case FEED_TAB:
+                toggleBooleanSettingAndRefresh(item, ExteraConfig::setShowFeedTab);
+                if (listView != null && listView.adapter != null) {
+                    listView.adapter.update(true);
+                }
+                getNotificationCenter().postNotificationName(NotificationCenter.feedTabVisibleToggled);
+                break;
+            case WIDE_POSTS:
+                toggleBooleanSettingAndRefresh(item, ExteraConfig::setWidePostsInFeed);
+                parentLayout.rebuildFragments(AndroidUtilities.isTablet() ? 1 : 0);
+                break;
+            case UNREAD_COUNTER:
+                toggleBooleanSettingAndRefresh(item, ExteraConfig::setShowFeedUnreadCounter);
+                getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, 0);
+                break;
+            case ARCHIVE:
+                FeedConfig feedConfig = FeedConfig.getInstance(currentAccount);
+                feedConfig.setIncludeArchived(!feedConfig.isIncludeArchived());
+                reloadChannels();
+                break;
         }
     }
 

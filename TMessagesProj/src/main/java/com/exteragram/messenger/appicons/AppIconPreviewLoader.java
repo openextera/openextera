@@ -112,11 +112,54 @@ public final class AppIconPreviewLoader {
             float[] hsl = new float[3];
             ColorUtils.colorToHSL(accent, hsl);
             if (hsl[1] >= 0.15f) {
-                hsl[2] = Theme.isCurrentThemeDark() ? Math.max(hsl[2], 0.72f) : Math.min(hsl[2], 0.42f);
-                return ColorUtils.HSLToColor(hsl);
+                if (Theme.isCurrentThemeDark()) {
+                    hsl[2] = Math.max(hsl[2], 0.72f);
+                    return clampTone(hsl, 70f, 100f);
+                }
+                hsl[2] = Math.min(hsl[2], 0.42f);
+                return clampTone(hsl, 0f, 42f);
             }
         }
         return Theme.getColor(fallbackKey, resourcesProvider);
+    }
+
+    public static int getAccentTint(AppIcon icon) {
+        int accent = icon == null ? 0 : getAccent(icon);
+        if (accent == 0) {
+            return 0;
+        }
+        float[] hsl = new float[3];
+        ColorUtils.colorToHSL(accent, hsl);
+        hsl[1] = Math.min(hsl[1], 0.6f);
+        if (Theme.isCurrentThemeDark()) {
+            hsl[2] = 0.22f;
+            return clampTone(hsl, 20f, 100f);
+        }
+        hsl[2] = 0.86f;
+        return clampTone(hsl, 0f, 88f);
+    }
+
+    private static int clampTone(float[] hsl, float minLightness, float maxLightness) {
+        double[] lab = new double[3];
+        ColorUtils.colorToLAB(ColorUtils.HSLToColor(hsl), lab);
+        double lightness = lab[0];
+        if (lightness >= minLightness && lightness <= maxLightness) {
+            return ColorUtils.HSLToColor(hsl);
+        }
+        float target = lightness >= minLightness ? maxLightness : minLightness;
+        float low = 0f;
+        float high = 1f;
+        for (int i = 0; i < 16; i++) {
+            hsl[2] = (low + high) / 2f;
+            ColorUtils.colorToLAB(ColorUtils.HSLToColor(hsl), lab);
+            if (lab[0] < target) {
+                low = hsl[2];
+            } else {
+                high = hsl[2];
+            }
+        }
+        hsl[2] = (low + high) / 2f;
+        return ColorUtils.HSLToColor(hsl);
     }
 
     public static void load(AppIcon icon, int size, Callback callback) {

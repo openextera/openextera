@@ -216,7 +216,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
                     invalidate();
                 }
 
-                if (allowLivePhotos && !isParentDoFastScroll() && photoEntry != null && photoEntry.isLivePhoto()) {
+                if (allowLivePhotos && !isParentDoFastScroll() && photoEntry != null && photoEntry.isLivePhotoAsync(() -> invalidate())) {
                     Drawable icon;
                     if (photoEntry.isUnalivePhoto()) {
                         if (livePhotoIconOff == null) {
@@ -438,6 +438,9 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         if (spoilerEffect2 != null) {
             spoilerEffect2.detach(this);
         }
+        if (photoEntry != null) {
+            photoEntry.cancelLivePhotoParse();
+        }
     }
 
     @Override
@@ -514,6 +517,9 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
     public void setPhotoEntry(MediaController.PhotoEntry entry, boolean selectedMultiple, boolean needCheckShow, boolean last, boolean allowLivePhotos) {
         pressed = false;
+        if (photoEntry != null && photoEntry != entry) {
+            photoEntry.cancelLivePhotoParse();
+        }
         photoEntry = entry;
         isLast = last;
         this.allowLivePhotos = allowLivePhotos;
@@ -752,7 +758,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(true);
         StringBuilder sb = new StringBuilder();
-        if (photoEntry != null && photoEntry.isLivePhoto()) {
+        if (photoEntry != null && photoEntry.isLivePhotoAsync(imageView::invalidate)) {
             sb.append(getString(R.string.AttachLivePhoto));
         } else if (photoEntry != null && photoEntry.isVideo) {
             sb.append(getString(R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));

@@ -2173,7 +2173,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             button.setOnClickListener(v -> {
                 if (button.isLoading() || localPreview) return;
                 if (!button.isEnabled()) {
-                    if (emoji_id == null) {
+                    if (!localMode && emoji_id == null) {
                         openIconDialog();
                     }
                     return;
@@ -2250,7 +2250,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                 return;
             }
             final SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[] popup = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[1];
-            SelectAnimatedEmojiDialog popupLayout = new SelectAnimatedEmojiDialog(null, getContext(), true, dp(150), SelectAnimatedEmojiDialog.TYPE_AI_STYLE_ICON, resourcesProvider) {
+            SelectAnimatedEmojiDialog popupLayout = new SelectAnimatedEmojiDialog(null, getContext(), localMode, dp(150), SelectAnimatedEmojiDialog.TYPE_AI_STYLE_ICON, resourcesProvider) {
                 @Override
                 protected boolean willApplyEmoji(View view, Long documentId, TLRPC.Document document, TL_stars.TL_starGiftUnique gift, Integer until) {
                     if (gift != null) {
@@ -2383,7 +2383,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                 return;
             }
             button.setEnabled(
-                emoji_id != null &&
+                (localMode || emoji_id != null) &&
                 titleCell.getText().length() > 0 &&
                 promptCell.getText().length() > 0
             );

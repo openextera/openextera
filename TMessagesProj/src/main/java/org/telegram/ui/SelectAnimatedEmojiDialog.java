@@ -1356,7 +1356,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         if (premiumStar == null) {
             if (badgePicker && defaultBadgeId != 0) {
                 premiumStar = AnimatedEmojiDrawable.make(currentAccount, getCacheType(), defaultBadgeId);
-            } else if (type == TYPE_SET_REPLY_ICON || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_EMOJI_STATUS_CHANNEL_TOP || type == TYPE_SET_REPLY_ICON_BOTTOM) {
+            } else if (type == TYPE_SET_REPLY_ICON || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_EMOJI_STATUS_CHANNEL_TOP || type == TYPE_SET_REPLY_ICON_BOTTOM || type == TYPE_AI_STYLE_ICON) {
                 premiumStar = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.msg_filled_blocked).mutate();
             } else {
                 premiumStar = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.msg_settings_premium).mutate();
@@ -3634,7 +3634,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     }
 
     private void incrementHintUse() {
-        if (type == TYPE_SET_DEFAULT_REACTION) {
+        if (type == TYPE_SET_DEFAULT_REACTION || type == TYPE_AI_STYLE_ICON) {
             return;
         }
         final String key = "emoji" + (type == TYPE_EMOJI_STATUS || type == TYPE_EMOJI_STATUS_TOP || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_EMOJI_STATUS_CHANNEL_TOP ? "status" : "reaction") + "usehint";
@@ -3679,6 +3679,8 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             MediaDataController.getInstance(account).getStickerSet(new TLRPC.TL_inputStickerSetEmojiChannelDefaultStatuses(), false);
         } else if (type == TYPE_EMOJI_STATUS || type == TYPE_EMOJI_STATUS_TOP) {
             MediaDataController.getInstance(account).fetchEmojiStatuses(0, true);
+            MediaDataController.getInstance(account).getStickerSet(new TLRPC.TL_inputStickerSetEmojiDefaultStatuses(), false);
+        } else if (type == TYPE_AI_STYLE_ICON) {
             MediaDataController.getInstance(account).getStickerSet(new TLRPC.TL_inputStickerSetEmojiDefaultStatuses(), false);
         } else if (type == TYPE_TOPIC_ICON) {
             MediaDataController.getInstance(account).checkDefaultTopicIcons();
@@ -3755,7 +3757,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         standardEmojis.clear();
         gifts.clear();
 
-        if ((!installedEmojipacks.isEmpty() || type == TYPE_AVATAR_CONSTRUCTOR) && type != TYPE_SET_REPLY_ICON && type != TYPE_SET_REPLY_ICON_BOTTOM && type != TYPE_EXPANDABLE_REACTIONS) {
+        if ((!installedEmojipacks.isEmpty() || type == TYPE_AVATAR_CONSTRUCTOR || type == TYPE_AI_STYLE_ICON) && type != TYPE_SET_REPLY_ICON && type != TYPE_SET_REPLY_ICON_BOTTOM && type != TYPE_EXPANDABLE_REACTIONS) {
             searchRow = totalCount++;
             rowHashCodes.add(9L);
         } else {
@@ -3857,7 +3859,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
         }
 
-        if (includeHint && !badgePicker && type != TYPE_STICKER_SET_EMOJI && type != TYPE_SET_DEFAULT_REACTION && type != TYPE_TAGS && type != TYPE_TOPIC_ICON && type != TYPE_CHAT_REACTIONS && type != TYPE_EXPANDABLE_REACTIONS && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_SET_REPLY_ICON && type != TYPE_SET_REPLY_ICON_BOTTOM) {
+        if (includeHint && !badgePicker && type != TYPE_STICKER_SET_EMOJI && type != TYPE_SET_DEFAULT_REACTION && type != TYPE_TAGS && type != TYPE_TOPIC_ICON && type != TYPE_CHAT_REACTIONS && type != TYPE_EXPANDABLE_REACTIONS && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_SET_REPLY_ICON && type != TYPE_SET_REPLY_ICON_BOTTOM && type != TYPE_AI_STYLE_ICON) {
             longtapHintRow = totalCount++;
             rowHashCodes.add(6L);
         }
@@ -4029,9 +4031,43 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     }
                 }
             }
+        } else if (type == TYPE_AI_STYLE_ICON) {
+            TLRPC.TL_messages_stickerSet defaultSet = MediaDataController.getInstance(currentAccount).getStickerSet(new TLRPC.TL_inputStickerSetEmojiDefaultStatuses(), true);
+            if (defaultSet == null) {
+                defaultSetLoading = true;
+            } else {
+                if (includeEmpty) {
+                    totalCount++;
+                    rowHashCodes.add(2L);
+                }
+                if (defaultSet.documents != null) {
+                    for (int i = 0; i < defaultSet.documents.size(); ++i) {
+                        recent.add(new AnimatedEmojiSpan(defaultSet.documents.get(i), null));
+                    }
+                }
+                final int maxlen = SPAN_COUNT_FOR_EMOJI * RECENT_MAX_LINES;
+                int len = maxlen - (includeEmpty ? 1 : 0);
+                if (recent.size() > len && !recentExpanded) {
+                    for (int i = 0; i < len - 1; ++i) {
+                        rowHashCodes.add(43223 + 13L * recent.get(i).getDocumentId());
+                        totalCount++;
+                    }
+                    rowHashCodes.add(-5531 + 13L * (recent.size() - maxlen + (includeEmpty ? 1 : 0) + 1));
+                    if (recentExpandButton != null) {
+                        recentExpandButton.textView.setText("+" + (recent.size() - maxlen + (includeEmpty ? 1 : 0) + 1));
+                    }
+                    positionToExpand.put(totalCount, -1);
+                    totalCount++;
+                } else {
+                    for (int i = 0; i < recent.size(); ++i) {
+                        rowHashCodes.add(43223 + 13L * recent.get(i).getDocumentId());
+                        totalCount++;
+                    }
+                }
+            }
         }
         gifts.clear();
-        if (type == TYPE_EMOJI_STATUS || type == TYPE_EMOJI_STATUS_TOP || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_EMOJI_STATUS_CHANNEL_TOP) {
+        if (!badgePicker && (type == TYPE_EMOJI_STATUS || type == TYPE_EMOJI_STATUS_TOP || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_EMOJI_STATUS_CHANNEL_TOP)) {
             final StarsController.GiftsList profileGifts = StarsController.getInstance(currentAccount).getProfileGiftsList(getDialogId());
             profileGifts.load();
             final ArrayList<TL_stars.TL_starGiftUnique> uniqueGifts = new ArrayList<>();
@@ -4684,7 +4720,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     ImageReceiver imageReceiver;
                     if (imageView.empty) {
                         Drawable drawable = getPremiumStar();
-                        float scale = badgePicker || type == TYPE_SET_REPLY_ICON || type == TYPE_EMOJI_STATUS_CHANNEL_TOP || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_SET_REPLY_ICON_BOTTOM ? 1.3f : 1f;
+                        float scale = badgePicker || type == TYPE_SET_REPLY_ICON || type == TYPE_EMOJI_STATUS_CHANNEL_TOP || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_SET_REPLY_ICON_BOTTOM || type == TYPE_AI_STYLE_ICON ? 1.3f : 1f;
                         if (imageView.pressedProgress != 0 || imageView.selectedProgress > 0) {
                             scale *= 0.8f + 0.2f * (1f - Math.max(imageView.selectedProgress * .8f, imageView.pressedProgress));
                         }
@@ -4852,7 +4888,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         Drawable drawable = null;
                         if (imageView.empty) {
                             drawable = getPremiumStar();
-                            if (badgePicker || type == TYPE_SET_REPLY_ICON || type == TYPE_EMOJI_STATUS_CHANNEL_TOP || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_SET_REPLY_ICON_BOTTOM) {
+                            if (badgePicker || type == TYPE_SET_REPLY_ICON || type == TYPE_EMOJI_STATUS_CHANNEL_TOP || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_SET_REPLY_ICON_BOTTOM || type == TYPE_AI_STYLE_ICON) {
                                 AndroidUtilities.rectTmp2.inset((int) (-AndroidUtilities.rectTmp2.width() * .15f), (int) (-AndroidUtilities.rectTmp2.height() * .15f));
                             }
                             drawable.setBounds(AndroidUtilities.rectTmp2);
