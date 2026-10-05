@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Nieskończone przewijanie</string>
     <string name="CryptoPillTargetCurrency">Waluta docelowa</string>
     <string name="CryptoCurrencyUsd">Dolar amerykański</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Rubel rosyjski</string>
     <string name="CryptoCurrencyGbp">Funt brytyjski</string>
     <string name="CryptoCurrencyKzt">Tenge kazachskie</string>
@@ -73,7 +72,6 @@
     <string name="CopyIpAddress">Skopiuj adres IP</string>
     <string name="IpInfoUnavailable">Nie udało się załadować informacji o adresie IP.</string>
     <string name="IpInfoCountry">Kraj</string>
-    <string name="IpInfoRegion">Region</string>
     <string name="IpInfoCity">Miasto</string>
     <string name="IpInfoIsp">Dostawca internetu</string>
     <string name="IpInfoOrganization">Organizacja</string>
@@ -100,13 +98,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Zwiększ szybkość pobierania</string>
     <string name="UploadSpeedBoost">Zwiększ szybkość wysyłania</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra przyśpieszenie może powodować problemy z pobieraniem plików i odtwarzaniem wideo przy wolnych połączeniach internetowych.</string>
-    <!-- Maps -->
-    <string name="Maps">Mapy</string>
-    <string name="TermsOfUseYandexMaps">Korzystając z map Yandex, wyrażasz zgodę na <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">warunki użytkowania</a>]]>.</string>
-    <string name="UseYandexMaps">Używaj map Yandex</string>
-    <string name="InstallYandexMaps">Zainstalować mapy Yandex?</string>
     <!-- Storage -->
     <string name="StorageSettings">Pamięć</string>
     <string name="CustomSavePath">Własny folder zapisu</string>
@@ -163,7 +155,6 @@
     <string name="NavigationDrawer">Panel boczny</string>
     <string name="NavigationDrawerInfo">Zastępuje menu w prawym górnym rogu klasycznym panelem bocznym i przyciskiem \"hamburgera\".</string>
     <string name="NavigationDrawerImmersiveAnimation">Animacja immersyjna</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Elementy menu</string>
     <string name="MainMenuItemsInfo">Dotknij, aby pokazać lub ukryć, przytrzymaj, aby zmienić kolejność. Układ jest wspólny dla menu i szuflady.</string>
     <string name="MainMenuHiddenItems">Ukryte elementy menu</string>
@@ -213,7 +204,6 @@
     <string name="AppIconAurora">Zorza polarna</string>
     <string name="AppIconAmethyst">Ametyst</string>
     <string name="AppIconInvincible">Niezwyciężony</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Kosmos</string>
     <string name="AppIconIceAge">Epoka lodowcowa</string>
     <string name="AppIconEditor">Edytor</string>
@@ -243,7 +233,6 @@
     <string name="PredictiveBackMax">Maksymalna</string>
     <string name="PredictiveBackInfo">Dostosowuje, jak daleko przesuwa się ekran podczas wykonywania gestu cofania.</string>
     <string name="TransitionAnimation">Animacja przejścia</string>
-    <string name="TransitionAnimationAosp">AOSP</string>
     <string name="TransitionAnimationSpring">Sprężyna</string>
     <string name="TransitionAnimationInfo">AOSP wykorzystuje standardową animację przejścia okien w Androidzie, Sprężyna - płynniejszą.</string>
     <!-- Blur & Effects -->
@@ -261,7 +250,6 @@
     <string name="StickerSize">Rozmiar naklejki</string>
     <string name="StickerSizeLeft">Mały</string>
     <string name="StickerSizeRight">Duży</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">woah, ale słodkie!</string>
     <string name="StickerShape">Kształt naklejki</string>
     <string name="StickerShapeRounded">Zaokrąglony</string>
@@ -283,7 +271,6 @@
     <string name="ServicesInfo">Wybierz odpowiednią usługę do współpracy z modelami językowymi.</string>
     <string name="NewService">Nowa usługa</string>
     <string name="EditService">Edytuj usługę</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">Klucz API</string>
     <string name="ServiceInfo">Informacje o usłudze</string>
     <string name="ServiceProvider">Dostawca</string>
@@ -444,7 +431,6 @@
     <string name="AlwaysSendInHD">Zawsze wysyłaj w jakości HD</string>
     <string name="HideCameraTile">Ukryj kafelek szybkiego aparatu</string>
     <string name="HideCameraTileInfo">Kafelek aparatu zostanie zastąpiony pływającym przyciskiem. Naciśnij, aby uruchomić aparat Telegram; przytrzymaj, aby uruchomić aparat systemowy.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Czas pomijania podwójnym stuknięciem</string>
     <string name="PreferOriginalQuality">Preferuj oryginalną jakość</string>
@@ -609,7 +595,6 @@
     <string name="MimeType">Typ Mime</string>
     <string name="Datacenter">Centrum danych</string>
     <!-- Date Formatting -->
-    <string name="DateFormatOption">Format:</string>
     <string name="DateFormatOptionNone">Brak</string>
     <string name="DateFormatOptionRelative">Względny</string>
     <string name="DateFormatOptionShortTime">Krótka godzina</string>
@@ -724,5 +709,37 @@
     <string name="DisableMarkdown">Wyłącz Markdown</string>
     <string name="EnableMarkdown">Włącz Markdown</string>
     <!-- Non-translatable -->
+    <string name="AccountNotifications">Konta</string>
+    <string name="AccountNotificationsCount">%1$d z %2$d</string>
+    <string name="AccountNotificationsInfo">Odznaczone konta nie wyświetlają powiadomień, gdy korzystasz z innego konta.</string>
+    <string name="AccountNotificationsCurrent">Powiadomienia z bieżącego konta są zawsze wyświetlane.</string>
+    <string name="TabCounterUnmuted">Niewyciszone</string>
+    <string name="NewFabStyle">Pływający przycisk</string>
+    <string name="ServiceAlreadyExists">Usługa już istnieje</string>
+    <string name="ServiceAlreadyExistsInfo">Przełączono na istniejącą usługę.</string>
+    <string name="ServiceDuplicate">Inna usługa używa już tego adresu URL, modelu i klucza.</string>
+    <string name="GenerateWithHistory">Z historią</string>
+    <string name="GenerateWithPhoto">Ze zdjęciem</string>
+    <string name="AIErrorEmpty">Pusta odpowiedź</string>
+    <string name="AIErrorEmptyInfo">Model nic nie zwrócił. Spróbuj ponownie lub wybierz inny model.</string>
+    <string name="AIErrorOnDeviceStopped">Model zatrzymany</string>
+    <string name="AIErrorOnDeviceStoppedInfo">Model na urządzeniu zatrzymał się podczas odpowiadania, najczęściej z powodu braku pamięci. Spróbuj ponownie lub wybierz lżejszy model.</string>
+    <string name="AIOnDevicePreviewModel">Model podglądowy</string>
+    <string name="AIOnDeviceFastModel">Szybki model</string>
+    <string name="AIReplaceTelegramEditorInfo">Tłumacz, zmieniaj styl i sprawdzaj wersje robocze</string>
+    <string name="AIReplaceTelegramSummariesInfo">Podsumowuj długie wiadomości i posty</string>
+    <string name="AIReplaceTelegramInfo">Wybrane funkcje korzystają z Twojej usługi AI zamiast serwerów Telegrama, bez limitów Premium.</string>
+    <string name="SwipeActionsBehavior">Zachowanie</string>
+    <string name="SwipeActionsLoop">Zapętl akcje</string>
+    <string name="SwipeActionsReversed">Odwrócone przewijanie</string>
+    <string name="SwipeActionsBehaviorInfo">Przy zapętleniu pierwsza akcja pojawia się tuż po ostatniej. Odwrócone przewijanie sprawia, że lista porusza się wraz z palcem.</string>
+    <string name="ShowForwardsCount">Pokaż liczbę przekazań</string>
+    <string name="BlockAds">Blokuj reklamy</string>
+    <string name="BlockedRequests_one">%1$d zablokowane</string>
+    <string name="BlockedRequests_two">%1$d zablokowane</string>
+    <string name="BlockedRequests_few">%1$d zablokowane</string>
+    <string name="BlockedRequests_many">%1$d zablokowanych</string>
+    <string name="BlockedRequests_other">%1$d zablokowanych</string>
+    <string name="AdBlockFiltersLoading">Wczytywanie filtrów…</string>
 </resources>
 

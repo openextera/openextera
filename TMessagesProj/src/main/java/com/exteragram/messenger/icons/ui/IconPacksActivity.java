@@ -112,7 +112,7 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
             }
         }
 
-        boolean enabledSection = countExistingPacks(ExteraConfig.getIconPacksLayout()) > 1 && sectionId == 0;
+        boolean enabledSection = countCustomPacks(ExteraConfig.getIconPacksLayout()) > 1 && sectionId == 0;
         if (enabledSection) {
             String basePack = null;
             for (String id : ExteraConfig.getIconPacksLayout()) {
@@ -142,7 +142,7 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
         updateAdapter();
     }
 
-    private int countExistingPacks(ArrayList<String> ids) {
+    private int countCustomPacks(ArrayList<String> ids) {
         int count = 0;
         for (String id : ids) {
             if (!id.startsWith(BASE_PREFIX) && getPackById(id) != null) {
@@ -180,23 +180,17 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
         adapter.whiteSectionEnd();
         items.add(UItem.asShadow(LocaleController.getString(R.string.BaseIconPackInfo)));
 
-        int enabledCount = countExistingPacks(ExteraConfig.getIconPacksLayout());
+        int enabledCount = countCustomPacks(ExteraConfig.getIconPacksLayout());
         if (enabledCount > 0) {
-            adapter.whiteSectionStart();
-            items.add(UItem.asHeader(LocaleController.getString(R.string.EnabledPacks)));
-            addPackItems(items, adapter, ExteraConfig.getIconPacksLayout(), enabledCount > 1);
-            adapter.whiteSectionEnd();
+            addCustomPacksSection(items, adapter, LocaleController.getString(R.string.EnabledPacks), ExteraConfig.getIconPacksLayout(), enabledCount > 1);
         }
 
-        int hiddenCount = countExistingPacks(ExteraConfig.getIconPacksHidden());
+        int hiddenCount = countCustomPacks(ExteraConfig.getIconPacksHidden());
         if (hiddenCount > 0) {
             if (enabledCount > 0) {
                 items.add(UItem.asShadow());
             }
-            adapter.whiteSectionStart();
-            items.add(UItem.asHeader(LocaleController.getString(R.string.AllPacks)));
-            addPackItems(items, adapter, ExteraConfig.getIconPacksHidden(), hiddenCount > 1);
-            adapter.whiteSectionEnd();
+            addCustomPacksSection(items, adapter, LocaleController.getString(R.string.AllPacks), ExteraConfig.getIconPacksHidden(), hiddenCount > 1);
         }
 
         if (enabledCount > 0 || hiddenCount > 0) {
@@ -204,7 +198,9 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
         }
     }
 
-    private void addPackItems(ArrayList<UItem> items, UniversalAdapter adapter, ArrayList<String> ids, boolean reorder) {
+    private void addCustomPacksSection(ArrayList<UItem> items, UniversalAdapter adapter, String title, ArrayList<String> ids, boolean reorder) {
+        adapter.whiteSectionStart();
+        items.add(UItem.asHeader(title));
         if (reorder) {
             adapter.reorderSectionStart();
         }
@@ -220,6 +216,7 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
         if (reorder) {
             adapter.reorderSectionEnd();
         }
+        adapter.whiteSectionEnd();
     }
 
     private IconPack getPackById(String id) {
@@ -261,9 +258,9 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
                 return false;
             }
             ItemOptions.makeOptions(this, view)
-                .addIf(ExteraConfig.getIconPacksLayout().contains(id), R.drawable.msg_edit, LocaleController.getString(R.string.Edit), () -> editPack(iconPack))
+                .addIf(ExteraConfig.getIconPacksLayout().contains(id), R.drawable.msg_edit, LocaleController.getString(R.string.Edit), () -> openEditor(iconPack))
                 .add(R.drawable.msg_share, LocaleController.getString(R.string.ShareFile), () -> sharePack(iconPack))
-                .add(R.drawable.msg_delete, LocaleController.getString(R.string.Delete), true, () -> showDeleteAlert(iconPack))
+                .add(R.drawable.msg_delete, LocaleController.getString(R.string.Delete), true, () -> confirmDeletePack(iconPack))
                 .setScrimViewBackground(listView.getClipBackground(view))
                 .show();
             return true;
@@ -271,7 +268,7 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
         return super.onLongClick(item, view, position, x, y);
     }
 
-    private void editPack(IconPack iconPack) {
+    private void openEditor(IconPack iconPack) {
         ExteraConfig.setEditingIconPackId(iconPack.getId());
         IconPickerController.setActive((LaunchActivity) getParentActivity(), true);
         presentFragment(new IconPacksEditorActivity(iconPack));
@@ -297,7 +294,7 @@ public class IconPacksActivity extends BasePreferencesActivity implements Notifi
         getParentActivity().startActivity(Intent.createChooser(intent, LocaleController.getString(R.string.ShareFile)));
     }
 
-    private void showDeleteAlert(IconPack iconPack) {
+    private void confirmDeletePack(IconPack iconPack) {
         AlertDialog dialog = new AlertDialog.Builder(getParentActivity(), getResourceProvider())
             .setTitle(LocaleController.getString(R.string.DeletePack))
             .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.DeletePackInfo, iconPack.getName())))

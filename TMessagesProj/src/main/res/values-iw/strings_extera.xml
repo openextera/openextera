@@ -102,11 +102,6 @@
     <string name="UploadSpeedBoost">הגברת מהירות העלאה</string>
     <string name="Ultra">אולטרה</string>
     <string name="SpeedBoostInfo">הורדה מהירה יכולה לגרום לבעיות בהורדת הקבצים והזרמת הסרטונים בחיבור אינטרנט איטי.</string>
-    <!-- Maps -->
-    <string name="Maps">מפות</string>
-    <string name="TermsOfUseYandexMaps">על ידי שימוש במפות Yandex הנך מסכים ל<![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">תנאי השימוש</a>]]>.</string>
-    <string name="UseYandexMaps">השתמש במפת Yandex</string>
-    <string name="InstallYandexMaps">להתקין את מפת Yandex?</string>
     <!-- Storage -->
     <string name="StorageSettings">אחסון</string>
     <string name="CustomSavePath">תיקיית שמירה מותאמת אישית</string>
@@ -163,7 +158,6 @@
     <string name="NavigationDrawer">מגירת ניווט</string>
     <string name="NavigationDrawerInfo">מחליף את התפריט הימני העליון במגירה קלאסית הניתנת להחלפה וכפתור המבורגר.</string>
     <string name="NavigationDrawerImmersiveAnimation">אנימציה סוחפת</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">פריטי התפריט</string>
     <string name="MainMenuItemsInfo">הקש כדי להציג או להסתיר פריטים, החזק כדי לשנות את הסדר. הפריסה משותפת בין התפריט למגירה.</string>
     <string name="MainMenuHiddenItems">פריטי תפריט מוסתרים</string>
@@ -243,7 +237,6 @@
     <string name="PredictiveBackMax">מקסימום</string>
     <string name="PredictiveBackInfo">מכוון עד כמה המסך זז בעת החלקה אחורה.</string>
     <string name="TransitionAnimation">אנימציית מעבר</string>
-    <string name="TransitionAnimationAosp">AOSP</string>
     <string name="TransitionAnimationSpring">אביב</string>
     <string name="TransitionAnimationInfo">ה-AOSP משתמשת במעבר החלונות המקורי של אנדרואיד, בעוד ש-Spring משתמשת במעבר חלק יותר.</string>
     <!-- Blur & Effects -->
@@ -444,7 +437,6 @@
     <string name="AlwaysSendInHD">תמיד לשלוח ב-HD</string>
     <string name="HideCameraTile">הסתר את משבצת המצלמה המיידית</string>
     <string name="HideCameraTileInfo">אריח המצלמה יוחלף בכפתור צף. לחיצה עליו תפעיל את מצלמת הטלגרם; לחיצה ממושכת תפעיל את מצלמת המערכת.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">לחיצה כפולה על זמן דילוג</string>
     <string name="PreferOriginalQuality">עדיף איכות מקורית</string>

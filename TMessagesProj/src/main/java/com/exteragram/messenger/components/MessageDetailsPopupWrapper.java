@@ -17,7 +17,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.exifinterface.media.ExifInterface;
 
-import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.utils.JpegFingerprint;
 import com.exteragram.messenger.utils.MediaUtils;
 import com.exteragram.messenger.utils.chats.ChatUtils;
@@ -352,8 +351,7 @@ public abstract class MessageDetailsPopupWrapper {
             return;
         }
         if (item.id == LOCATION) {
-            String url = ExteraConfig.canUseYandexMaps() ? "http://maps.yandex.ru/?text=%s,%s" : "https://maps.google.com/?q=%s,%s";
-            Browser.openUrl(fragment.getParentActivity(), String.format(url, geo[0], geo[1]));
+            Browser.openUrl(fragment.getParentActivity(), String.format("https://maps.google.com/?q=%s,%s", geo[0], geo[1]));
             return;
         }
         copy(item.subtitle != null ? item.subtitle : item.title);

@@ -2,7 +2,6 @@ package com.exteragram.messenger.utils.text;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -150,23 +149,6 @@ public abstract class LocaleUtils {
         return builder;
     }
 
-    public static CharSequence formatWithHtmlURLs(CharSequence text) {
-        if (TextUtils.isEmpty(text)) {
-            return text;
-        }
-        SpannableString spannable = new SpannableString(text);
-        URLSpan[] spans = spannable.getSpans(0, text.length(), URLSpan.class);
-        SpannableStringBuilder builder = new SpannableStringBuilder(spannable);
-        for (URLSpan span : spans) {
-            int start = builder.getSpanStart(span);
-            int end = builder.getSpanEnd(span);
-            String url = span.getURL();
-            builder.removeSpan(span);
-            builder.setSpan(new URLSpanNoUnderline(url), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-        return builder;
-    }
-
     public static CharSequence formatWithURLs(CharSequence text) {
         if (TextUtils.isEmpty(text)) {
             return text;
@@ -200,10 +182,6 @@ public abstract class LocaleUtils {
             formatted = formatWithUsernames(result[0]);
         }
         return AndroidUtilities.replaceTags(formatted);
-    }
-
-    public static CharSequence fromHtml(String html) {
-        return new SpannableString(Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY));
     }
 
     public static String getAppName() {

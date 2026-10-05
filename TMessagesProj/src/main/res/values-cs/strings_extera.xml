@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Nekonečné posouvání</string>
     <string name="CryptoPillTargetCurrency">Cílová měna</string>
     <string name="CryptoCurrencyUsd">Americký dolar</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Ruský rubl</string>
     <string name="CryptoCurrencyGbp">Britská libra</string>
     <string name="CryptoCurrencyKzt">Kazachstánské tenge</string>
@@ -73,7 +72,6 @@
     <string name="CopyIpAddress">Zkopírovat IP adresu</string>
     <string name="IpInfoUnavailable">Nelze načíst informace o IP adrese.</string>
     <string name="IpInfoCountry">Země</string>
-    <string name="IpInfoRegion">Region</string>
     <string name="IpInfoCity">Město</string>
     <string name="IpInfoIsp">Poskytovatel internetu</string>
     <string name="IpInfoOrganization">Organizace</string>
@@ -98,13 +96,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Zrychlení stahování</string>
     <string name="UploadSpeedBoost">Zrychlení nahrávání</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra zrychlení může způsobovat problémy při stahování souborů a streamování videí na pomalých internetových připojeních.</string>
-    <!-- Maps -->
-    <string name="Maps">Mapy</string>
-    <string name="TermsOfUseYandexMaps">Používáním Yandex Maps souhlasíte s <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">podmínkami použití</a>]]>.</string>
-    <string name="UseYandexMaps">Používat Yandex Maps</string>
-    <string name="InstallYandexMaps">Nainstalovat Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Úložiště</string>
     <string name="CustomSavePath">Vlastní složka pro ukládání</string>
@@ -161,7 +153,6 @@
     <string name="NavigationDrawer">Navigační zásuvka</string>
     <string name="NavigationDrawerInfo">Nahrazuje nabídku vpravo nahoře klasickou zásuvkou otevíranou přejetím a tlačítkem hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Imersivní animace</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Položky nabídky</string>
     <string name="MainMenuItemsInfo">Klepnutím položky zobrazíte nebo skryjete, podržením změníte pořadí. Rozvržení je sdíleno mezi nabídkou a zásuvkou.</string>
     <string name="MainMenuHiddenItems">Skryté položky nabídky</string>
@@ -208,14 +199,11 @@
     <!-- App Icons -->
     <string name="IconPack">Balíček ikon</string>
     <string name="AppIconSunset">Západ slunce</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Ametyst</string>
     <string name="AppIconInvincible">Neporazitelný</string>
     <string name="AppIconCyberpunk">Kyberpunk</string>
     <string name="AppIconSpace">Prostor</string>
     <string name="AppIconIceAge">Doba ledová</string>
-    <string name="AppIconEditor">Editor</string>
-    <string name="AppIconOrbit">Orbit</string>
     <string name="AppIconSus">Podvodník</string>
     <string name="AppIconWinter">Zimní</string>
     <!-- General Appearance -->
@@ -253,7 +241,6 @@
     <string name="StickerSize">Velikost samolepek</string>
     <string name="StickerSizeLeft">Malá</string>
     <string name="StickerSizeRight">Velká</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">wow, tak roztomilé!</string>
     <string name="StickerShape">Tvar samolepek</string>
     <string name="StickerShapeRounded">Zaoblené</string>
@@ -272,7 +259,6 @@
     <string name="ServicesInfo">Vyberte vhodnou službu pro interakci s jazykovými modely.</string>
     <string name="NewService">Nová služba</string>
     <string name="EditService">Upravit službu</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">API klíč</string>
     <string name="ServiceInfo">Informace o službě</string>
     <string name="ServiceProvider">Poskytovatel</string>
@@ -379,7 +365,6 @@
     <string name="StaticZoom">Statické zvětšení</string>
     <string name="StaticZoomInfo">Při nahrávání videozpráv se úroveň přiblížení po uvolnění prstů neresetuje.</string>
     <string name="VideoMessagesCamera">Kamera ve videozprávách</string>
-    <string name="VideoMessagesCameraRear">Rear</string>
     <string name="VideoMessagesCameraFront">Přední</string>
     <string name="VideoMessagesCameraAsk">Zeptat se</string>
     <string name="RearCamera">Zadní kamera</string>
@@ -390,12 +375,10 @@
     <string name="AlwaysSendInHD">Vždy odesílat v HD</string>
     <string name="HideCameraTile">Skrýt dlaždici okamžité kamery</string>
     <string name="HideCameraTileInfo">Dlaždice kamery bude nahrazena plovoucím tlačítkem. Klepnutím se spustí kamera Telegramu, podržením se spustí systémová kamera.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Doba přeskočení dvojitým klepnutím</string>
     <string name="PreferOriginalQuality">Preferovat původní kvalitu</string>
     <string name="PauseOnMinimize">Automatická pauza</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Hlas</string>
     <string name="PauseOnMinimizeRound">Kruhová</string>
     <string name="PauseOnMinimizeInfo">Pozastaví přehrávání médií, když je zařízení uzamčeno nebo je exteraGram minimalizováno.</string>
@@ -525,10 +508,8 @@
     <string name="FilePath">Cesta k souboru</string>
     <string name="Platform">Platforma</string>
     <string name="Resolution">Rozlišení</string>
-    <string name="Bitrate">Bitrate</string>
     <string name="Duration">Délka</string>
     <string name="MimeType">MIME typ</string>
-    <string name="Datacenter">Datacenter</string>
     <!-- Date Formatting -->
     <string name="DateFormatOption">Formát:</string>
     <string name="DateFormatOptionNone">Žádný</string>

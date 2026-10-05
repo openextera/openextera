@@ -16,7 +16,6 @@
     <string name="AboutExteraDescription">En eksperimentell Telegram-klient basert på den offisielle kildekoden!</string>
     <string name="Crowdin">Oversett</string>
     <string name="Website">Nettside</string>
-    <string name="Categories">Categories</string>
     <string name="Developer">**%1$s** er medlem av utviklingsteamet **exteraGram**.</string>
     <string name="DeveloperCompact">Medlem av utviklingsteamet til **exteraGram**.</string>
     <string name="Supporter">*%1$s** støttet utviklingen av **exteraGram** og mottok et unikt merke.</string>
@@ -26,7 +25,6 @@
     <string name="SettingLinkToUser">Innstillingslenke sendt til **%1$s**.</string>
     <string name="SettingLinkToChats">Innstillingslenke sendt til **%1$s**.</string>
     <string name="LiteBatteryFollowSystem">Bruk systembatterisparing</string>
-    <string name="LiteBatteryFollowSystemState">System</string>
     <string name="LiteBatteryFollowSystemInfo">Styres av systemets batterisparer.</string>
     <!-- Pill Stack -->
     <string name="PillStackPills">Pillestabel</string>
@@ -46,7 +44,6 @@
     <string name="PillStackInfiniteScrolling">Uendelig rulling</string>
     <string name="CryptoPillTargetCurrency">Målvaluta</string>
     <string name="CryptoCurrencyUsd">Amerikansk dollar</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Russisk rubel</string>
     <string name="CryptoCurrencyGbp">Britisk pund</string>
     <string name="CryptoCurrencyKzt">Kasakhstansk tenge</string>
@@ -66,14 +63,12 @@
     <string name="ProxyDisableNever">Aldri</string>
     <string name="ProxyDisableAlways">Alltid</string>
     <string name="ProxyDisableOnMobileData">Mobildata</string>
-    <string name="ProxyType">Type</string>
     <string name="Unknown">Ukjent</string>
     <string name="ProxyRename">Proxynavn (valgfritt)</string>
     <string name="ProxyPinLimitReached">Du kan feste opptil %1$d proxyer.</string>
     <string name="CopyIpAddress">Kopier IP-adressen</string>
     <string name="IpInfoUnavailable">Kunne ikke laste IP-adresseinformasjon.</string>
     <string name="IpInfoCountry">Land</string>
-    <string name="IpInfoRegion">Region</string>
     <string name="IpInfoCity">By</string>
     <string name="IpInfoIsp">Internett-leverandør</string>
     <string name="IpInfoOrganization">Organisasjon</string>
@@ -98,13 +93,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Nedlastingshastighetsøkning</string>
     <string name="UploadSpeedBoost">Økning av opplastingshastighet</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost kan forårsake problemer med nedlasting av filer og strømming av videoer på trege internettforbindelser.</string>
-    <!-- Maps -->
-    <string name="Maps">Kart</string>
-    <string name="TermsOfUseYandexMaps">Ved å bruke Yandex Maps godtar du <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">bruksvilkårene</a>]]>.</string>
-    <string name="UseYandexMaps">Bruk Yandex Kart</string>
-    <string name="InstallYandexMaps">Installer Yandex karter?</string>
     <!-- Storage -->
     <string name="StorageSettings">Lagring</string>
     <string name="CustomSavePath">Egendefinert lagringsmappe</string>
@@ -161,7 +150,6 @@
     <string name="NavigationDrawer">Navigasjonsskuff</string>
     <string name="NavigationDrawerInfo">Erstatter menyen øverst til høyre med en klassisk sveip-for-åpne-skuff og en hamburgerknapp.</string>
     <string name="NavigationDrawerImmersiveAnimation">Immersiv animasjon</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Menyelementer</string>
     <string name="MainMenuItemsInfo">Trykk for å vise eller skjule elementer, hold inne for å endre rekkefølgen. Oppsettet deles mellom menyen og skuffen.</string>
     <string name="MainMenuHiddenItems">Skjulte menyelementer</string>
@@ -171,7 +159,6 @@
     <!-- Icon Packs -->
     <string name="IconPacks">Ikonpakker</string>
     <string name="IconPacksInfo">Tilpass ikoner på tvers av appen</string>
-    <string name="IconPickerFilter">Filter</string>
     <string name="IconPickerAllIcons">Alle ikoner</string>
     <string name="IconPickerReplacedIcons">Byttet ut ikoner</string>
     <string name="IconPickerNotReplacedIcons">Byttet ut ikoner</string>
@@ -208,10 +195,8 @@
     <!-- App Icons -->
     <string name="IconPack">Ikonpakk</string>
     <string name="AppIconSunset">Solnedgang</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Ametyst</string>
     <string name="AppIconInvincible">Uovervinnelig</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Rom</string>
     <string name="AppIconIceAge">Istid</string>
     <string name="AppIconEditor">Redaktør</string>
@@ -253,7 +238,6 @@
     <string name="StickerSize">Klistremerkestørrelse</string>
     <string name="StickerSizeLeft">Liten</string>
     <string name="StickerSizeRight">Stor</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">wow, så søtt!</string>
     <string name="StickerShape">Klistremerkeform</string>
     <string name="StickerShapeRounded">Avrundet</string>
@@ -345,7 +329,6 @@
     <string name="AddCommaAfterMention">Legg til komma etter omtale</string>
     <string name="HideSendAsPeer">Skjul \"Send som…\" knappen</string>
     <string name="HideSendAsPeerInfo">Du kan fortsatt få tilgang til \"Send som…\" menyen ved å trykke lenge på Emojier/Klistremerker/GIF knappen.</string>
-    <string name="ShowPollResultsBeforeVoting">Show Results Before Voting</string>
     <string name="ShowPollResultsBeforeVotingHint">Se resultatene for hvert alternativ før du sender inn stemmen din.</string>
     <string name="ShowOnlineStatus">Vis online-indikator</string>
     <string name="MessagePreviewDialogMessage">Jeg kan spise glass, og det skader meg ikke.</string>
@@ -380,7 +363,6 @@
     <string name="StaticZoomInfo">Når du spiller inn videomeldinger, vil ikke zoomnivået tilbakestilles hvis du slipper fingrene.</string>
     <string name="VideoMessagesCamera">Kamera i videomeldinger</string>
     <string name="VideoMessagesCameraRear">Bak</string>
-    <string name="VideoMessagesCameraFront">Front</string>
     <string name="VideoMessagesCameraAsk">Spørre</string>
     <string name="RearCamera">Ryggekamera</string>
     <string name="FrontCamera">Frontkamera</string>
@@ -390,12 +372,10 @@
     <string name="AlwaysSendInHD">Send alltid i HD</string>
     <string name="HideCameraTile">Skjul flis for øyeblikkelig kamera</string>
     <string name="HideCameraTileInfo">Kameraflisen vil bli erstattet av en flytende knapp. Hvis du trykker på den, starter Telegram-kameraet; hvis du holder den inne, starter systemkameraet.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Dobbelttrykk Hopp over tid</string>
     <string name="PreferOriginalQuality">Foretrekker original kvalitet</string>
     <string name="PauseOnMinimize">Automatisk pause</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Stemme</string>
     <string name="PauseOnMinimizeRound">Rund</string>
     <string name="PauseOnMinimizeInfo">Setter avspillingen av media på pause når enheten er låst eller exteraGram er minimert.</string>
@@ -446,7 +426,6 @@
     <string name="SelectServiceInfo">Viser gjeldende spor i profilen som et kort hentet fra scrobbling-tjenesten.</string>
     <string name="EnterUsername">Skriv inn brukernavn</string>
     <string name="EnterUsernameInfo">Du kan få brukernavnet ditt på den **offisielle nettsiden**.</string>
-    <string name="BoostyPeopleCount_one">%1$d person</string>
     <string name="BoostyPeopleCount_two">%1$d personer</string>
     <string name="BoostyPeopleCount_few">%1$d personer</string>
     <string name="BoostyPeopleCount_many">%1$d personer</string>
@@ -525,12 +504,10 @@
     <string name="FilePath">Filsti</string>
     <string name="Platform">Plattform</string>
     <string name="Resolution">Oppløsning</string>
-    <string name="Bitrate">Bitrate</string>
     <string name="Duration">Varighet</string>
     <string name="MimeType">Mime-type</string>
     <string name="Datacenter">Datasenter</string>
     <!-- Date Formatting -->
-    <string name="DateFormatOption">Format:</string>
     <string name="DateFormatOptionNone">Ingen</string>
     <string name="DateFormatOptionRelative">Slektning</string>
     <string name="DateFormatOptionShortTime">Kort tid</string>
@@ -619,7 +596,6 @@
     <string name="StickerCornerRadius">Klistremerke hjørner</string>
     <string name="StickerCornerRadiusInfo">Velg hvor avrundede klistremerkehjørnene skal se ut.</string>
     <string name="StickerCornerRadiusLarge">Stor</string>
-    <string name="StickerCornerRadiusMedium">Medium</string>
     <string name="StickerCornerRadiusSmall">Liten</string>
     <string name="StickerCornerRadiusNone">Ingen</string>
     <!-- Feed -->
@@ -645,5 +621,9 @@
     <string name="DisableMarkdown">Deaktiver Markdown</string>
     <string name="EnableMarkdown">Aktiver Markdown</string>
     <!-- Non-translatable -->
+    <string name="ShowTranslateChatButtonLocked">Velg en annen oversettelsesleverandør eller abonnér på **Telegram Premium**.</string>
+    <string name="AccountNotifications">Kontoer</string>
+    <string name="AccountNotificationsCount">%1$d av %2$d</string>
+    <string name="TransitionAnimation">Overgangsanimasjon</string>
 </resources>
 

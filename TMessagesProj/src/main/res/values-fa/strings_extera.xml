@@ -100,11 +100,6 @@
     <string name="UploadSpeedBoost">افزایش سرعت آپلود</string>
     <string name="Ultra">فوق‌العاده</string>
     <string name="SpeedBoostInfo">افزایش فوق‌العاده ممکن است اختلالاتی در بارگیری و پخش ویدیو‌ها در اینترنت‌های کند ایجاد کند.</string>
-    <!-- Maps -->
-    <string name="Maps">نقشه‌ها</string>
-    <string name="TermsOfUseYandexMaps">درصورت استفاده از نقشه‌های یاندکس شما با <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">خط مشی‌ها</a>]]> موافقت کرده‌اید.</string>
-    <string name="UseYandexMaps">استفاده از نقشه‌های یاندکس</string>
-    <string name="InstallYandexMaps">نصب نقشه‌های یاندکس؟</string>
     <!-- Storage -->
     <string name="StorageSettings">حافظه</string>
     <string name="CustomSavePath">پوشه ذخیره‌سازی دلخواه</string>
@@ -645,5 +640,40 @@
     <string name="DisableMarkdown">غیرفعال‌سازی مارک‌داون</string>
     <string name="EnableMarkdown">فعال‌سازی مارک‌داون</string>
     <!-- Non-translatable -->
+    <string name="ShowTranslateChatButtonLocked">یک ارائه‌دهندهٔ ترجمهٔ دیگر انتخاب کنید یا مشترک **Telegram Premium** شوید.</string>
+    <string name="DisableNotificationDelay">خاموش کردن تاخیر اعلان ها</string>
+    <string name="AccountNotifications">اعلان های اکانت </string>
+    <string name="AccountNotificationsInfo">اکانت‌های انتخاب‌نشده هنگام استفاده از اکانت دیگر، اعلانی نشان نمی‌دهند.</string>
+    <string name="AccountNotificationsCurrent">اعلان هایی که از اکانت فعلی میاد همیشه نشان داده میشود.</string>
+    <string name="TabCounterUnmuted">بی‌صدا نشده</string>
+    <string name="AppIconsApply">انتخاب</string>
+    <string name="AppIconsKeep">این را نگه دار</string>
+    <string name="NewFabStyle">دکمه معلق</string>
+    <string name="TransitionAnimation">انیمیشن انتقال</string>
+    <string name="TransitionAnimationSpring">فنری</string>
+    <string name="TransitionAnimationInfo">AOSP از انیمیشن پیش‌فرض اندروید برای انتقال پنجره‌ها استفاده می‌کند و «فنری» از انیمیشنی نرم‌تر.</string>
+    <string name="StickerTimeHidden">پنهان</string>
+    <string name="GenerateWithHistory">با تاریخچه</string>
+    <string name="GenerateWithPhoto">با عکس</string>
+    <string name="AIErrorOnDeviceStopped">مدل متوقف شد</string>
+    <string name="AIOnDeviceDownloadButton">بارگیری</string>
+    <string name="AIOnDeviceBadgeReady">حاضر</string>
+    <string name="AIOnDeviceBadgeUnavailable">غیر قابل دسترس</string>
+    <string name="AIOnDeviceNotificationReady">مدل حاضر</string>
+    <string name="AIOnDeviceBadgeDownload">بارگیری</string>
+    <string name="AIOnDeviceBadgeDownloading">درحال دریافت</string>
+    <string name="AIOnDeviceFastModel">مدل سریع</string>
+    <string name="AIReplaceTelegram">هوش مصنوعی تلگرام</string>
+    <string name="AIReplaceTelegramSummariesInfo">خلاصه کردن متن های طولانی پیام ها و پست ها</string>
+    <string name="AIReplaceTelegramInfo">ویژگی های انتخاب شده از سرویس هوش مصنوعی به جای سرور های تلگرام استفاده میکنه تا محدودیت تلگرام پرمیوم را دور بزنه.</string>
+    <string name="AIOnDeviceManage">تنظیمات هسته ی هوش مصنوعی</string>
+    <string name="AIOnDeviceManageUnavailable">تنظیمات سیستم واسه ی هسته‌ی هوش مصنوعی در این دستگاه در دسترس نیست.</string>
+    <string name="AIChangeModel">تغییر مدل هوش مصنوعی</string>
+    <string name="AIAskMore">پرسیدن بیشتر</string>
+    <string name="AIAssistant">دستیار هوش مصنوعی</string>
+    <string name="Gestures">اشاره ها</string>
+    <string name="SwipeActions">کنش‌های کشیدن انگشت</string>
+    <string name="SwipeActionsInfo">پیام را به چپ بکشید و بدون برداشتن انگشت، آن را بالا یا پایین ببرید تا یک کنش را انتخاب کنید.</string>
+    <string name="BlockAds">مسدود کردن تبلیغات</string>
 </resources>
 

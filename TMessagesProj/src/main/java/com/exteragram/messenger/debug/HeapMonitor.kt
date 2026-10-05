@@ -167,7 +167,7 @@ object HeapMonitor {
         }
     }
 
-    private fun collectGarbage() {
+    internal fun collectGarbage() {
         val runtime = Runtime.getRuntime()
         runtime.gc()
         runtime.runFinalization()

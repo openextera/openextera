@@ -30,14 +30,6 @@ public interface IMapsProvider {
     ICameraUpdate newCameraUpdateLatLngBounds(ILatLngBounds bounds, int padding);
     IMapStyleOptions loadRawResourceStyle(Context context, int resId);
     String getMapsAppPackageName();
-
-    default boolean isApplicationRequired() {
-        return true;
-    }
-
-    default boolean supportsOtherMapTypes() {
-        return true;
-    }
     int getInstallMapsString();
 
     interface IMap {
@@ -56,29 +48,12 @@ public interface IMapsProvider {
         void setOnMapLoadedCallback(Runnable callback);
         IProjection getProjection();
         void setPadding(int left, int top, int right, int bottom);
-        Padding getFragmentPadding(int bottom);
-        default void setLogoPadding(int right, int bottom) {
-        }
         void setMapStyle(IMapStyleOptions style);
         IMarker addMarker(IMarkerOptions markerOptions);
         void setOnMyLocationChangeListener(Consumer<Location> callback);
         void setOnMarkerClickListener(OnMarkerClickListener markerClickListener);
         void setOnCameraMoveListener(Runnable callback);
         ICircle addCircle(ICircleOptions circleOptions);
-
-        class Padding {
-            public final int left;
-            public final int top;
-            public final int right;
-            public final int bottom;
-
-            public Padding(int left, int top, int right, int bottom) {
-                this.left = left;
-                this.top = top;
-                this.right = right;
-                this.bottom = bottom;
-            }
-        }
     }
 
     interface IMapView {

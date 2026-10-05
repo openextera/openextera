@@ -4117,6 +4117,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         expandStickersButton.setScaleX(0.1f);
         expandStickersButton.setScaleY(0.1f);
         expandStickersButton.setAlpha(0.0f);
+        expandStickersButton.setTranslationX(audioVideoButtonContainerForbidden ? 0f : AndroidUtilities.dpf2(4f));
         expandStickersButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         sendButtonContainer.addView(expandStickersButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.BOTTOM));
         expandStickersButton.setOnClickListener(v -> {
@@ -6968,6 +6969,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         setInputIconColorFilter(audioVideoSendButton, new PorterDuffColorFilter(audioVideoIconColor, PorterDuff.Mode.SRC_IN));
         audioVideoSendButton.invalidate();
         audioVideoSendButton.setTranslationX(audioVideoButtonContainerForbidden ? 0f : AndroidUtilities.dpf2(4f));
+        if (expandStickersButton != null) {
+            expandStickersButton.setTranslationX(audioVideoButtonContainerForbidden ? 0f : AndroidUtilities.dpf2(4f));
+        }
         updateFieldHint(false);
         boolean currentModeVideo = isInVideoMode;
         if (!sendRoundEnabled && currentModeVideo) {

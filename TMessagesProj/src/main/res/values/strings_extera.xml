@@ -115,12 +115,6 @@
     <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost can cause problems with downloading files and streaming videos on slow Internet connections.</string>
 
-    <!-- Maps -->
-    <string name="Maps">Maps</string>
-    <string name="TermsOfUseYandexMaps">By using Yandex Maps you agree with the <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">terms of use</a>]]>.</string>
-    <string name="UseYandexMaps">Use Yandex Maps</string>
-    <string name="InstallYandexMaps">Install Yandex Maps?</string>
-
     <!-- Storage -->
     <string name="StorageSettings">Storage</string>
     <string name="CustomSavePath">Custom Save Folder</string>

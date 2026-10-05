@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Sonsuz Kaydırma</string>
     <string name="CryptoPillTargetCurrency">Hedef para birimi</string>
     <string name="CryptoCurrencyUsd">ABD Doları</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Rus Rublesi</string>
     <string name="CryptoCurrencyGbp">İngiliz Sterlini</string>
     <string name="CryptoCurrencyKzt">Kazakistan Tengesi</string>
@@ -100,13 +99,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">İndirme Hızı Artışı</string>
     <string name="UploadSpeedBoost">Yükleme Hızı Artışı</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Artış, yavaş internet bağlantılarında dosya indirme ve video oynatma sorunlarına neden olabilir.</string>
-    <!-- Maps -->
-    <string name="Maps">Haritalar</string>
-    <string name="TermsOfUseYandexMaps">Yandex Haritalar\'ı kullanarak <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">kullanım şartlarını</a>]]> kabul etmiş olursunuz.</string>
-    <string name="UseYandexMaps">Yandex Haritalar\'ı Kullan</string>
-    <string name="InstallYandexMaps">Yandex Haritalar yüklensin mi?</string>
     <!-- Storage -->
     <string name="StorageSettings">Depolama</string>
     <string name="CustomSavePath">Özel Kayıt Klasörü</string>
@@ -163,7 +156,6 @@
     <string name="NavigationDrawer">Yan Menü</string>
     <string name="NavigationDrawerInfo">Sağ üstteki menüyü, kaydırarak açılan klasik bir yan menü ve hamburger düğmesiyle değiştirir.</string>
     <string name="NavigationDrawerImmersiveAnimation">Sürükleyici Animasyon</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Menü Öğeleri</string>
     <string name="MainMenuItemsInfo">Öğeleri göstermek veya gizlemek için dokunun, yeniden sıralamak için basılı tutun. Düzen, menü ve yan menü arasında ortaktır.</string>
     <string name="MainMenuHiddenItems">Gizli Menü Öğeleri</string>
@@ -210,7 +202,6 @@
     <!-- App Icons -->
     <string name="IconPack">İkon Paketi</string>
     <string name="AppIconSunset">Gün Batımı</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Ametist</string>
     <string name="AppIconInvincible">Yenilmez</string>
     <string name="AppIconCyberpunk">Siberpunk</string>
@@ -243,7 +234,6 @@
     <string name="PredictiveBackMax">Maks</string>
     <string name="PredictiveBackInfo">Geriye doğru kaydırma yapıldığında ekranın ne kadar kayacağını ayarlar.</string>
     <string name="TransitionAnimation">Geçiş Animasyonu</string>
-    <string name="TransitionAnimationAosp">AOSP</string>
     <string name="TransitionAnimationSpring">Yay</string>
     <string name="TransitionAnimationInfo">AOSP stok Android pencere geçişini kullanır, Yay ise daha akıcı olanıdır.</string>
     <!-- Blur & Effects -->
@@ -283,14 +273,13 @@
     <string name="ServicesInfo">Dil modelleriyle etkileşim için uygun servisi seçin.</string>
     <string name="NewService">Yeni Servis</string>
     <string name="EditService">Servisi Düzenle</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">API Anahtarı</string>
     <string name="ServiceInfo">Servis Bilgileri</string>
     <string name="ServiceProvider">Sağlayıcı</string>
     <string name="ServiceProviderCustom">Özel</string>
     <string name="ServiceTestAndSave">Test Et ve Kaydet</string>
-    <string name="ServicePasteService">Servis Yapıştır</string>
-    <string name="ServicePasteKey">API Anahtarı Yapıştır</string>
+    <string name="ServicePasteService">Servisi Yapıştır</string>
+    <string name="ServicePasteKey">API Anahtarını Yapıştır</string>
     <string name="DeleteServiceInfo">**%1$s**\'yi silmek istediğinizden emin misiniz?</string>
     <!-- AI Roles -->
     <string name="Roles">Roller</string>
@@ -444,12 +433,10 @@
     <string name="AlwaysSendInHD">Her Zaman HD Olarak Gönder</string>
     <string name="HideCameraTile">Anında Kamera Karesini Gizle</string>
     <string name="HideCameraTileInfo">Kamera karesi, yüzen bir düğme ile değiştirilecektir. Buna basmak Telegram kamerasını, basılı tutmak ise sistem kamerasını başlatır.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Çift Dokunma Atlama Süresi</string>
     <string name="PreferOriginalQuality">Orijinal Kaliteyi Tercih Et</string>
     <string name="PauseOnMinimize">Otomatik Duraklat</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Ses</string>
     <string name="PauseOnMinimizeRound">Video Mesaj</string>
     <string name="PauseOnMinimizeInfo">Cihaz kilitlendiğinde veya exteraGram simge durumuna küçültüldüğünde medya oynatımını duraklatır.</string>
@@ -601,7 +588,6 @@
     <string name="FileSize">Dosya Boyutu</string>
     <string name="FileName">Dosya Adı</string>
     <string name="FilePath">Dosya Yolu</string>
-    <string name="Platform">Platform</string>
     <string name="SentFrom">%1$s ile gönderildi</string>
     <string name="Resolution">Çözünürlük</string>
     <string name="Bitrate">Bit Hızı</string>

@@ -75,7 +75,6 @@
     <string name="IpInfoCountry">Краіна</string>
     <string name="IpInfoRegion">Рэгіён</string>
     <string name="IpInfoCity">Горад</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Арганізацыя</string>
     <string name="IpInfoDomain">Дамен</string>
     <string name="IpInfoTimezone">Часавы пояс</string>
@@ -100,11 +99,6 @@
     <string name="UploadSpeedBoost">Павелічэнне хуткасці адпраўкі</string>
     <string name="Ultra">Ультра</string>
     <string name="SpeedBoostInfo">Ультра ўзмацненне можа выклікаць праблемы са загрузкай файлаў і трансляцыяй відэа пры павольным падключэнні да Інтэрнэту.</string>
-    <!-- Maps -->
-    <string name="Maps">Карты</string>
-    <string name="TermsOfUseYandexMaps">Карыстаючыся Яндэкс-картамі, вы згаджаецеся з <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">ўмовамі карыстання</a>]]>.</string>
-    <string name="UseYandexMaps">Выкарыстоўваць Яндэкс Карты</string>
-    <string name="InstallYandexMaps">Устанавіць Яндэкс Карты?</string>
     <!-- Storage -->
     <string name="StorageSettings">Сховішча</string>
     <string name="CustomSavePath">Карыстальніцкая тэчка захавання</string>
@@ -390,7 +384,6 @@
     <string name="AlwaysSendInHD">Заўсёды адпраўляць у HD-якасці</string>
     <string name="HideCameraTile">Схаваць плітку імгненнай камеры</string>
     <string name="HideCameraTileInfo">Плітка камеры будзе заменена плаваючай кнопкай. Націсканне на яе запускае камеру Telegram; утрымліваючы яго, запускае сістэмную камеру.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Падвойны націск для пошуку</string>
     <string name="PreferOriginalQuality">Аддаваць перавагу арыгінальнай якасці</string>

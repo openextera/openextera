@@ -139,7 +139,7 @@ public class RadialProgressView extends View {
         }
         if (m3Drawable != null) {
             m3Drawable.setCallback(this);
-            setM3Visible(isAttachedToWindow(), true);
+            setM3Visible(isShown(), true);
         }
         invalidate();
     }
@@ -374,9 +374,9 @@ public class RadialProgressView extends View {
     }
 
     @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        setM3Visible(true, false);
+    public void onVisibilityAggregated(boolean isVisible) {
+        super.onVisibilityAggregated(isVisible);
+        setM3Visible(isVisible, false);
     }
 
     @Override

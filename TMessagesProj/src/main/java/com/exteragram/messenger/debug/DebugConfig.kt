@@ -13,4 +13,6 @@ object DebugConfig {
     @JvmStatic var heapMonitorLimitMb by IntegerPref(256)
     @JvmStatic var loadMonitorEnabled by BooleanPref(false)
     @JvmStatic var loadMonitorCpuPercent by IntegerPref(5)
+    @JvmStatic var freezeMonitorEnabled by BooleanPref(false)
+    @JvmStatic var freezeMonitorThresholdMs by IntegerPref(700)
 }

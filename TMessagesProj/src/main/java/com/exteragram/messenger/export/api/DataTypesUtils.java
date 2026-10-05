@@ -1446,7 +1446,7 @@ public final class DataTypesUtils {
             return prefix.concat("takeout");
         }
         FileLog.e("wtf! File location type in Export::ComputeLocationKey. " + location);
-        throw new IllegalStateException("wtf! File location type in ComputeLocationKey." + location);
+        return prefix;
     }
 
     public static boolean DisplayDate(int date, int previousDate) {
@@ -1521,7 +1521,7 @@ public final class DataTypesUtils {
             }
             return true;
         }
-        throw new IllegalArgumentException("wtf in appendTopPeers! to: " + to + " d: " + data);
+        return false;
     }
 
     private static void appendTopPeers(HashMap<Long, ApiWrap.Peer> peers, ArrayList<ApiWrap.TopPeer> to, ArrayList<TLRPC.TL_topPeer> list) {

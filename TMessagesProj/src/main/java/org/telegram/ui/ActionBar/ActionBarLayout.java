@@ -3060,7 +3060,10 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         if (fragment != null && fragment.closeLastFragment()) {
             return;
         }
-        if (delegate != null && !delegate.needCloseLastFragment(this) || transitionBlocksNavigation() || fragmentsStack.isEmpty()) {
+        if (delegate != null && !delegate.needCloseLastFragment(this)) {
+            return;
+        }
+        if (onCloseAnimationEndRunnable != null && checkTransitionAnimation() || transitionBlocksNavigation() || fragmentsStack.isEmpty()) {
             return;
         }
         if (parentActivity.getCurrentFocus() != null) {

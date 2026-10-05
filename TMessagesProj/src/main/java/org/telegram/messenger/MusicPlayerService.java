@@ -532,7 +532,12 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 }
             }
 
-            mediaSession.setPlaybackState(playbackState.build());
+            PlaybackStateCompat state = playbackState.build();
+            mediaSession.setPlaybackState(state);
+            TelegramMediaSession telegramMediaSession = TelegramMediaSession.peekInstance();
+            if (telegramMediaSession != null) {
+                telegramMediaSession.publishPlaybackState(state);
+            }
             updateRepeatMode();
             updateShuffleMode();
             MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder()
@@ -545,7 +550,11 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 meta.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, fullAlbumArt);
             }
 
-            mediaSession.setMetadata(meta.build());
+            MediaMetadataCompat metadata = meta.build();
+            mediaSession.setMetadata(metadata);
+            if (telegramMediaSession != null) {
+                telegramMediaSession.publishMetadata(metadata);
+            }
 
             bldr.setVisibility(Notification.VISIBILITY_PUBLIC);
 
@@ -755,7 +764,12 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                         NOTIFY_REPEAT, LocaleController.getString(R.string.RepeatSong), repeatIcon).build());
             }
         }
-        mediaSession.setPlaybackState(playbackState.build());
+        PlaybackStateCompat state = playbackState.build();
+        mediaSession.setPlaybackState(state);
+        TelegramMediaSession telegramMediaSession = TelegramMediaSession.peekInstance();
+        if (telegramMediaSession != null) {
+            telegramMediaSession.publishPlaybackState(state);
+        }
     }
 
     private void updateRepeatMode() {
@@ -774,11 +788,19 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             }
             mediaSession.setRepeatMode(sessionRepeatMode);
         }
+        TelegramMediaSession telegramMediaSession = TelegramMediaSession.peekInstance();
+        if (telegramMediaSession != null) {
+            telegramMediaSession.updateRepeatMode();
+        }
     }
 
     private void updateShuffleMode() {
         if (mediaSession != null) {
             mediaSession.setShuffleMode(SharedConfig.shuffleMusic ? PlaybackStateCompat.SHUFFLE_MODE_ALL : PlaybackStateCompat.SHUFFLE_MODE_NONE);
+        }
+        TelegramMediaSession telegramMediaSession = TelegramMediaSession.peekInstance();
+        if (telegramMediaSession != null) {
+            telegramMediaSession.updateShuffleMode();
         }
     }
 

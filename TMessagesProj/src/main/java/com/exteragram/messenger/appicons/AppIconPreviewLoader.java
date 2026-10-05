@@ -95,15 +95,23 @@ public final class AppIconPreviewLoader {
         if (!icon.isBackgroundColor()) {
             return 0;
         }
-        int color;
-        try {
-            color = ContextCompat.getColor(ApplicationLoader.applicationContext, icon.getBackground());
-        } catch (Throwable e) {
-            FileLog.e(e);
-            color = 0;
+        int color = getBackgroundColor(icon);
+        float[] hsl = new float[3];
+        ColorUtils.colorToHSL(color, hsl);
+        if (isNeutral(hsl)) {
+            return 0;
         }
         accents.put(icon.id, color);
         return color;
+    }
+
+    private static int getBackgroundColor(AppIcon icon) {
+        try {
+            return ContextCompat.getColor(ApplicationLoader.applicationContext, icon.getBackground());
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return 0;
+        }
     }
 
     public static int getAccentTextColor(AppIcon icon, int fallbackKey, Theme.ResourcesProvider resourcesProvider) {
@@ -187,7 +195,7 @@ public final class AppIconPreviewLoader {
         boolean needAccent = !accents.containsKey(icon.id) && getAccent(icon) == 0;
         Utilities.globalQueue.postRunnable(() -> {
             Bitmap bitmap = render(icon, size);
-            int accent = bitmap != null && needAccent ? extractAccent(bitmap) : 0;
+            int accent = bitmap != null && needAccent ? extractAccent(bitmap, icon.isBackgroundColor() ? getBackgroundColor(icon) : 0) : 0;
             AndroidUtilities.runOnUIThread(() -> {
                 if (bitmap != null) {
                     getCache().put(key, bitmap);
@@ -226,7 +234,11 @@ public final class AppIconPreviewLoader {
         }
     }
 
-    private static int extractAccent(Bitmap bitmap) {
+    private static boolean isNeutral(float[] hsl) {
+        return hsl[1] < 0.15f || hsl[2] < 0.06f || hsl[2] > 0.94f;
+    }
+
+    private static int extractAccent(Bitmap bitmap, int backgroundColor) {
         float stepX = (bitmap.getWidth() - 1) / (float) (ACCENT_GRID - 1);
         float stepY = (bitmap.getHeight() - 1) / (float) (ACCENT_GRID - 1);
         float[] hsl = new float[3];
@@ -241,11 +253,11 @@ public final class AppIconPreviewLoader {
         for (int x = 0; x < ACCENT_GRID; x++) {
             for (int y = 0; y < ACCENT_GRID; y++) {
                 int pixel = bitmap.getPixel((int) (x * stepX), (int) (y * stepY));
-                if (Color.alpha(pixel) < 200) {
+                if (Color.alpha(pixel) < 200 || pixel == backgroundColor) {
                     continue;
                 }
                 ColorUtils.colorToHSL(pixel, hsl);
-                if (hsl[1] < 0.15f || hsl[2] < 0.06f || hsl[2] > 0.94f) {
+                if (isNeutral(hsl)) {
                     neutralCount++;
                     neutralLightness += hsl[2];
                 } else {

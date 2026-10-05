@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Beskonačno pomicanje</string>
     <string name="CryptoPillTargetCurrency">Ciljana valuta</string>
     <string name="CryptoCurrencyUsd">Američki dolar</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Ruska rublja</string>
     <string name="CryptoCurrencyGbp">Britanska funta</string>
     <string name="CryptoCurrencyKzt">Kazahstanski tenge</string>
@@ -75,7 +74,6 @@
     <string name="IpInfoCountry">Država</string>
     <string name="IpInfoRegion">Regija</string>
     <string name="IpInfoCity">Grad</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organizacija</string>
     <string name="IpInfoDomain">Domena</string>
     <string name="IpInfoTimezone">Vremenska zona</string>
@@ -98,13 +96,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Ubrzanje preuzimanja</string>
     <string name="UploadSpeedBoost">Ubrzanje slanja</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra ubrzanje može uzrokovati probleme s preuzimanjem datoteka i streamingom videa na sporim internetskim vezama.</string>
-    <!-- Maps -->
-    <string name="Maps">Karte</string>
-    <string name="TermsOfUseYandexMaps">Korištenjem Yandex karata slažete se s <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">uvjetima korištenja</a>]]>.</string>
-    <string name="UseYandexMaps">Koristi Yandex karte</string>
-    <string name="InstallYandexMaps">Instalirati Yandex karte?</string>
     <!-- Storage -->
     <string name="StorageSettings">Pohrana</string>
     <string name="CustomSavePath">Prilagođena mapa za spremanje</string>
@@ -161,7 +153,6 @@
     <string name="NavigationDrawer">Navigacijska ladica</string>
     <string name="NavigationDrawerInfo">Zamjenjuje gornji desni izbornik klasičnom ladicom koja se otvara povlačenjem i gumbom za hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Immerzivna animacija</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Stavke izbornika</string>
     <string name="MainMenuItemsInfo">Dodirnite za prikaz ili skrivanje stavki, držite za promjenu redoslijeda. Raspored je zajednički za izbornik i ladicu.</string>
     <string name="MainMenuHiddenItems">Skrivene stavke izbornika</string>
@@ -208,15 +199,12 @@
     <!-- App Icons -->
     <string name="IconPack">Paket ikona</string>
     <string name="AppIconSunset">Zalazak sunca</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Ametist</string>
     <string name="AppIconInvincible">Nepobjediv</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Svemir</string>
     <string name="AppIconIceAge">Ledeno doba</string>
     <string name="AppIconEditor">Urednik</string>
     <string name="AppIconOrbit">Orbita</string>
-    <string name="AppIconSus">Impostor</string>
     <string name="AppIconWinter">Zima</string>
     <!-- General Appearance -->
     <string name="Sections">Odjeljci</string>
@@ -272,7 +260,6 @@
     <string name="ServicesInfo">Odaberite odgovarajuću uslugu za interakciju s jezičnim modelima.</string>
     <string name="NewService">Nova usluga</string>
     <string name="EditService">Uredi uslugu</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">API ključ</string>
     <string name="ServiceInfo">Informacije o usluzi</string>
     <string name="ServiceProvider">Pružatelj</string>
@@ -390,12 +377,10 @@
     <string name="AlwaysSendInHD">Uvijek šalji u HD</string>
     <string name="HideCameraTile">Sakrij pločicu za trenutnu kameru</string>
     <string name="HideCameraTileInfo">Pločica kamere bit će zamijenjena plutajućim gumbom. Pritiskom se pokreće Telegram kamera; držanjem se pokreće sustavska kamera.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Vrijeme preskoka dvostrukim dodirom</string>
     <string name="PreferOriginalQuality">Preferiraj izvornu kvalitetu</string>
     <string name="PauseOnMinimize">Automatska pauza</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Glas</string>
     <string name="PauseOnMinimizeRound">Kružno</string>
     <string name="PauseOnMinimizeInfo">Pauzira reprodukciju medija kada je uređaj zaključan ili je exteraGram minimiziran.</string>
@@ -525,12 +510,10 @@
     <string name="FilePath">Put datoteke</string>
     <string name="Platform">Platforma</string>
     <string name="Resolution">Rezolucija</string>
-    <string name="Bitrate">Bitrate</string>
     <string name="Duration">Trajanje</string>
     <string name="MimeType">Mime vrsta</string>
     <string name="Datacenter">Podatkovni centar</string>
     <!-- Date Formatting -->
-    <string name="DateFormatOption">Format:</string>
     <string name="DateFormatOptionNone">Nijedan</string>
     <string name="DateFormatOptionRelative">Relativno</string>
     <string name="DateFormatOptionShortTime">Kratko vrijeme</string>
@@ -623,7 +606,6 @@
     <string name="StickerCornerRadiusSmall">Mali</string>
     <string name="StickerCornerRadiusNone">Nijedan</string>
     <!-- Feed -->
-    <string name="Feed">Feed</string>
     <string name="FeedShownChannels">Prikazano u feedu</string>
     <string name="FeedHiddenChannels">Skriveno</string>
     <string name="FeedChannels">Kanali</string>

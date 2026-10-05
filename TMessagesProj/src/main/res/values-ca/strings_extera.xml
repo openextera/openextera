@@ -16,7 +16,6 @@
     <string name="AboutExteraDescription">Un client de Telegram experimental basat en el codi font oficial!</string>
     <string name="Crowdin">Traduir</string>
     <string name="Website">Lloc web</string>
-    <string name="Categories">Categories</string>
     <string name="Developer">**%1$s** és membre de l\'equip de desenvolupament d\'**exteraGram**.</string>
     <string name="DeveloperCompact">Membre de l\'equip de desenvolupament d\'**exteraGram**.</string>
     <string name="Supporter">**%1$s** ha donat suport al desenvolupament d\'**exteraGram** i ha rebut una insígnia única.</string>
@@ -46,7 +45,6 @@
     <string name="PillStackInfiniteScrolling">Desplaçament infinit</string>
     <string name="CryptoPillTargetCurrency">Moneda objectiu</string>
     <string name="CryptoCurrencyUsd">Dòlar dels EUA</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Ruble rus</string>
     <string name="CryptoCurrencyGbp">Lliura esterlina</string>
     <string name="CryptoCurrencyKzt">Tenge kazakh</string>
@@ -75,7 +73,6 @@
     <string name="IpInfoCountry">País</string>
     <string name="IpInfoRegion">Regió</string>
     <string name="IpInfoCity">Ciutat</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organització</string>
     <string name="IpInfoDomain">Domini</string>
     <string name="IpInfoTimezone">Zona horària</string>
@@ -98,13 +95,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Acceleració de baixada</string>
     <string name="UploadSpeedBoost">Acceleració de pujada</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">L\'acceleració Ultra pot causar problemes en baixar fitxers i reproduir vídeos en connexions lentes.</string>
-    <!-- Maps -->
-    <string name="Maps">Mapes</string>
-    <string name="TermsOfUseYandexMaps">En utilitzar Yandex Maps acceptes els <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">termes d\'ús</a>]]>.</string>
-    <string name="UseYandexMaps">Utilitza Yandex Maps</string>
-    <string name="InstallYandexMaps">Instal·lar Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Emmagatzematge</string>
     <string name="CustomSavePath">Carpeta de desament personalitzada</string>
@@ -161,7 +152,6 @@
     <string name="NavigationDrawer">Calaix de navegació</string>
     <string name="NavigationDrawerInfo">Substitueix el menú superior dret per un calaix clàssic que s\'obre lliscant i un botó d\'hamburguesa.</string>
     <string name="NavigationDrawerImmersiveAnimation">Animació immersiva</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Elements del menú</string>
     <string name="MainMenuItemsInfo">Toca per mostrar o ocultar elements, mantén premut per reordenar. La disposició és compartida entre el menú i el calaix.</string>
     <string name="MainMenuHiddenItems">Elements del menú ocults</string>
@@ -208,15 +198,11 @@
     <!-- App Icons -->
     <string name="IconPack">Paquet d\'icones</string>
     <string name="AppIconSunset">Posta de sol</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Ametista</string>
     <string name="AppIconInvincible">Invencible</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Espai</string>
     <string name="AppIconIceAge">Edat de gel</string>
-    <string name="AppIconEditor">Editor</string>
     <string name="AppIconOrbit">Òrbita</string>
-    <string name="AppIconSus">Impostor</string>
     <string name="AppIconWinter">Hivern</string>
     <!-- General Appearance -->
     <string name="Sections">Seccions</string>
@@ -224,7 +210,6 @@
     <string name="DividerStyle">Estil de separador</string>
     <string name="DividerStyleHidden">Ocult</string>
     <string name="DividerStyleLine">Línia</string>
-    <string name="DividerStyleSegments">Segments</string>
     <string name="UseSystemFonts">Utilitza les fonts del sistema</string>
     <string name="UseSystemEmoji">Utilitza els emojis del sistema</string>
     <string name="NewLoadingStyle">Estil de càrrega</string>
@@ -253,7 +238,6 @@
     <string name="StickerSize">Mida de l\'adhesiu</string>
     <string name="StickerSizeLeft">Petit</string>
     <string name="StickerSizeRight">Gran</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">uau, què maco!</string>
     <string name="StickerShape">Forma de l\'adhesiu</string>
     <string name="StickerShapeRounded">Arrodonit</string>
@@ -272,7 +256,6 @@
     <string name="ServicesInfo">Tria el servei adequat per interactuar amb els models de llenguatge.</string>
     <string name="NewService">Nou servei</string>
     <string name="EditService">Edita el servei</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">Clau API</string>
     <string name="ServiceInfo">Informació del servei</string>
     <string name="ServiceProvider">Proveïdor</string>
@@ -390,7 +373,6 @@
     <string name="AlwaysSendInHD">Envia sempre en HD</string>
     <string name="HideCameraTile">Amaga la icona de càmera instantània</string>
     <string name="HideCameraTileInfo">La icona de càmera serà substituïda per un botó flotant. En prémer-lo s\'obre la càmera de Telegram; en mantenir-lo premut s\'obre la càmera del sistema.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Salt de temps amb doble toc</string>
     <string name="PreferOriginalQuality">Prefereix la qualitat original</string>
@@ -530,7 +512,6 @@
     <string name="MimeType">Tipus MIME</string>
     <string name="Datacenter">Centre de dades</string>
     <!-- Date Formatting -->
-    <string name="DateFormatOption">Format:</string>
     <string name="DateFormatOptionNone">Cap</string>
     <string name="DateFormatOptionRelative">Relatiu</string>
     <string name="DateFormatOptionShortTime">Hora curta</string>
@@ -554,7 +535,6 @@
     <string name="PageBlockedProceed">Continua</string>
     <!-- Other -->
     <string name="SetAsBadge">Establir com a insígnia</string>
-    <string name="AutoLockInstant">Instant</string>
     <string name="TestBackend">Prova el backend</string>
     <string name="SearchPhotoInfo">Els serveis poden utilitzar imatges seguint les seves polítiques de privacitat i termes d\'ús.</string>
     <string name="PhotoUploadFailed">No s\'ha pogut pujar la foto.</string>

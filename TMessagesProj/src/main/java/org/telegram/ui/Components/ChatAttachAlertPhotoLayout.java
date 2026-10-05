@@ -911,6 +911,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
         });
         gridView.setLayoutManager(layoutManager);
+        gridView.setInstantClick(true);
         gridView.setOnItemClickListener((view, position, x, y) -> {
             if (!mediaEnabled || parentAlert.destroyed) {
                 return;

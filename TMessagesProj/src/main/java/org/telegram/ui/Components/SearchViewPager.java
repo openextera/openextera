@@ -88,6 +88,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     private LinearLayoutManager searchLayoutManager;
     private RecyclerItemsEnterAnimator itemsEnterAnimator;
     private boolean attached;
+    private boolean channelsUpdatePending;
 
     private DefaultItemAnimator channelsItemAnimator;
     public FrameLayout channelsSearchContainer;
@@ -1443,12 +1444,26 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     }
 
     @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        if (visibility == View.VISIBLE && channelsUpdatePending && channelsSearchAdapter != null) {
+            channelsUpdatePending = false;
+            channelsSearchAdapter.updateMyChannels();
+            channelsSearchAdapter.update(false);
+        }
+    }
+
+    @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.channelRecommendationsLoaded) {
             channelsEmptyView.showProgress(MessagesController.getInstance(currentAccount).getChannelRecommendations(0) != null, true);
             channelsSearchAdapter.updateMyChannels();
             channelsSearchAdapter.update(true);
         } else if (id == NotificationCenter.dialogDeleted || id == NotificationCenter.dialogsNeedReload) {
+            if (getVisibility() != View.VISIBLE) {
+                channelsUpdatePending = true;
+                return;
+            }
             channelsSearchAdapter.updateMyChannels();
             channelsSearchAdapter.update(true);
         } else if (id == NotificationCenter.reloadWebappsHints) {

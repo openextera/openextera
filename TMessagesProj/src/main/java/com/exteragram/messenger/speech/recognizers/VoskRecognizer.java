@@ -70,10 +70,6 @@ public class VoskRecognizer implements VoiceRecognitionController.RecognitionPro
         add(new RecognitionModel("zh", "https://alphacephei.com/vosk/models/vosk-model-small-cn-0.22.zip", 43898754L));
     }};
 
-    public VoskRecognizer() {
-        LibVosk.setLogLevel(LogLevel.INFO);
-    }
-
     private static void unpackZip(String zipPath, String targetPath) throws IOException {
         File targetDir = new File(targetPath);
         if (!targetDir.exists()) {
@@ -218,6 +214,7 @@ public class VoskRecognizer implements VoiceRecognitionController.RecognitionPro
         try {
             if (!loadedModels.containsKey(language)) {
                 FileLog.d("Loading model: " + language);
+                LibVosk.setLogLevel(LogLevel.INFO);
                 loadedModels.put(language, new Model(modelsDir + "/" + language));
                 FileLog.d("Model loaded: " + language);
             }

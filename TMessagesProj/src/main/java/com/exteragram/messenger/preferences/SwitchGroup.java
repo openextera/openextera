@@ -48,6 +48,10 @@ public final class SwitchGroup {
             this.setter = setter;
         }
 
+        public void setNewFeatureAlias(String alias) {
+            newFeatureAlias = alias;
+        }
+
         private boolean isVisible() {
             return visible == null || visible.getAsBoolean();
         }
@@ -104,7 +108,7 @@ public final class SwitchGroup {
     }
 
     public SwitchGroup markNew(String alias) {
-        children.get(children.size() - 1).newFeatureAlias = alias;
+        children.get(children.size() - 1).setNewFeatureAlias(alias);
         return this;
     }
 

@@ -100,11 +100,6 @@
     <string name="UploadSpeedBoost">Жүктеу (жіберу) жылдамдығын арттыру</string>
     <string name="Ultra">Ультра</string>
     <string name="SpeedBoostInfo">Ультра арттыру баяу интернет қосылымдарында файлдарды жүктеу және бейнелерді көру кезінде проблемалар туғызуы мүмкін.</string>
-    <!-- Maps -->
-    <string name="Maps">Карталар</string>
-    <string name="TermsOfUseYandexMaps">Яндекс Карталарды пайдалану арқылы сіз <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">пайдалану шарттарымен</a>]]> келісесіз.</string>
-    <string name="UseYandexMaps">Яндекс Карталарды пайдалану</string>
-    <string name="InstallYandexMaps">Яндекс Карталарды орнату керек пе?</string>
     <!-- Storage -->
     <string name="StorageSettings">Қойма</string>
     <string name="CustomSavePath">Арнайы сақтау қалтасы</string>

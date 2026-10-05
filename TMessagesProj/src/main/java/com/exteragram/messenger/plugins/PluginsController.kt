@@ -14,6 +14,7 @@ import org.telegram.tgnet.TLObject
 import org.telegram.tgnet.TLRPC
 import org.telegram.ui.ActionBar.BaseFragment
 import org.telegram.ui.Components.BulletinFactory
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
@@ -88,6 +89,10 @@ class PluginsController private constructor() : PluginsHooks {
         @JvmStatic
         fun isPlugin(messageObject: MessageObject?): Boolean =
             messageObject?.documentName?.lowercase(Locale.ROOT)?.endsWith(".plugin") == true
+
+        @JvmStatic
+        fun isPlugin(file: File?, messageObject: MessageObject?): Boolean =
+            file?.name?.lowercase(Locale.ROOT)?.endsWith(".plugin") == true
 
         @JvmStatic
         fun getFileIconId(fileName: String?): Int = -1

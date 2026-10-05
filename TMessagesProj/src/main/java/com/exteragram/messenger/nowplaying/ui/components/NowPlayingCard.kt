@@ -12,13 +12,11 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
-import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
@@ -36,6 +34,7 @@ import org.telegram.messenger.NotificationCenter
 import org.telegram.messenger.R
 import org.telegram.messenger.browser.Browser
 import org.telegram.messenger.utils.ViewOutlineProviderImpl
+import org.telegram.ui.ActionBar.SimpleTextView
 import org.telegram.ui.ActionBar.Theme
 import org.telegram.ui.Components.AnimatedEmojiDrawable
 import org.telegram.ui.Components.BackupImageView
@@ -78,9 +77,9 @@ abstract class NowPlayingCard(
     private val cardLayout: FrameLayout
     private val emoji: AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable
     private val imageView: BackupImageView
-    private val nameView: TextView
-    private val artistView: TextView
-    private val albumView: TextView
+    private val nameView: SimpleTextView
+    private val artistView: SimpleTextView
+    private val albumView: SimpleTextView
     private val playPauseButton: ImageView
     private val playPauseDrawable: PlayPauseDrawable
 
@@ -138,28 +137,26 @@ abstract class NowPlayingCard(
         imageView = BackupImageView(context)
         imageView.clipToOutline = true
         imageView.outlineProvider = ViewOutlineProviderImpl.boundsWithRoundRect(coverCornerRadius)
-        contentLayout.addView(imageView, LayoutHelper.createLinear(68, 68, Gravity.LEFT or Gravity.TOP, 0, 0, 12, 0))
+        contentLayout.addView(imageView, LayoutHelper.createLinear(64, 64, Gravity.LEFT or Gravity.CENTER_VERTICAL, 0, 0, 12, 0))
 
         val textLayout = LinearLayout(context)
         textLayout.orientation = LinearLayout.VERTICAL
         contentLayout.addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL))
 
-        nameView = TextView(context).apply {
-            gravity = Gravity.LEFT
+        nameView = SimpleTextView(context).apply {
+            setGravity(Gravity.LEFT or Gravity.CENTER_VERTICAL)
             setTextColor(Color.WHITE)
-            textSize = 16f
-            isSingleLine = true
-            ellipsize = TextUtils.TruncateAt.END
-            typeface = AndroidUtilities.bold()
+            setTextSize(16)
+            setTypeface(AndroidUtilities.bold())
             NotificationCenter.listenEmojiLoading(this)
         }
-        textLayout.addView(nameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT))
+        textLayout.addView(nameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 22))
 
         artistView = createSecondaryTextView(context)
-        textLayout.addView(artistView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0f, 2f, 0f, 0f))
+        textLayout.addView(artistView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 19, 0f, 2f, 0f, 0f))
 
         albumView = createSecondaryTextView(context)
-        textLayout.addView(albumView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0f, 2f, 0f, 0f))
+        textLayout.addView(albumView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 19, 0f, 2f, 0f, 0f))
 
         playPauseDrawable = PlayPauseDrawable(16).apply {
             setPause(false)
@@ -174,12 +171,10 @@ abstract class NowPlayingCard(
         contentLayout.addView(playPauseButton, LayoutHelper.createLinear(32, 32, Gravity.CENTER_VERTICAL, 8, 0, 8, 0))
     }
 
-    private fun createSecondaryTextView(context: Context) = TextView(context).apply {
-        gravity = Gravity.LEFT
-        typeface = AndroidUtilities.regular()
-        textSize = 14f
-        isSingleLine = true
-        ellipsize = TextUtils.TruncateAt.END
+    private fun createSecondaryTextView(context: Context) = SimpleTextView(context).apply {
+        setGravity(Gravity.LEFT or Gravity.CENTER_VERTICAL)
+        setTypeface(AndroidUtilities.regular())
+        setTextSize(14)
         setTextColor(Color.WHITE)
         alpha = 0.6f
         NotificationCenter.listenEmojiLoading(this)
@@ -190,19 +185,19 @@ abstract class NowPlayingCard(
         val track = data.nowPlayingDTO
         val artists = track.artists
 
-        artistView.text = null
-        nameView.text = null
-        albumView.text = null
+        artistView.setText(null)
+        nameView.setText(null)
+        albumView.setText(null)
 
-        artistView.text = if (artists.isNullOrEmpty()) {
+        artistView.setText(if (artists.isNullOrEmpty()) {
             LocaleController.getString(R.string.AudioUnknownArtist)
         } else {
             artists.joinToString(", ")
-        }
-        nameView.text = Emoji.replaceEmoji(track.trackName, nameView.paint.fontMetricsInt, false)
+        })
+        nameView.setText(Emoji.replaceEmoji(track.trackName, nameView.paint.fontMetricsInt, false))
         albumView.visibility = if (!track.albumName.isNullOrEmpty() && track.trackName != track.albumName) VISIBLE else GONE
         if (albumView.visibility == VISIBLE) {
-            albumView.text = Emoji.replaceEmoji(track.albumName, albumView.paint.fontMetricsInt, false)
+            albumView.setText(Emoji.replaceEmoji(track.albumName, albumView.paint.fontMetricsInt, false))
         }
 
         setPadding(AndroidUtilities.dp(12f), 0, AndroidUtilities.dp(12f), 0)

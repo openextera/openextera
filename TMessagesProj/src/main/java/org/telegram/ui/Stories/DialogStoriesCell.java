@@ -898,8 +898,6 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         }
 
         if (progress != 0) {
-            final float translationOffset = subtitleOverlayContainer.getTotalVisibility() * -dp(10);
-
             float offset = (titleView.getMeasuredHeight() - titleView.getTextHeight()) / 2f;
             final float titleScale = lerp(1f, 0.95f, subtitleOverlayContainer.getTotalVisibility());
             final float titleTranslationY = bottomY + dp(14) - offset + dp(FAKE_TOP_PADDING) - dp(6) * subtitleOverlayContainer.getTotalVisibility();
@@ -930,7 +928,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
             final AnimatedTextView statusAnchor = isEmojiStatusFadingOut() ? titleViewOut : titleView;
             emojiStatusView.setTranslationX(statusAnchor.getTranslationX() + statusAnchor.getDrawable().getCurrentWidth() * titleScale - dp(2));
-            emojiStatusView.setTranslationY(bottomY + dp(14 - 11 + FAKE_TOP_PADDING + 4.333f) + translationOffset);
+            emojiStatusView.setTranslationY(titleTranslationY + (statusAnchor.getMeasuredHeight() - emojiStatusView.getMeasuredHeight()) / 2f);
             emojiStatusView.setAlpha(progress * getEmojiStatusAlpha());
 
             subtitleOverlayContainer.setTranslationX(titleView.getTranslationX());

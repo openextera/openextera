@@ -12,10 +12,8 @@
 <resources>
     <string name="Preferences">exteraGram Voorkeuren</string>
     <!-- Main Menu -->
-    <string name="Links">Links</string>
     <string name="AboutExteraDescription">Een experimentele Telegram-client gebaseerd op de officiële broncode!</string>
     <string name="Crowdin">Vertalen</string>
-    <string name="Website">Website</string>
     <string name="Categories">Categorieën</string>
     <string name="Developer">**%1$s** is lid van het **exteraGram**-ontwikkelingsteam.</string>
     <string name="DeveloperCompact">Lid van het **exteraGram**-ontwikkelingsteam.</string>
@@ -46,7 +44,6 @@
     <string name="PillStackInfiniteScrolling">Oneindig scrollen</string>
     <string name="CryptoPillTargetCurrency">Doelvaluta</string>
     <string name="CryptoCurrencyUsd">US-dollar</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Russische roebel</string>
     <string name="CryptoCurrencyGbp">Britse pond</string>
     <string name="CryptoCurrencyKzt">Kazachse tenge</string>
@@ -66,7 +63,6 @@
     <string name="ProxyDisableNever">Nooit</string>
     <string name="ProxyDisableAlways">Altijd</string>
     <string name="ProxyDisableOnMobileData">Mobiele data</string>
-    <string name="ProxyType">Type</string>
     <string name="Unknown">Onbekend</string>
     <string name="ProxyRename">Proxynaam (optioneel)</string>
     <string name="ProxyPinLimitReached">Je kunt maximaal %1$d proxy\'s vastzetten.</string>
@@ -75,7 +71,6 @@
     <string name="IpInfoCountry">Land</string>
     <string name="IpInfoRegion">Regio</string>
     <string name="IpInfoCity">Stad</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organisatie</string>
     <string name="IpInfoDomain">Domein</string>
     <string name="IpInfoTimezone">Tijdzone</string>
@@ -92,19 +87,12 @@
     <string name="FilterZalgoInfo">Verwijdert \"%1$s\"-symbolen in namen en berichten.</string>
     <string name="RestartRequired">Start de app opnieuw om de wijzigingen door te voeren.</string>
     <!-- Message Formatting -->
-    <string name="CodeBlock">Code</string>
     <string name="CreateCode">Codeblok maken</string>
     <string name="CreateCodeLanguage">Taal</string>
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Downloadsnelheid versnellen</string>
     <string name="UploadSpeedBoost">Uploadsnelheid versnellen</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost kan problemen veroorzaken bij het downloaden van bestanden en het streamen van video\'s op trage internetverbindingen.</string>
-    <!-- Maps -->
-    <string name="Maps">Kaarten</string>
-    <string name="TermsOfUseYandexMaps">Door Yandex Maps te gebruiken ga je akkoord met de <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">gebruiksvoorwaarden</a>]]>.</string>
-    <string name="UseYandexMaps">Yandex Maps gebruiken</string>
-    <string name="InstallYandexMaps">Yandex Maps installeren?</string>
     <!-- Storage -->
     <string name="StorageSettings">Opslag</string>
     <string name="CustomSavePath">Aangepaste opslagmap</string>
@@ -161,7 +149,6 @@
     <string name="NavigationDrawer">Navigatielade</string>
     <string name="NavigationDrawerInfo">Vervangt het menu rechtsboven door een klassieke navigatielade die je opent door te vegen en een hamburgerknop.</string>
     <string name="NavigationDrawerImmersiveAnimation">Meeslepende animatie</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Menu-items</string>
     <string name="MainMenuItemsInfo">Tik om items te tonen of te verbergen, houd vast om de volgorde te wijzigen. De lay-out wordt gedeeld tussen het menu en de navigatielade.</string>
     <string name="MainMenuHiddenItems">Verborgen menu-items</string>
@@ -171,7 +158,6 @@
     <!-- Icon Packs -->
     <string name="IconPacks">Iconenpakketten</string>
     <string name="IconPacksInfo">Pas iconen in de hele app aan</string>
-    <string name="IconPickerFilter">Filter</string>
     <string name="IconPickerAllIcons">Alle iconen</string>
     <string name="IconPickerReplacedIcons">Vervangen iconen</string>
     <string name="IconPickerNotReplacedIcons">Niet vervangen iconen</string>
@@ -208,16 +194,12 @@
     <!-- App Icons -->
     <string name="IconPack">Iconenpakket</string>
     <string name="AppIconSunset">Zonsondergang</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Amethist</string>
     <string name="AppIconInvincible">Onoverwinnelijk</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Ruimte</string>
     <string name="AppIconIceAge">IJstijd</string>
-    <string name="AppIconEditor">Editor</string>
     <string name="AppIconOrbit">Baan</string>
     <string name="AppIconSus">Bedrieger</string>
-    <string name="AppIconWinter">Winter</string>
     <!-- General Appearance -->
     <string name="Sections">Secties</string>
     <string name="SeparateHeaders">Aparte koppen</string>
@@ -236,7 +218,6 @@
     <string name="CustomChatThemes">Aangepaste thema\'s in chats</string>
     <string name="CustomChatThemesInfo">Elke chat toont het thema dat specifiek voor die chat is gekozen.</string>
     <string name="PredictiveBackIntensity">Intensiteit van voorspellend terug</string>
-    <string name="PredictiveBackMax">Max</string>
     <string name="PredictiveBackInfo">Bepaalt hoe ver het scherm beweegt bij het terugvegen.</string>
     <!-- Blur & Effects -->
     <string name="BlurOptions">Vervagingsopties</string>
@@ -253,7 +234,6 @@
     <string name="StickerSize">Stickergrootte</string>
     <string name="StickerSizeLeft">Klein</string>
     <string name="StickerSizeRight">Groot</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">woah, zo schattig!</string>
     <string name="StickerShape">Stickervorm</string>
     <string name="StickerShapeRounded">Afgerond</string>
@@ -268,14 +248,11 @@
     <string name="AIChatInfo">Services, rollen en geschiedenis instellen</string>
     <string name="AIChatInfo2">Genereer tekst uit berichten of vóór het verzenden.</string>
     <!-- AI Services -->
-    <string name="Services">Services</string>
     <string name="ServicesInfo">Kies de juiste service voor interactie met taalmodel.</string>
     <string name="NewService">Nieuwe service</string>
     <string name="EditService">Service bewerken</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">API-sleutel</string>
     <string name="ServiceInfo">Service-info</string>
-    <string name="ServiceProvider">Provider</string>
     <string name="ServiceProviderCustom">Aangepast</string>
     <string name="ServiceTestAndSave">Testen en opslaan</string>
     <string name="ServicePasteService">Service plakken</string>
@@ -286,7 +263,6 @@
     <string name="RolesInfo">Maak rollen voor jouw specifieke behoeften!</string>
     <string name="Suggestions">Suggesties</string>
     <string name="RoleName">Naam</string>
-    <string name="RolePrompt">Prompt</string>
     <string name="PromptInfo">Een prompt is de initiële tekst die aan het model wordt gegeven om een antwoord te genereren of een dialoog voort te zetten.</string>
     <string name="NewRole">Nieuwe rol</string>
     <string name="EditRole">Rol bewerken</string>
@@ -390,12 +366,10 @@
     <string name="AlwaysSendInHD">Altijd in HD verzenden</string>
     <string name="HideCameraTile">Snelcamerategel verbergen</string>
     <string name="HideCameraTileInfo">De camerategel wordt vervangen door een zwevende knop. Door erop te drukken wordt de Telegram-camera geopend; door lang te drukken wordt de systeemcamera geopend.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Overslaan met dubbeltik</string>
     <string name="PreferOriginalQuality">Originele kwaliteit prefereren</string>
     <string name="PauseOnMinimize">Automatisch pauzeren</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Spraak</string>
     <string name="PauseOnMinimizeRound">Rond</string>
     <string name="PauseOnMinimizeInfo">Pauzeert media-afspelen wanneer het apparaat is vergrendeld of exteraGram is geminimaliseerd.</string>
@@ -455,7 +429,6 @@
     <string name="BoostyInfo2">Bedankt voor je steun!</string>
     <!-- Plugins -->
     <string name="PluginsNotSupported">Plugin-installatie is alleen beschikbaar in de **Volledige** versie van **exteraGram**.</string>
-    <string name="Plugins">Plugins</string>
     <string name="PluginsEngine">Plugin-engine</string>
     <string name="EnablePluginsEngine">Plugin-engine inschakelen</string>
     <string name="PluginsInfo">Je kunt plugins vinden op @exteraPlugins.</string>
@@ -516,19 +489,15 @@
     <string name="UpdateFailedToInstall">Update-installatie mislukt met foutcode: %d</string>
     <string name="UpdateAvailable">Update beschikbaar!</string>
     <!-- Message Details -->
-    <string name="Details">Details</string>
     <string name="Date">Datum</string>
     <string name="EditedDate">Bewerkingsdatum</string>
     <string name="ForwardedDate">Doorstuurdatum</string>
     <string name="FileSize">Bestandsgrootte</string>
     <string name="FileName">Bestandsnaam</string>
     <string name="FilePath">Bestandspad</string>
-    <string name="Platform">Platform</string>
     <string name="Resolution">Resolutie</string>
-    <string name="Bitrate">Bitrate</string>
     <string name="Duration">Duur</string>
     <string name="MimeType">Mime-type</string>
-    <string name="Datacenter">Datacenter</string>
     <!-- Date Formatting -->
     <string name="DateFormatOption">Opmaak:</string>
     <string name="DateFormatOptionNone">Geen</string>
@@ -623,7 +592,6 @@
     <string name="StickerCornerRadiusSmall">Klein</string>
     <string name="StickerCornerRadiusNone">Geen</string>
     <!-- Feed -->
-    <string name="Feed">Feed</string>
     <string name="FeedShownChannels">Getoond in feed</string>
     <string name="FeedHiddenChannels">Verborgen</string>
     <string name="FeedChannels">Kanalen</string>

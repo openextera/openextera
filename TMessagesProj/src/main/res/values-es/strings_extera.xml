@@ -22,7 +22,6 @@
     <string name="Supporter">**%1$s** apoyó el desarrollo de **exteraGram** y recibió una insignia exclusiva.</string>
     <string name="OfficialChannel">**%1$s** es el recurso oficial de **exteraGram**.</string>
     <string name="NoSuchSetting">Parece que esa configuración no existe.</string>
-    <string name="SettingLinkToSavedMessages">Setting link sent to **Saved Messages**.</string>
     <string name="SettingLinkToUser">Enlace de configuración enviado a **%1$s**.</string>
     <string name="SettingLinkToChats">Enlace de configuración enviado a **%1$s**.</string>
     <string name="LiteBatteryFollowSystem">Usar el ahorro de batería del sistema</string>
@@ -46,7 +45,6 @@
     <string name="PillStackInfiniteScrolling">Scroll infinito</string>
     <string name="CryptoPillTargetCurrency">Moneda objetivo</string>
     <string name="CryptoCurrencyUsd">Dólares Americanos</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Rublo ruso</string>
     <string name="CryptoCurrencyGbp">Libra esterlina</string>
     <string name="CryptoCurrencyKzt">Tenge kazajo</string>
@@ -75,7 +73,6 @@
     <string name="IpInfoCountry">Condado</string>
     <string name="IpInfoRegion">Región</string>
     <string name="IpInfoCity">Ciudad</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organización</string>
     <string name="IpInfoDomain">Dominio</string>
     <string name="IpInfoTimezone">Zona horaria</string>
@@ -98,13 +95,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Aumento de velocidad de descarga</string>
     <string name="UploadSpeedBoost">Aumento de velocidad de subida</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost puede causar problemas con la descarga de archivos y la transmisión de videos en conexiones lentas a Internet.</string>
-    <!-- Maps -->
-    <string name="Maps">Mapas</string>
-    <string name="TermsOfUseYandexMaps">Al utilizar Yandex Maps, usted acepta los <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">términos de uso</a>]]>.</string>
-    <string name="UseYandexMaps">Usar \"Mapas\" de Yandex</string>
-    <string name="InstallYandexMaps">¿Instalar Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Almacenamiento</string>
     <string name="CustomSavePath">Carpeta de guardado personalizada</string>
@@ -161,7 +152,6 @@
     <string name="NavigationDrawer">Cajón de navegación</string>
     <string name="NavigationDrawerInfo">Reemplaza el menú superior derecho con un cajón clásico de deslizar para abrir y un botón de hamburguesa.</string>
     <string name="NavigationDrawerImmersiveAnimation">Animación inmersiva</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Elementos del menú</string>
     <string name="MainMenuItemsInfo">Toca para mostrar u ocultar elementos, mantén presionado para reordenar. El diseño se comparte entre el menú y el cajón.</string>
     <string name="MainMenuHiddenItems">Elementos de menú ocultos</string>
@@ -207,15 +197,12 @@
     <!-- App Icons -->
     <string name="IconPack">Paquete de iconos</string>
     <string name="AppIconSunset">Atardecer</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Amatista</string>
     <string name="AppIconInvincible">Invencible</string>
     <string name="AppIconCyberpunk">Ciberpunk</string>
     <string name="AppIconSpace">Espacio</string>
     <string name="AppIconIceAge">Era de Hielo</string>
-    <string name="AppIconEditor">Editor</string>
     <string name="AppIconOrbit">Órbita</string>
-    <string name="AppIconSus">Impostor</string>
     <string name="AppIconWinter">Invierno</string>
     <!-- General Appearance -->
     <string name="Sections">Secciones</string>
@@ -252,7 +239,6 @@
     <string name="StickerSize">Tamaño de sticker</string>
     <string name="StickerSizeLeft">Pequeño</string>
     <string name="StickerSizeRight">Grande</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">¡Woah, qué lindo!</string>
     <string name="StickerShape">Forma de la pegatina</string>
     <string name="StickerShapeRounded">Redondeado</string>
@@ -281,11 +267,9 @@
     <string name="ServicePasteKey">Clave API de pegado</string>
     <string name="DeleteServiceInfo">¿Estás seguro de que quieres eliminar **%1$s**?</string>
     <!-- AI Roles -->
-    <string name="Roles">Roles</string>
     <string name="RolesInfo">¡Crea roles para tus necesidades específicas!</string>
     <string name="Suggestions">Sugerencias</string>
     <string name="RoleName">Nombre</string>
-    <string name="RolePrompt">Prompt</string>
     <string name="PromptInfo">Un mensaje es el texto inicial que se le da al modelo para comenzar a generar una respuesta o continuar un diálogo.</string>
     <string name="NewRole">Nuevo rol</string>
     <string name="EditRole">Editar rol</string>
@@ -387,12 +371,10 @@
     <string name="AlwaysSendInHD">Enviar siempre en HD</string>
     <string name="HideCameraTile">Ocultar mosaico de cámara instantánea</string>
     <string name="HideCameraTileInfo">El mosaico de la cámara se reemplazará por un botón flotante. Al presionarlo, se inicia la cámara de Telegram; al mantenerlo presionado, se inicia la cámara del sistema.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Duración del doble toque</string>
     <string name="PreferOriginalQuality">Prefiero la calidad original</string>
     <string name="PauseOnMinimize">Pausar automáticamente</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Voz</string>
     <string name="PauseOnMinimizeRound">Ronda</string>
     <string name="PauseOnMinimizeInfo">Pausa la reproducción multimedia cuando el dispositivo está bloqueado o exteraGram está minimizado.</string>
@@ -474,9 +456,7 @@
     <string name="PluginNoDescription">No se proporcionó descripción.</string>
     <string name="PluginIsNotResponding">El complemento no responde.</string>
     <string name="PluginIsNotRespondingAlert">%1$s no responde</string>
-    <string name="PluginNoAuthor">Unknown Author</string>
     <string name="EnableAfterInstallation">Habilitar después de la instalación</string>
-    <string name="EnterValue">Enter a value</string>
     <string name="PluginDelete">Eliminar complemento</string>
     <string name="PluginDeleteInfo">¿Estás seguro de que deseas eliminar **%1$s**?</string>
     <string name="ResetPluginSettings">**%1$s** se han restablecido las configuraciones.</string>
@@ -551,7 +531,6 @@
     <string name="PageBlockedProceed">Continuar</string>
     <!-- Other -->
     <string name="SetAsBadge">Establecer como insignia</string>
-    <string name="AutoLockInstant">Instant</string>
     <string name="TestBackend">Probar backend</string>
     <string name="SearchPhotoInfo">Los servicios pueden utilizar imágenes siguiendo sus políticas de privacidad y términos de uso.</string>
     <string name="PhotoUploadFailed">Error al cargar la foto.</string>
@@ -619,7 +598,6 @@
     <string name="StickerCornerRadiusSmall">Pequeño</string>
     <string name="StickerCornerRadiusNone">Ninguno</string>
     <!-- Feed -->
-    <string name="Feed">Feed</string>
     <string name="FeedShownChannels">Mostrado en el feed</string>
     <string name="FeedHiddenChannels">Oculto</string>
     <string name="FeedChannels">Canales</string>

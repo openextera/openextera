@@ -65,8 +65,6 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.exteragram.messenger.ExteraConfig;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -1294,9 +1292,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         IMapsProvider.IMapView map = mapView;
         new Thread(() -> {
             try {
-                if (!ExteraConfig.canUseYandexMaps()) {
-                    map.onCreate(null);
-                }
+                map.onCreate(null);
             } catch (Exception e) {
                 //this will cause exception, but will preload google maps?
             }
@@ -1313,8 +1309,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                                 IMapsProvider.IMapStyleOptions style = ApplicationLoader.getMapsProvider().loadRawResourceStyle(ApplicationLoader.applicationContext, themeResId);
                                 this.map.setMapStyle(style);
                             }
-                            IMapsProvider.IMap.Padding fragmentPadding = this.map.getFragmentPadding(dp(10));
-                            this.map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
+                            this.map.setPadding(dp(70), 0, dp(70), dp(10));
                             onMapInit();
                         });
                         mapsInitialized = true;
@@ -1601,20 +1596,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             daddrLat = chatLocation.geo_point.lat;
             daddrLong = chatLocation.geo_point._long;
         }
-        if (ExteraConfig.canUseYandexMaps()) {
-            try {
-                final String url;
-                if (myLocation != null) {
-                    url = String.format(Locale.US, "http://maps.yandex.ru/?rtext=%f,%f~%f,%f", myLocation.getLatitude(), myLocation.getLongitude(), daddrLat, daddrLong);
-                } else {
-                    url = String.format(Locale.US, "http://maps.yandex.ru/?rtext=%f,%f", daddrLat, daddrLong);
-                }
-                getParentActivity().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            return;
-        }
         String domain;
         if (BuildVars.isHuaweiStoreApp()) {
             domain = "mapapp://navigation";
@@ -1787,8 +1768,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             return true;
         }, () -> {
             if (map != null) {
-                IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(dp(10));
-                map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
+                map.setPadding(dp(70), 0, dp(70), dp(10));
             }
             if (!proximitySheet.getRadiusSet()) {
                 if (previousRadius > 0) {
@@ -2415,13 +2395,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (layoutParams != null && layoutParams.height != overScrollHeight + dp(10)) {
                     layoutParams.height = overScrollHeight + dp(10);
                     if (map != null) {
-                        IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(dp(10));
-                        map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
+                        map.setPadding(dp(70), 0, dp(70), dp(10));
                     }
                     mapView.getView().setLayoutParams(layoutParams);
-                }
-                if (map != null) {
-                    map.setLogoPadding(0, Math.max(0, -top / 2) + dp(10));
                 }
                 if (overlayView != null) {
                     layoutParams = (FrameLayout.LayoutParams) overlayView.getLayoutParams();
@@ -2470,8 +2446,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             if (layoutParams != null) {
                 layoutParams.height = overScrollHeight + dp(10);
                 if (map != null) {
-                    IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(dp(10));
-                    map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
+                    map.setPadding(dp(70), 0, dp(70), dp(10));
                 }
                 mapView.getView().setLayoutParams(layoutParams);
             }
@@ -2679,8 +2654,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 bounds = builder.build();
                 try {
                     int height = (int) (proximitySheet.getCustomView().getMeasuredHeight() - dp(40) + mapViewClip.getTranslationY());
-                    IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(height);
-                    map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
+                    map.setPadding(dp(70), 0, dp(70), height);
                     if (animated) {
                         map.animateCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLngBounds(bounds, 0), 500, null);
                     } else {
@@ -2711,8 +2685,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 bounds = builder.build();
                 try {
                     int height = proximitySheet.getCustomView().getMeasuredHeight() - dp(100);
-                    IMapsProvider.IMap.Padding fragmentPadding = map.getFragmentPadding(height);
-                    map.setPadding(fragmentPadding.left, fragmentPadding.top, fragmentPadding.right, fragmentPadding.bottom);
+                    map.setPadding(dp(70), 0, dp(70), height);
                     map.moveCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLngBounds(bounds, 0));
                 } catch (Exception e) {
                     FileLog.e(e);

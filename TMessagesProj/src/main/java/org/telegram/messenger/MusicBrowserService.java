@@ -53,6 +53,9 @@ public class MusicBrowserService extends MediaBrowserService {
         if (TelegramMediaSession.getInstance(this).isPasscodeLocked()) {
             return null;
         }
+        if (!"com.android.systemui".equals(clientPackageName)) {
+            TelegramMediaSession.getInstance(this).enablePlaybackMirroring();
+        }
         return new BrowserRoot(MEDIA_ID_ROOT, TelegramMediaSession.getInstance(this).buildRootHints());
     }
 

@@ -14,7 +14,6 @@
     <!-- Main Menu -->
     <string name="Links">Tautan</string>
     <string name="AboutExteraDescription">Sebuah klien Telegram experimental berbasis kode sumber resmi!</string>
-    <string name="Crowdin">Translate</string>
     <string name="Website">Situs web</string>
     <string name="Categories">Kategori</string>
     <string name="NoSuchSetting">Sepertinya pengaturan seperti itu tidak ada.</string>
@@ -42,7 +41,6 @@
     <string name="PillStackInfiniteScrolling">Gulir Tak Terbatas</string>
     <string name="CryptoPillTargetCurrency">Mata uang target</string>
     <string name="CryptoCurrencyUsd">Dolar AS</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Rubel Rusia</string>
     <string name="CryptoCurrencyGbp">Pound Britania</string>
     <string name="CryptoCurrencyKzt">Tenge Kazakhstan</string>
@@ -71,20 +69,16 @@
     <string name="IpInfoCountry">Negara</string>
     <string name="IpInfoRegion">Wilayah</string>
     <string name="IpInfoCity">Kota</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organisasi</string>
-    <string name="IpInfoDomain">Domain</string>
     <string name="IpInfoTimezone">Zona waktu</string>
     <!-- Translator -->
     <string name="TranslationProvider">Penyedia Terjemahan</string>
-    <string name="TranslationTarget">Target Language</string>
     <string name="TranslationTargetApp">Ikuti Aplikasi</string>
     <!-- Formatting & Behavior -->
     <string name="DisableNumberRounding">Nonaktifkan Pembulatan Angka</string>
     <string name="FormatTimeWithSeconds">Format Waktu dengan Detik</string>
     <string name="RelativeLastSeen">Terakhir Dilihat Relatif</string>
     <string name="InAppVibration">Getaran Dalam Aplikasi</string>
-    <string name="FilterZalgo">Filter \"Zalgo\"</string>
     <string name="FilterZalgoInfo">Menghapus simbol \"%1$s\" pada nama dan pesan.</string>
     <string name="RestartRequired">Mulai ulang aplikasi agar perubahan berlaku.</string>
     <!-- Message Formatting -->
@@ -94,13 +88,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Penambah Kecepatan Unduh</string>
     <string name="UploadSpeedBoost">Penambah Kecepatan Unggah</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost dapat menyebabkan masalah saat mengunduh file dan streaming video pada koneksi Internet lambat.</string>
-    <!-- Maps -->
-    <string name="Maps">Peta</string>
-    <string name="TermsOfUseYandexMaps">Dengan menggunakan Yandex Maps, Anda menyetujui <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">ketentuan penggunaan</a>]]>.</string>
-    <string name="UseYandexMaps">Gunakan Yandex Maps</string>
-    <string name="InstallYandexMaps">Instal Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Penyimpanan</string>
     <string name="CustomSavePath">Folder Simpan Kustom</string>
@@ -129,7 +117,6 @@
     <!-- Chat List -->
     <string name="ListOfChats">Daftar Obrolan</string>
     <string name="ActionBarTitle">Teks Judul</string>
-    <string name="ActionBarTitleUsername">Username</string>
     <string name="ActionBarTitleName">Nama Depan</string>
     <string name="HideStories">Sembunyikan Cerita</string>
     <string name="HideActionBarStatus">Sembunyikan Status</string>
@@ -157,7 +144,6 @@
     <string name="NavigationDrawer">Laci Navigasi</string>
     <string name="NavigationDrawerInfo">Mengganti menu kanan atas dengan laci geser-untuk-membuka klasik dan tombol hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Animasi Imersif</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Item Menu</string>
     <string name="MainMenuItemsInfo">Ketuk untuk menampilkan atau menyembunyikan item, tahan untuk mengurutkan ulang. Tata letak dibagikan antara menu dan laci.</string>
     <string name="MainMenuHiddenItems">Item Menu Tersembunyi</string>
@@ -167,7 +153,6 @@
     <!-- Icon Packs -->
     <string name="IconPacks">Paket Ikon</string>
     <string name="IconPacksInfo">Sesuaikan ikon di seluruh aplikasi</string>
-    <string name="IconPickerFilter">Filter</string>
     <string name="IconPickerAllIcons">Semua Ikon</string>
     <string name="IconPickerReplacedIcons">Ikon Diganti</string>
     <string name="IconPickerNotReplacedIcons">Ikon Tidak Diganti</string>
@@ -176,7 +161,6 @@
     <string name="BaseIconPackInfo">Paket ikon dasar digunakan sebagai cadangan untuk ikon yang tidak diganti oleh paket lain.</string>
     <string name="IconPacksHint">Ketuk untuk mengaktifkan atau menonaktifkan paket. Tahan untuk mengedit atau menghapus.</string>
     <string name="NewIconPack">Buat Paket Ikon Baru</string>
-    <string name="EditIconPackInfo">Edit Info</string>
     <string name="EnabledPacks">Paket Diaktifkan</string>
     <string name="AllPacks">Semua Paket</string>
     <string name="PackName">Nama Paket</string>
@@ -204,15 +188,9 @@
     <!-- App Icons -->
     <string name="IconPack">Paket Ikon</string>
     <string name="AppIconSunset">Senja</string>
-    <string name="AppIconAurora">Aurora</string>
-    <string name="AppIconAmethyst">Amethyst</string>
     <string name="AppIconInvincible">Tak Terkalahkan</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Angkasa</string>
     <string name="AppIconIceAge">Zaman Es</string>
-    <string name="AppIconEditor">Editor</string>
-    <string name="AppIconOrbit">Orbit</string>
-    <string name="AppIconSus">Impostor</string>
     <string name="AppIconWinter">Musim Dingin</string>
     <!-- General Appearance -->
     <string name="Sections">Bagian</string>
@@ -249,7 +227,6 @@
     <string name="StickerSize">Ukuran Stiker</string>
     <string name="StickerSizeLeft">Kecil</string>
     <string name="StickerSizeRight">Besar</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">wah, imut sekali!</string>
     <string name="StickerShape">Bentuk Stiker</string>
     <string name="StickerShapeRounded">Membulat</string>
@@ -268,7 +245,6 @@
     <string name="ServicesInfo">Pilih layanan yang sesuai untuk berinteraksi dengan model bahasa.</string>
     <string name="NewService">Layanan Baru</string>
     <string name="EditService">Edit Layanan</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">Kunci API</string>
     <string name="ServiceInfo">Info Layanan</string>
     <string name="ServiceProvider">Penyedia</string>
@@ -282,7 +258,6 @@
     <string name="RolesInfo">Buat peran untuk kebutuhan spesifik Anda!</string>
     <string name="Suggestions">Saran</string>
     <string name="RoleName">Nama</string>
-    <string name="RolePrompt">Prompt</string>
     <string name="PromptInfo">Prompt adalah teks awal yang diberikan ke model untuk mulai menghasilkan respons atau melanjutkan dialog.</string>
     <string name="NewRole">Peran Baru</string>
     <string name="EditRole">Edit Peran</string>
@@ -386,12 +361,10 @@
     <string name="AlwaysSendInHD">Selalu Kirim dalam HD</string>
     <string name="HideCameraTile">Sembunyikan Ubin Kamera Instan</string>
     <string name="HideCameraTileInfo">Ubin kamera akan diganti dengan tombol mengambang. Menekannya akan meluncurkan kamera Telegram; menahannya akan meluncurkan kamera sistem.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Durasi Skip Ketuk Ganda</string>
     <string name="PreferOriginalQuality">Utamakan Kualitas Asli</string>
     <string name="PauseOnMinimize">Jeda Otomatis</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Suara</string>
     <string name="PauseOnMinimizeRound">Lingkaran</string>
     <string name="PauseOnMinimizeInfo">Menjeda pemutaran media saat perangkat dikunci atau exteraGram diminimalkan.</string>
@@ -519,14 +492,11 @@
     <string name="FileSize">Ukuran File</string>
     <string name="FileName">Nama File</string>
     <string name="FilePath">Lokasi File</string>
-    <string name="Platform">Platform</string>
     <string name="Resolution">Resolusi</string>
-    <string name="Bitrate">Bitrate</string>
     <string name="Duration">Durasi</string>
     <string name="MimeType">Tipe Mime</string>
     <string name="Datacenter">Pusat Data</string>
     <!-- Date Formatting -->
-    <string name="DateFormatOption">Format:</string>
     <string name="DateFormatOptionNone">Tidak Ada</string>
     <string name="DateFormatOptionRelative">Relatif</string>
     <string name="DateFormatOptionShortTime">Waktu Pendek</string>
@@ -619,7 +589,6 @@
     <string name="StickerCornerRadiusSmall">Kecil</string>
     <string name="StickerCornerRadiusNone">Tidak Ada</string>
     <!-- Feed -->
-    <string name="Feed">Feed</string>
     <string name="FeedShownChannels">Ditampilkan di feed</string>
     <string name="FeedHiddenChannels">Tersembunyi</string>
     <string name="FeedChannels">Saluran</string>

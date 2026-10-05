@@ -1312,7 +1312,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             showTosActivity(account, UserConfig.getInstance(account).unacceptedTermsOfService);
         }
         updateCurrentConnectionState(currentAccount);
-        ApplicationLoader.updateMapsProvider();
 
         switchingAccount = false;
         AndroidUtilities.runOnUIThread(() -> PillStackConfig.notifySettingsChanged(PillType.GRAM.getId(), PillType.BTC.getId(), PillType.USD.getId()), 150);

@@ -78,6 +78,7 @@ public class TelegramMediaSession {
 
     private int currentAccount;
     private long lastSelectedDialog;
+    private boolean mirrorPlayback;
 
     private boolean chatsLoaded;
     private boolean loadingChats;
@@ -520,6 +521,19 @@ public class TelegramMediaSession {
         session.setMetadata(mb.build());
     }
 
+    public void enablePlaybackMirroring() {
+        if (mirrorPlayback) {
+            return;
+        }
+        mirrorPlayback = true;
+        AndroidUtilities.runOnUIThread(() -> {
+            MessageObject playing = MediaController.getInstance().getPlayingMessageObject();
+            if (playing != null) {
+                NotificationCenter.getInstance(playing.currentAccount).postNotificationName(NotificationCenter.messagePlayingPlayStateChanged, playing.getId());
+            }
+        });
+    }
+
     public void publishMetadata(MessageObject messageObject, @Nullable AudioInfo audioInfo, @Nullable Bitmap albumArt) {
         if (messageObject == null) return;
         MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder()
@@ -535,8 +549,29 @@ public class TelegramMediaSession {
         session.setMetadata(meta.build());
     }
 
+    public void publishMetadata(MediaMetadataCompat metadata) {
+        if (mirrorPlayback) {
+            session.setMetadata(metadata);
+        }
+    }
+
     public void publishPlaybackState(PlaybackStateCompat state) {
-        session.setPlaybackState(state);
+        if (mirrorPlayback) {
+            if (!session.isActive()) {
+                session.setActive(true);
+            }
+            session.setPlaybackState(new PlaybackStateCompat.Builder(state).setActions(getAvailableActions() | state.getActions()).build());
+        }
+    }
+
+    public void clearPlaybackState() {
+        try {
+            session.setPlaybackState(new PlaybackStateCompat.Builder().setState(PlaybackStateCompat.STATE_NONE, 0, 1f).setActions(0).build());
+            session.setMetadata(null);
+            session.setActive(false);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     public long getAvailableActions() {

@@ -254,12 +254,6 @@
     <string name="Ultra">Ультра</string>
     <string name="SpeedBoostInfo">Ультра-ускорение может вызывать проблемы с загрузкой файлов и просмотром видео на медленном интернет-соединении.</string>
 
-    <!-- Карты -->
-    <string name="Maps">Карты</string>
-    <string name="TermsOfUseYandexMaps">Используя Яндекс Карты, вы соглашаетесь с <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">условиями использования</a>]]>.</string>
-    <string name="UseYandexMaps">Использовать Яндекс Карты</string>
-    <string name="InstallYandexMaps">Установить Яндекс Карты?</string>
-
     <!-- Хранилище -->
     <string name="StorageSettings">Хранилище</string>
     <string name="CustomSavePath">Папка для сохранения</string>

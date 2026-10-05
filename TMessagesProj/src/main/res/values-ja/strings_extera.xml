@@ -75,7 +75,6 @@
     <string name="IpInfoCountry">国</string>
     <string name="IpInfoRegion">地域</string>
     <string name="IpInfoCity">都市</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">組織</string>
     <string name="IpInfoDomain">ドメイン</string>
     <string name="IpInfoTimezone">タイムゾーン</string>
@@ -100,11 +99,6 @@
     <string name="UploadSpeedBoost">アップロード速度ブースト</string>
     <string name="Ultra">ウルトラ</string>
     <string name="SpeedBoostInfo">ウルトラブーストは、低速のインターネット接続でファイルのダウンロードやビデオのストリーミングに問題を引き起こす可能性があります。</string>
-    <!-- Maps -->
-    <string name="Maps">地図</string>
-    <string name="TermsOfUseYandexMaps"><![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">利用規約</a>]]>に同意することにより、Yandexマップを使用します。</string>
-    <string name="UseYandexMaps">Yandexマップを使用</string>
-    <string name="InstallYandexMaps">Yandexマップをインストールしますか？</string>
     <!-- Storage -->
     <string name="StorageSettings">ストレージ</string>
     <string name="CustomSavePath">カスタム保存フォルダ</string>
@@ -161,7 +155,6 @@
     <string name="NavigationDrawer">ナビゲーションドロワー</string>
     <string name="NavigationDrawerInfo">右上メニューを、スワイプで開くクラシックなドロワーとハンバーガーボタンに置き換えます。</string>
     <string name="NavigationDrawerImmersiveAnimation">没入感のあるアニメーション</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">メニュー項目</string>
     <string name="MainMenuItemsInfo">タップで項目を表示/非表示、長押しで並べ替え。レイアウトはメニューとドロワーで共有されます。</string>
     <string name="MainMenuHiddenItems">非表示のメニュー項目</string>
@@ -169,32 +162,19 @@
     <string name="MainMenuAddDivider">区切りを追加</string>
     <string name="MainMenuRemoveSettingsInfo">下部ナビゲーションバーが無効の間は設定を非表示にできません。</string>
     <!-- Icon Packs -->
-    <string name="IconPacks">Icon Packs</string>
-    <string name="IconPacksInfo">Customize icons across the app</string>
     <string name="IconPickerFilter">フィルター</string>
-    <string name="IconPickerAllIcons">All Icons</string>
     <string name="IconPickerReplacedIcons">置き換えられたアイコン</string>
     <string name="IconPickerNotReplacedIcons">置き換えられていないアイコン</string>
-    <string name="IconPickerSaveAndExit">Save &amp; Exit</string>
-    <string name="BasePacks">Base Packs</string>
     <string name="BaseIconPackInfo">The base icon pack is used as a fallback for icons not replaced by other packs。</string>
     <string name="IconPacksHint">タップしてパックを有効または無効にします。長押しして編集または削除します。</string>
     <string name="NewIconPack">新しいアイコンパックを作成</string>
-    <string name="EditIconPackInfo">Edit Info</string>
-    <string name="EnabledPacks">Enabled Packs</string>
-    <string name="AllPacks">All Packs</string>
     <string name="PackName">パック名</string>
-    <string name="AuthorNameOptional">Author Name (optional)</string>
     <string name="NameCannotBeEmpty">Name cannot be empty。</string>
     <string name="Version">バージョン</string>
     <string name="InstallPack">インストールパック</string>
-    <string name="IconCount_one">%1$d icon</string>
     <string name="IconCount_two">%1$d 個のアイコン</string>
     <string name="IconCount_few">%1$d 個のアイコン</string>
     <string name="IconCount_many">%1$d 個のアイコン</string>
-    <string name="IconCount_other">%1$d icons</string>
-    <string name="UpdatePack">Update Pack</string>
-    <string name="DeletePack">Delete Pack</string>
     <string name="DeletePackInfo">Are you sure you want to delete **%1$s**？</string>
     <string name="IconPackErrorInvalidArchive">アイコンパックのアーカイブが無効です。</string>
     <string name="IconPackErrorMissingMetadata">アイコンパックのアーカイブに metadata.json がありません。</string>
@@ -213,8 +193,6 @@
     <string name="AppIconInvincible">無敵</string>
     <string name="AppIconCyberpunk">サイバーパンク</string>
     <string name="AppIconSpace">宇宙</string>
-    <string name="AppIconIceAge">Ice Age</string>
-    <string name="AppIconEditor">Editor</string>
     <string name="AppIconOrbit">軌道</string>
     <string name="AppIconSus">詐欺師</string>
     <string name="AppIconWinter">冬</string>
@@ -390,7 +368,6 @@
     <string name="AlwaysSendInHD">常にHDで送信</string>
     <string name="HideCameraTile">インスタントカメラタイルを隠す</string>
     <string name="HideCameraTileInfo">カメラタイルはフローティングボタンに置き換えられます。それを押すとTelegramカメラが起動し、長押しするとシステムカメラが起動します。</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">ダブルタップのスキップ時間</string>
     <string name="PreferOriginalQuality">元の品質を優先</string>

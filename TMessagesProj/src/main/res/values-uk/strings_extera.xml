@@ -29,7 +29,6 @@
     <string name="LiteBatteryFollowSystemState">Система</string>
     <string name="LiteBatteryFollowSystemInfo">Керується системним енергозбереженням.</string>
     <!-- Pill Stack -->
-    <string name="PillStackPills">Pill Stack</string>
     <string name="PillStackPillsInfo">Інтерактивні віджети у полі пошуку</string>
     <string name="PillStackPillsSettingsInfo">Налаштуйте видимі віджети. Натисніть, щоб показати або приховати, утримуйте і перетягніть для зміни порядку.</string>
     <string name="PillStackActivePills">Активні віджети</string>
@@ -102,11 +101,6 @@
     <string name="UploadSpeedBoost">Збільшення швидкості відправки</string>
     <string name="Ultra">Ультра</string>
     <string name="SpeedBoostInfo">Ультраприскорення може викликати проблеми при завантаженні файлів і потокових відео при повільному з\'єднанні з інтернетом.</string>
-    <!-- Maps -->
-    <string name="Maps">Карти</string>
-    <string name="TermsOfUseYandexMaps">Використовуючи Yandex Maps Ви погоджуєтесь з <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">умовами використання</a>]]>.</string>
-    <string name="UseYandexMaps">Використовувати Яндекс Карти</string>
-    <string name="InstallYandexMaps">Встановити Яндекс Карти?</string>
     <!-- Storage -->
     <string name="StorageSettings">Сховище</string>
     <string name="CustomSavePath">Папка для збереження</string>
@@ -174,30 +168,13 @@
     <string name="IconPacks">Набори іконок</string>
     <string name="IconPacksInfo">Налаштування іконок всього додатку</string>
     <string name="IconPickerFilter">Фільтр</string>
-    <string name="IconPickerAllIcons">All Icons</string>
     <string name="IconPickerReplacedIcons">Замінені іконки</string>
     <string name="IconPickerNotReplacedIcons">Не замінені іконки</string>
-    <string name="IconPickerSaveAndExit">Save &amp; Exit</string>
-    <string name="BasePacks">Base Packs</string>
     <string name="BaseIconPackInfo">Базові набори використовуються для іконок, котрі не замінені іншими наборами.</string>
     <string name="IconPacksHint">Торкніться, щоб увімкнути чи вимкнути набір. Утримуйте для редагування чи видалення.</string>
-    <string name="NewIconPack">Create a new Icon Pack</string>
-    <string name="EditIconPackInfo">Edit Info</string>
-    <string name="EnabledPacks">Enabled Packs</string>
-    <string name="AllPacks">All Packs</string>
-    <string name="PackName">Pack Name</string>
-    <string name="AuthorNameOptional">Author Name (optional)</string>
-    <string name="NameCannotBeEmpty">Name cannot be empty.</string>
-    <string name="Version">Version</string>
-    <string name="InstallPack">Install Pack</string>
-    <string name="IconCount_one">%1$d icon</string>
     <string name="IconCount_two">%1$d іконки</string>
     <string name="IconCount_few">%1$d іконки</string>
     <string name="IconCount_many">%1$d іконок</string>
-    <string name="IconCount_other">%1$d icons</string>
-    <string name="UpdatePack">Update Pack</string>
-    <string name="DeletePack">Delete Pack</string>
-    <string name="DeletePackInfo">Are you sure you want to delete **%1$s**?</string>
     <string name="IconPackErrorInvalidArchive">Набір іконок недійсний.</string>
     <string name="IconPackErrorMissingMetadata">Набір іконок не містить metadata.json.</string>
     <string name="IconPackErrorMetadataTooLarge">Метадані набору іконок завеликі.</string>
@@ -215,8 +192,6 @@
     <string name="AppIconInvincible">Нездоланний</string>
     <string name="AppIconCyberpunk">Кіберпанк</string>
     <string name="AppIconSpace">Космос</string>
-    <string name="AppIconIceAge">Ice Age</string>
-    <string name="AppIconEditor">Editor</string>
     <string name="AppIconOrbit">Орбіта</string>
     <string name="AppIconSus">Самозванець</string>
     <string name="AppIconWinter">Зима</string>
@@ -244,8 +219,6 @@
     <string name="PredictiveBackMax">Максимум</string>
     <string name="PredictiveBackInfo">Регулює відстань, на яку зміщується екран під час свайпу.</string>
     <string name="TransitionAnimation">Анімація переходів</string>
-    <string name="TransitionAnimationAosp">AOSP</string>
-    <string name="TransitionAnimationSpring">Spring</string>
     <string name="TransitionAnimationInfo">AOSP використовує системну анімацію Android. Spring — більш плавну.</string>
     <!-- Blur & Effects -->
     <string name="BlurOptions">Параметри розмиття</string>
@@ -454,7 +427,6 @@
     <string name="AlwaysSendInHD">Завжди надсилати в HD</string>
     <string name="HideCameraTile">Приховати плитку камери</string>
     <string name="HideCameraTileInfo">Плитка камери буде замінена плавучою кнопкою. Натиск на неї запустить камеру Telegram; утримання - системну.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Подвійний дотик для перемотки</string>
     <string name="PreferOriginalQuality">Перевага оригінальній якості</string>
@@ -734,5 +706,28 @@
     <string name="DisableMarkdown">Вимкнути Markdown</string>
     <string name="EnableMarkdown">Увімкнути Markdown</string>
     <!-- Non-translatable -->
+    <string name="AccountNotifications">Акаунти</string>
+    <string name="AccountNotificationsCount">%1$d з %2$d</string>
+    <string name="AccountNotificationsInfo">Сповіщення з невідмічених акаунтів не приходять, доки ви використовуєте інший акаунт.</string>
+    <string name="AccountNotificationsCurrent">Сповіщення від поточного акаунту показуються завжди.</string>
+    <string name="TabCounterUnmuted">Зі сповіщеннями</string>
+    <string name="GenerateWithHistory">З історією</string>
+    <string name="GenerateWithPhoto">З фото</string>
+    <string name="AIErrorOnDeviceStopped">Модель зупинилась</string>
+    <string name="AIErrorOnDeviceStoppedInfo">Локальна модель перервалася під час відповіді, найчастіше через нестачу пам\'яті. Спробуйте ще раз або оберіть легшу модель.</string>
+    <string name="AIOnDevicePreviewModel">Бета-модель</string>
+    <string name="AIOnDeviceFastModel">Швидка модель</string>
+    <string name="AIReplaceTelegram">ШІ Telegram</string>
+    <string name="AIReplaceTelegramEditorInfo">Переклад, зміна стилю та перевірка чернеток</string>
+    <string name="AIReplaceTelegramSummariesInfo">Підсумок довгих повідомлень та постів</string>
+    <string name="AIReplaceTelegramInfo">Обрані функції використовують ваш сервіс ШІ замість серверів Telegram без обмежень Premium.</string>
+    <string name="ShowForwardsCount">Показувати лічильник пересилок</string>
+    <string name="BlockAds">Блокування реклами</string>
+    <string name="BlockedRequests_one">%1$d заблокований</string>
+    <string name="BlockedRequests_two">%1$d заблоковані</string>
+    <string name="BlockedRequests_few">%1$d заблоковано</string>
+    <string name="BlockedRequests_many">%1$d заблоковано</string>
+    <string name="BlockedRequests_other">%1$d заблоковано</string>
+    <string name="AdBlockFiltersLoading">Завантаження фільтрів…</string>
 </resources>
 

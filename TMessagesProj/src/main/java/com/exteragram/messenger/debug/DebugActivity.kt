@@ -40,7 +40,10 @@ class DebugActivity : BasePreferencesActivity() {
         LOAD_MONITOR,
         CAPTURE_LOAD_REPORT,
         SHARE_LOAD_REPORT,
-        DELETE_LOAD_REPORTS;
+        DELETE_LOAD_REPORTS,
+        FREEZE_MONITOR,
+        SHARE_FREEZE_REPORT,
+        DELETE_FREEZE_REPORTS;
 
         val id: Int
             get() = ordinal + 1
@@ -88,6 +91,18 @@ class DebugActivity : BasePreferencesActivity() {
             items.add(UItem.asButton(DebugItem.DELETE_LOAD_REPORTS.id, "Delete load reports", AndroidUtilities.formatFileSize(reportsSize)))
         }
         items.add(UItem.asShadow())
+        items.add(UItem.asCheck(DebugItem.FREEZE_MONITOR.id, "Freeze monitor").setChecked(DebugConfig.freezeMonitorEnabled))
+        if (DebugConfig.freezeMonitorEnabled) {
+            items.add(createFreezeThresholdSliderItem())
+        }
+        FreezeMonitor.report?.let { report ->
+            items.add(UItem.asButton(DebugItem.SHARE_FREEZE_REPORT.id, "Share freeze report", AndroidUtilities.formatFileSize(report.length())))
+        }
+        val freezeReportsSize = FreezeMonitor.reportsSize
+        if (freezeReportsSize > 0) {
+            items.add(UItem.asButton(DebugItem.DELETE_FREEZE_REPORTS.id, "Delete freeze reports", AndroidUtilities.formatFileSize(freezeReportsSize)))
+        }
+        items.add(UItem.asShadow())
     }
 
     private fun createHeapLimitSliderItem(): UItem {
@@ -95,6 +110,13 @@ class DebugActivity : BasePreferencesActivity() {
         return UItem.asIntSlideView(1, 4, HeapMonitor.limitMb / step, HeapMonitor.maxLimitMb / step,
             { value -> "${value * step} MB" },
             { value -> HeapMonitor.setLimitMb(value * step) })
+    }
+
+    private fun createFreezeThresholdSliderItem(): UItem {
+        val step = 100
+        return UItem.asIntSlideView(1, 2, FreezeMonitor.thresholdMs / step, 20,
+            { value -> "${value * step} ms" },
+            { value -> FreezeMonitor.setThresholdMs(value * step) })
     }
 
     private fun createLoadThresholdSliderItem(): UItem {
@@ -146,6 +168,12 @@ class DebugActivity : BasePreferencesActivity() {
             DebugItem.DELETE_LOAD_REPORTS -> LoadMonitor.deleteReports {
                 listView.adapter.update(true)
                 BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, "Load reports deleted.").show()
+            }
+            DebugItem.FREEZE_MONITOR -> toggleBooleanSettingAndRefresh(item) { FreezeMonitor.setEnabled(it) }
+            DebugItem.SHARE_FREEZE_REPORT -> parentActivity?.let { FreezeMonitor.shareReport(it) }
+            DebugItem.DELETE_FREEZE_REPORTS -> FreezeMonitor.deleteReports {
+                listView.adapter.update(true)
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, "Freeze reports deleted.").show()
             }
         }
     }

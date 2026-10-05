@@ -50,8 +50,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.exteragram.messenger.ExteraConfig;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DialogObject;
@@ -498,7 +496,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
-                if (ev.getY() > getMeasuredHeight() - clipSize && !ExteraConfig.canUseYandexMaps()) {
+                if (ev.getY() > getMeasuredHeight() - clipSize) {
                     return false;
                 }
                 return super.onInterceptTouchEvent(ev);
@@ -506,7 +504,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
-                if (ev.getY() > getMeasuredHeight() - clipSize && !ExteraConfig.canUseYandexMaps()) {
+                if (ev.getY() > getMeasuredHeight() - clipSize) {
                     return false;
                 }
                 return super.dispatchTouchEvent(ev);
@@ -568,9 +566,6 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 map.setMapType(IMapsProvider.MAP_TYPE_HYBRID);
             }
         });
-        if (!ApplicationLoader.getMapsProvider().supportsOtherMapTypes()) {
-            mapTypeButton.setVisibility(GONE);
-        }
 
         locationButton = new ImageView(context);
         drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(40), getThemedColor(Theme.key_location_actionBackground), getThemedColor(Theme.key_location_actionPressedBackground));
@@ -840,9 +835,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         final IMapsProvider.IMapView map = mapView;
         new Thread(() -> {
             try {
-                if (!ExteraConfig.canUseYandexMaps()) {
-                    map.onCreate(null);
-                }
+                map.onCreate(null);
             } catch (Exception e) {
                 //this will cause exception, but will preload google maps?
             }
@@ -973,9 +966,6 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         }
         try {
             if (mapView != null) {
-                if (ExteraConfig.canUseYandexMaps() && mapViewClip != null) {
-                    mapViewClip.removeAllViews();
-                }
                 mapView.onDestroy();
                 mapView = null;
             }
@@ -1476,7 +1466,6 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             mapViewClip.setTranslationY(top - nonClipSize);
             if (map != null) {
                 map.setPadding(0, AndroidUtilities.dp(6), 0, clipSize + AndroidUtilities.dp(6));
-                map.setLogoPadding(0, Math.max(0, -(top - nonClipSize) / 2) + AndroidUtilities.dp(6));
             }
             if (overlayView != null) {
                 overlayView.setTranslationY(trY);

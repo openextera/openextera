@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Loputon vieritys</string>
     <string name="CryptoPillTargetCurrency">Kohdevaluutta</string>
     <string name="CryptoCurrencyUsd">Yhdysvaltain dollari</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Venäjän rupla</string>
     <string name="CryptoCurrencyGbp">Englannin punta</string>
     <string name="CryptoCurrencyKzt">Kazakstanin tenge</string>
@@ -78,7 +77,6 @@
     <string name="IpInfoIsp">Palveluntarjoaja</string>
     <string name="IpInfoOrganization">Organisaatio</string>
     <string name="IpInfoDomain">Verkkotunnus</string>
-    <string name="IpInfoTimezone">Time zone</string>
     <!-- Translator -->
     <string name="TranslationProvider">Käännöspalvelu</string>
     <string name="TranslationTarget">Kohdekieli</string>
@@ -98,13 +96,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Lataa Nopeustehostin</string>
     <string name="UploadSpeedBoost">Latausnopeuden tehostus</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost voi aiheuttaa ongelmia tiedostojen lataamisessa ja videoiden suoratoistossa hitaissa Internet-yhteyksissä.</string>
-    <!-- Maps -->
-    <string name="Maps">Kartat</string>
-    <string name="TermsOfUseYandexMaps">Käyttämällä Yandex Maps hyväksyt <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">käyttöehdot</a>]]>.</string>
-    <string name="UseYandexMaps">Käytä Yandex Karttoja</string>
-    <string name="InstallYandexMaps">Asenna Yandex- Kartta?</string>
     <!-- Storage -->
     <string name="StorageSettings">Tallennustila</string>
     <string name="CustomSavePath">Mukautettu Tallennuskansio</string>
@@ -161,7 +153,6 @@
     <string name="NavigationDrawer">Navigointivalikkolaatikko</string>
     <string name="NavigationDrawerInfo">Korvaa oikean yläkulman valikon perinteisellä pyyhkäisyllä avattavalla laatikolla ja hampurilaispainikkeella.</string>
     <string name="NavigationDrawerImmersiveAnimation">Upottava animaatio</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Valikon kohteet</string>
     <string name="MainMenuItemsInfo">Napauta näyttääksesi tai piilottaaksesi kohteita, pidä painettuna järjestääksesi. Asettelu on yhteinen valikon ja laatikon välillä.</string>
     <string name="MainMenuHiddenItems">Piilotetut valikon kohteet</string>
@@ -211,7 +202,6 @@
     <string name="AppIconAurora">Revontulet</string>
     <string name="AppIconAmethyst">Ametisti</string>
     <string name="AppIconInvincible">Voittamaton</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Avaruus</string>
     <string name="AppIconIceAge">Jääkausi</string>
     <string name="AppIconEditor">Editori</string>
@@ -253,7 +243,6 @@
     <string name="StickerSize">Tarran koko</string>
     <string name="StickerSizeLeft">Pieni</string>
     <string name="StickerSizeRight">Suuri</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">woah, niin söpö!</string>
     <string name="StickerShape">Tarran muoto</string>
     <string name="StickerShapeRounded">Pyöristetty</string>
@@ -390,12 +379,10 @@
     <string name="AlwaysSendInHD">Lähetä aina HD-laadulla</string>
     <string name="HideCameraTile">Piilota pika-kamera-ruutu</string>
     <string name="HideCameraTileInfo">Kameraruutu korvataan kelluvalla painikkeella. Painamalla se avaa Telegram-kameran; pitämällä painettuna avaa järjestelmäkameran.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Kaksoisnapautuksen ohitusaika</string>
     <string name="PreferOriginalQuality">Suosi alkuperäistä laatua</string>
     <string name="PauseOnMinimize">Automaattinen keskeytys</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Ääni</string>
     <string name="PauseOnMinimizeRound">Pyöreä</string>
     <string name="PauseOnMinimizeInfo">Keskeyttää median toiston, kun laite lukitaan tai exteraGram pienennetään.</string>

@@ -1608,6 +1608,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public boolean hideViews;
     private final ForwardsCountUiHelper forwardsCountUiHelper = new ForwardsCountUiHelper();
     private final BlendedReplyFileText replyFileText = new BlendedReplyFileText();
+    private BlendedReplyFileText.AttachType replyAttachType;
     public boolean isBotForum;
     public boolean isSavedChat;
     public boolean isSavedPreviewChat;
@@ -19743,6 +19744,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private void setMessageObjectInternal(MessageObject messageObject) {
+        replyAttachType = BlendedReplyFileText.AttachType.UNKNOWN;
         if (((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0 || messageObject.messageOwner.replies != null) && !currentMessageObject.scheduled && !currentMessageObject.isSponsored()) {
             if (!currentMessageObject.viewsReloaded) {
                 MessagesController.getInstance(currentAccount).addToViewsQueue(currentMessageObject);
@@ -20448,6 +20450,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     }
 
+                    replyAttachType = BlendedReplyFileText.getType(messageObject.replyMessageObject);
 
                     if (name == null) {
                         name = getString("Loading", R.string.Loading);
@@ -20514,6 +20517,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         ssb.setSpan(new ColoredImageSpan(R.drawable.mini_reply_poll_16), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         ssb.append(getString(poll.poll.quiz ? R.string.QuizPoll : R.string.Poll));
                         stringFinalText = ssb;
+                    } else if (replyAttachType != BlendedReplyFileText.AttachType.UNKNOWN) {
+                        stringFinalText = TextUtils.ellipsize(replyFileText.build(getContext(), messageObject.replyMessageObject, replyAttachType, textPaint.getFontMetricsInt()), textPaint, maxWidth, TextUtils.TruncateAt.END);
                     } else if (messageObject.messageOwner.reply_to != null && messageObject.messageOwner.reply_to.reply_from != null && messageObject.messageOwner.reply_to.reply_media != null) {
                         stringFinalText = messageObject.getMediaTitle(messageObject.messageOwner.reply_to.reply_media);
                     } else if (messageObject.replyMessageObject != null && messageObject.replyMessageObject.messageTextForReply != null) {
@@ -20524,8 +20529,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     } else if (MessageObject.getMedia(messageObject.replyMessageObject) instanceof TLRPC.TL_messageMediaInvoice) {
                         stringFinalText = Emoji.replaceEmoji(MessageObject.getMedia(messageObject.replyMessageObject).title, textPaint.getFontMetricsInt(), false);
                         stringFinalText = TextUtils.ellipsize(stringFinalText, textPaint, maxWidth, TextUtils.TruncateAt.END);
-                    } else if (messageObject.replyMessageObject != null && (messageObject.replyMessageObject.type == MessageObject.TYPE_FILE || messageObject.replyMessageObject.type == MessageObject.TYPE_MUSIC)) {
-                        stringFinalText = TextUtils.ellipsize(replyFileText.build(getContext(), messageObject.replyMessageObject, textPaint.getFontMetricsInt()), textPaint, maxWidth, TextUtils.TruncateAt.END);
                     } else if (messageObject.replyMessageObject != null && !TextUtils.isEmpty(messageObject.replyMessageObject.caption)) {
                         String mess = messageObject.replyMessageObject.caption.toString();
                         if (mess.length() > 150) {
@@ -20636,7 +20639,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     replyLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_REPLY);
                     if (replyLine.hasSticker()) {
-                        maxWidth -= dp(38);
+                        maxWidth -= dp(28);
                     }
                     if (maxWidth < 0) {
                         maxWidth = dp(10);
@@ -20657,7 +20660,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
 
                     if (replyLine.hasSticker()) {
-                        replyNameWidth += dp(38);
+                        replyNameWidth += dp(28);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -23988,7 +23991,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             color = getThemedColor(isDrawSelectionBackground() ? Theme.key_chat_outReplyMediaMessageSelectedText : Theme.key_chat_outReplyMediaMessageText);
                             blendPressed = .6f + (blendPressed * .4f);
                         }
-                        if (currentMessageObject.hasValidReplyMessageObject() && (currentMessageObject.replyMessageObject.type == MessageObject.TYPE_FILE || currentMessageObject.replyMessageObject.type == MessageObject.TYPE_MUSIC)) {
+                        if (replyAttachType != BlendedReplyFileText.AttachType.UNKNOWN) {
                             color = getThemedColor(Theme.key_chat_outReplyMessageText);
                         }
                         Theme.chat_replyTextPaint.setColor(ColorUtils.blendARGB(color, Theme.adaptHue(color, Theme.chat_replyNamePaint.getColor()), blendPressed));
@@ -24005,7 +24008,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             color = getThemedColor(isDrawSelectionBackground() ? Theme.key_chat_inReplyMediaMessageSelectedText : Theme.key_chat_inReplyMediaMessageText);
                             blendPressed = .6f + (blendPressed * .4f);
                         }
-                        if (currentMessageObject.hasValidReplyMessageObject() && (currentMessageObject.replyMessageObject.type == MessageObject.TYPE_FILE || currentMessageObject.replyMessageObject.type == MessageObject.TYPE_MUSIC)) {
+                        if (replyAttachType != BlendedReplyFileText.AttachType.UNKNOWN) {
                             color = getThemedColor(Theme.key_chat_inReplyMessageText);
                         }
                         Theme.chat_replyTextPaint.setColor(ColorUtils.blendARGB(color, Theme.adaptHue(color, Theme.chat_replyNamePaint.getColor()), blendPressed));

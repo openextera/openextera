@@ -70,7 +70,6 @@ object ExteraConfig {
     @JvmStatic var inAppVibration by BooleanPref(true)
     @JvmStatic var disableNotificationDelay by BooleanPref(false)
     @JvmStatic var filterZalgo by BooleanPref(true)
-    @JvmStatic var useYandexMaps by BooleanPref(false)
     @JvmStatic var downloadSpeedBoost by IntegerPref(0)
     @JvmStatic var uploadSpeedBoost by BooleanPref(false)
     @JvmStatic var hidePhoneNumber by BooleanPref(false)
@@ -666,8 +665,4 @@ object ExteraConfig {
     fun toggleLogging() {
         logging = !BuildVars.LOGS_ENABLED
     }
-
-    @JvmStatic
-    fun canUseYandexMaps(): Boolean =
-        useYandexMaps && ApplicationLoader.applicationLoaderInstance.allowToUseYandexMaps()
 }

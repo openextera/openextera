@@ -10375,6 +10375,9 @@ public class EmojiView extends FrameLayout implements
                     stickersGridAdapter.notifyDataSetChanged();
                 }
             }
+            if (stickersContainerAttached && !stickerAdapterBuilt) {
+                reloadStickersAdapter();
+            }
         }
     }
 

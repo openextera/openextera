@@ -93,6 +93,7 @@ public class MessageDrawable extends Drawable {
     Drawable transitionDrawable;
     int transitionDrawableColor;
     private int alpha;
+    private int colorAlpha = 255;
     private boolean drawFullBubble;
 
     public MessageDrawable crossfadeFromDrawable;
@@ -283,6 +284,7 @@ public class MessageDrawable extends Drawable {
                 gradientShader = null;
                 paint.setShader(null);
             }
+            colorAlpha = Color.alpha(color);
             paint.setColor(color);
         }
         if (gradientShader instanceof BitmapShader) {
@@ -542,7 +544,14 @@ public class MessageDrawable extends Drawable {
             generatePath(path, bounds, padding, rad, smallRad, nearRad, top, drawFullBottom, drawFullTop, paintToUse != null);
         }
 
-        canvas.drawPath(path, p);
+        if (paintToUse == null && gradientShader == null) {
+            int wasAlpha = paint.getAlpha();
+            paint.setAlpha(colorAlpha * alpha / 255);
+            canvas.drawPath(path, paint);
+            paint.setAlpha(wasAlpha);
+        } else {
+            canvas.drawPath(path, p);
+        }
         if (gradientShader != null && isSelected && paintToUse == null) {
             int color = getColor(Theme.key_chat_outBubbleGradientSelectedOverlay);
             selectedPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * alpha / 255f)));

@@ -423,22 +423,38 @@ public class TableLayout extends View {
         invalidateStructure();
     }
 
-    public void addChild(TL_iv.pageTableCell cell, int x, int y, int colspan) {
-        if (colspan == 0) {
-            colspan = 1;
+    public void addRows(ArrayList<TL_iv.pageTableRow> rows) {
+        int maxCols = 0;
+        for (int r = 0, size = rows.size(); r < size; r++) {
+            TL_iv.pageTableRow row = rows.get(r);
+            int cols = 0;
+            for (int c = 0, size2 = row.cells.size(); c < size2 && cols < 1000; c++) {
+                TL_iv.pageTableCell cell = row.cells.get(c);
+                int colspan = Math.max(1, Math.min(cell.colspan, 1000 - cols));
+                int rowspan = Math.max(1, Math.min(cell.rowspan, size - r));
+                if (cell.text != null) {
+                    addChild(cell, cols, r, colspan, rowspan);
+                } else {
+                    addChild(cols, r, colspan, rowspan);
+                }
+                cols += colspan;
+            }
+            maxCols = Math.max(maxCols, cols);
         }
+        setColumnCount(maxCols);
+    }
+
+    public void addChild(TL_iv.pageTableCell cell, int x, int y, int colspan, int rowspan) {
         Child child = new Child(childrens.size());
         child.cell = cell;
         LayoutParams layoutParams = new LayoutParams();
-        layoutParams.rowSpec = new Spec(false, new Interval(y, y + (cell.rowspan != 0 ? cell.rowspan : 1)), FILL, 0.0f);
+        layoutParams.rowSpec = new Spec(false, new Interval(y, y + rowspan), FILL, 0.0f);
         layoutParams.columnSpec = new Spec(false, new Interval(x, x + colspan), FILL, 1.0f);
         child.layoutParams = layoutParams;
         child.rowspan = y;
         childrens.add(child);
-        if (cell.rowspan > 1) {
-            float x1 = y;
-            float y1 = y + cell.rowspan;
-            rowSpans.add(new PointF(x1, y1));
+        if (rowspan > 1) {
+            rowSpans.add(new PointF(y, y + rowspan));
         }
         invalidateStructure();
     }

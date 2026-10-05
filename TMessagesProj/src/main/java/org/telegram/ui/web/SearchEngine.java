@@ -7,6 +7,8 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.exteragram.messenger.ExteraConfig;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.FileLog;
@@ -127,6 +129,7 @@ public class SearchEngine {
                 final String privacy_policy_url = nullable(getString("SearchEngine" + i + "PrivacyPolicyURL"));
                 searchEngines.add(new SearchEngine(name, search_url, autocomplete_url, privacy_policy_url));
             }
+            searchEngines.add(1, ExteraConfig.getYandexSearchEngine());
         }
         return searchEngines;
     }

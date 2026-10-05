@@ -9,11 +9,9 @@ import android.widget.LinearLayout;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.translator.TranslationProviders;
 import com.exteragram.messenger.translator.TranslatorUtils;
-import com.exteragram.messenger.utils.text.LocaleUtils;
 import com.exteragram.messenger.utils.text.ZalgoFilter;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -55,7 +53,6 @@ public class GeneralPreferencesActivity extends BasePreferencesActivity {
         RELATIVE_LAST_SEEN,
         IN_APP_VIBRATION,
         FILTER_ZALGO,
-        YANDEX_MAPS,
         DOWNLOAD_SPEED_BOOST,
         UPLOAD_SPEED_BOOST,
         CUSTOM_SAVE_PATH,
@@ -103,12 +100,6 @@ public class GeneralPreferencesActivity extends BasePreferencesActivity {
         items.add(UItem.asCheck(GeneralItem.DISABLE_NOTIFICATION_DELAY.getId(), LocaleController.getString(R.string.DisableNotificationDelay)).setChecked(ExteraConfig.getDisableNotificationDelay()).setSearchable(this).setLinkAlias("disableNotificationDelay", this));
         items.add(UItem.asCheck(GeneralItem.FILTER_ZALGO.getId(), LocaleController.getString(R.string.FilterZalgo)).setChecked(ExteraConfig.getFilterZalgo()).setSearchable(this).setLinkAlias("filterZalgo", this));
         items.add(UItem.asShadow(LocaleController.formatString(R.string.FilterZalgoInfo, ZalgoFilter.filter("Z\u0337\u034c\u034da\u0338\u0304\u031cl\u0338\u0302\u031eg\u0337\u034d\u031do\u0336\u0313\u0329"))));
-
-        if (ApplicationLoader.applicationLoaderInstance.allowToUseYandexMaps()) {
-            items.add(UItem.asHeader(LocaleController.getString(R.string.Maps)));
-            items.add(UItem.asCheck(GeneralItem.YANDEX_MAPS.getId(), LocaleController.getString(R.string.UseYandexMaps)).setChecked(ExteraConfig.getUseYandexMaps()).setSearchable(this).setLinkAlias("useYandexMaps", this));
-            items.add(UItem.asShadow(LocaleUtils.formatWithHtmlURLs(LocaleUtils.fromHtml(LocaleController.getString(R.string.TermsOfUseYandexMaps)))));
-        }
 
         items.add(UItem.asHeader(LocaleController.getString(R.string.DownloadSpeedBoost)));
         items.add(UItem.asSlideView(GeneralItem.DOWNLOAD_SPEED_BOOST.getId(), new String[]{
@@ -182,10 +173,6 @@ public class GeneralPreferencesActivity extends BasePreferencesActivity {
                 break;
             case FILTER_ZALGO:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setFilterZalgo);
-                break;
-            case YANDEX_MAPS:
-                toggleBooleanSettingAndRefresh(item, ExteraConfig::setUseYandexMaps);
-                ApplicationLoader.updateMapsProvider();
                 break;
             case UPLOAD_SPEED_BOOST:
                 toggleBooleanSettingAndRefresh(item, ExteraConfig::setUploadSpeedBoost);

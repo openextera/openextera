@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Scorrimento infinito</string>
     <string name="CryptoPillTargetCurrency">Valuta di destinazione</string>
     <string name="CryptoCurrencyUsd">Dollaro statunitense</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Rublo russo</string>
     <string name="CryptoCurrencyGbp">Sterlina britannica</string>
     <string name="CryptoCurrencyKzt">Tenge kazako</string>
@@ -75,7 +74,6 @@
     <string name="IpInfoCountry">Paese</string>
     <string name="IpInfoRegion">Regione</string>
     <string name="IpInfoCity">Città</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organizzazione</string>
     <string name="IpInfoDomain">Dominio</string>
     <string name="IpInfoTimezone">Fuso orario</string>
@@ -100,11 +98,6 @@
     <string name="UploadSpeedBoost">Upload più veloci</string>
     <string name="Ultra">Massimo</string>
     <string name="SpeedBoostInfo">\'Massimo\' può causare problemi di download e streaming con connessioni lente.</string>
-    <!-- Maps -->
-    <string name="Maps">Mappe</string>
-    <string name="TermsOfUseYandexMaps">Se scegli Yandex Maps, accetti i termini di utilizzo del servizio.</string>
-    <string name="UseYandexMaps">Usa l\'app Yandex Maps</string>
-    <string name="InstallYandexMaps">Vuoi installare Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Archiviazione</string>
     <string name="CustomSavePath">Cartella di salvataggio personalizzata</string>
@@ -161,7 +154,6 @@
     <string name="NavigationDrawer">Cassetto laterale</string>
     <string name="NavigationDrawerInfo">Sostituisce il menu in alto a destra con un classico cassetto a scomparsa e un pulsante hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Animazione immersiva</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Voci del menu</string>
     <string name="MainMenuItemsInfo">Tocca per mostrare o nascondere gli elementi, tieni premuto per riordinarli. Il layout è condiviso tra il menu e il cassetto.</string>
     <string name="MainMenuHiddenItems">Voci di menu nascoste</string>
@@ -207,17 +199,7 @@
     <string name="IconPackErrorStorage">Impossibile salvare il pacchetto di icone.</string>
     <!-- App Icons -->
     <string name="IconPack">Pacchetto icone</string>
-    <string name="AppIconSunset">Sunset</string>
-    <string name="AppIconAurora">Aurora</string>
-    <string name="AppIconAmethyst">Amethyst</string>
-    <string name="AppIconInvincible">Invincible</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
-    <string name="AppIconSpace">Space</string>
     <string name="AppIconIceAge">Era glaciale</string>
-    <string name="AppIconEditor">Editor</string>
-    <string name="AppIconOrbit">Orbit</string>
-    <string name="AppIconSus">Impostor</string>
-    <string name="AppIconWinter">Winter</string>
     <!-- General Appearance -->
     <string name="Sections">Sezioni</string>
     <string name="SeparateHeaders">Intestazioni separate</string>
@@ -355,7 +337,6 @@
     <string name="MissingLanguageModel">Pacchetto lingua mancante</string>
     <string name="DownloadingModel">Download pacchetto…</string>
     <string name="DownloadingModelInfo">Il pacchetto lingua è in download: non abbandonare questa schermata.</string>
-    <string name="ModelDownload">Download (%1$s)</string>
     <string name="ModelDownloadInfo">Per continuare, devi scaricare il pacchetto lingua \"**%1$s**\".</string>
     <string name="ModelDownloaded">Pacchetto scaricato correttamente.</string>
     <string name="ModelError">Errore: download non riuscito.</string>
@@ -390,12 +371,10 @@
     <string name="AlwaysSendInHD">Invia massima risoluzione</string>
     <string name="HideCameraTile">Nascondi fotocamera istantanea</string>
     <string name="HideCameraTileInfo">Il riquadro della fotocamera sarà sostituito da un pulsante fluttuante (\'FAB\'): toccandolo si avvia la telecamera di Telegram, tenendo premuto si avvia la fotocamera di sistema.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Avanti/indietro con doppio tap</string>
     <string name="PreferOriginalQuality">Qualità originale (se possibile)</string>
     <string name="PauseOnMinimize">Pausa automatica</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Messaggi vocali</string>
     <string name="PauseOnMinimizeRound">Videomessaggi rotondi</string>
     <string name="PauseOnMinimizeInfo">Mette in pausa la riproduzione quando il dispositivo è bloccato o exteraGram è minimizzato.</string>
@@ -525,10 +504,8 @@
     <string name="FilePath">Percorso file</string>
     <string name="Platform">Piattaforma</string>
     <string name="Resolution">Risoluzione</string>
-    <string name="Bitrate">Bitrate</string>
     <string name="Duration">Durata</string>
     <string name="MimeType">Tipo di file</string>
-    <string name="Datacenter">Datacenter</string>
     <!-- Date Formatting -->
     <string name="DateFormatOption">Formato:</string>
     <string name="DateFormatOptionNone">Nessuno</string>
@@ -622,7 +599,6 @@
     <string name="StickerCornerRadiusSmall">Piccolo</string>
     <string name="StickerCornerRadiusNone">Nessuno</string>
     <!-- Feed -->
-    <string name="Feed">Feed</string>
     <string name="FeedShownChannels">Mostrato nel feed</string>
     <string name="FeedHiddenChannels">Nascosto</string>
     <string name="FeedChannels">Canali</string>

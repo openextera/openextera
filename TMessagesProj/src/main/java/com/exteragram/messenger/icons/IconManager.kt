@@ -13,7 +13,6 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
-import android.text.TextUtils
 import android.util.LongSparseArray
 import android.util.SparseArray
 import android.util.SparseIntArray
@@ -937,11 +936,11 @@ object IconManager {
     }
 
     fun isIconPack(messageObject: MessageObject?): Boolean {
-        val path = ChatUtils.getInstance().getPathToMessage(messageObject)
-        return messageObject != null &&
-            messageObject.documentName != null &&
-            !TextUtils.isEmpty(path) &&
-            path.endsWith(".icons")
+        return isIconPack(ChatUtils.getInstance().getPathToMessage(messageObject), messageObject)
+    }
+
+    fun isIconPack(path: String?, messageObject: MessageObject?): Boolean {
+        return messageObject?.documentName != null && !path.isNullOrEmpty() && path.endsWith(".icons")
     }
 
     fun handleIconPack(baseFragment: BaseFragment, messageObject: MessageObject) {

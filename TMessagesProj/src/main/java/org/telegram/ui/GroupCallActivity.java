@@ -6459,6 +6459,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             pipSource.destroy();
             pipSource = null;
         }
+        if (avatarsViewPager != null) {
+            avatarsViewPager.onDestroy();
+        }
     }
 
     public final static float MAX_AMPLITUDE = 8_500f;

@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Derulare infinită</string>
     <string name="CryptoPillTargetCurrency">Moneda țintă</string>
     <string name="CryptoCurrencyUsd">Dolar american</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Rublă rusă</string>
     <string name="CryptoCurrencyGbp">Liră sterlină</string>
     <string name="CryptoCurrencyKzt">Tenge kazah</string>
@@ -75,7 +74,6 @@
     <string name="IpInfoCountry">Țară</string>
     <string name="IpInfoRegion">Regiune</string>
     <string name="IpInfoCity">Oraș</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organizație</string>
     <string name="IpInfoDomain">Domeniu</string>
     <string name="IpInfoTimezone">Fus orar</string>
@@ -98,13 +96,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Accelerare vitezei de descărcare</string>
     <string name="UploadSpeedBoost">Accelerarea vitezei de încărcare</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost poate cauza probleme la descărcarea fișierelor și la redarea în flux a videoclipurilor pe conexiuni lente la internet.</string>
-    <!-- Maps -->
-    <string name="Maps">Hărţi</string>
-    <string name="TermsOfUseYandexMaps">Prin utilizarea Yandex Maps, sunteți de acord cu <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">termenii de utilizare</a>]]></string>
-    <string name="UseYandexMaps">Folosește Yandex Maps</string>
-    <string name="InstallYandexMaps">Instalați Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Stocare</string>
     <string name="CustomSavePath">Folder personalizat de salvare</string>
@@ -161,7 +153,6 @@
     <string name="NavigationDrawer">Sertar de navigare</string>
     <string name="NavigationDrawerInfo">Înlocuiește meniul din dreapta sus cu un sertar clasic care se deschide prin glisare și un buton hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Animație imersivă</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Elemente de meniu</string>
     <string name="MainMenuItemsInfo">Atingeți pentru a afișa sau ascunde elementele, țineți apăsat pentru a reordona. Aspectul este partajat între meniu și sertar.</string>
     <string name="MainMenuHiddenItems">Elemente de meniu ascunse</string>
@@ -208,15 +199,11 @@
     <!-- App Icons -->
     <string name="IconPack">Pachet de pictograme</string>
     <string name="AppIconSunset">Apus de soare</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Ametist</string>
     <string name="AppIconInvincible">Invincibil</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Spațiu</string>
     <string name="AppIconIceAge">Epoca de gheață</string>
-    <string name="AppIconEditor">Editor</string>
     <string name="AppIconOrbit">Orbită</string>
-    <string name="AppIconSus">Impostor</string>
     <string name="AppIconWinter">Iarnă</string>
     <!-- General Appearance -->
     <string name="Sections">Secțiuni</string>
@@ -242,7 +229,6 @@
     <string name="BlurOptions">Opțiuni blurare</string>
     <string name="GlassOutlineStyle">Contur sticlă</string>
     <string name="GlassOutlineGlare">Strălucire</string>
-    <string name="GlassOutlineSolid">Solid</string>
     <string name="GlassOutlineHidden">Ascuns</string>
     <string name="ForceBlur">Blur forțat</string>
     <string name="ForceBlurInfo">Efectele de estompare vor fi aplicate tuturor temelor, ignorând setările implicite ale acestora.</string>
@@ -253,7 +239,6 @@
     <string name="StickerSize">Dimensiunea autocolantului</string>
     <string name="StickerSizeLeft">Mic</string>
     <string name="StickerSizeRight">Mare</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">hai, așa drăguț!</string>
     <string name="StickerShape">Formă Sticker</string>
     <string name="StickerShapeRounded">Rotunjit</string>
@@ -390,12 +375,10 @@
     <string name="AlwaysSendInHD">Trimite întotdeauna în HD</string>
     <string name="HideCameraTile">Ascunde tabla de cameră instantă</string>
     <string name="HideCameraTileInfo">Iconița camerei foto va fi înlocuită cu un buton plutitor. Apăsând pornește camera Telegram; ținând apăsat camera de sistem.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Dublă apăsare Omitere timp</string>
     <string name="PreferOriginalQuality">Preferă calitatea originală</string>
     <string name="PauseOnMinimize">Auto Pauză</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Voce</string>
     <string name="PauseOnMinimizeRound">Rotunjit</string>
     <string name="PauseOnMinimizeInfo">Întrerupe redarea media atunci când dispozitivul este blocat sau exteraGram este minimizat.</string>
@@ -525,12 +508,10 @@
     <string name="FilePath">Calea fișierului</string>
     <string name="Platform">Platformă</string>
     <string name="Resolution">Rezoluție</string>
-    <string name="Bitrate">Bitrate</string>
     <string name="Duration">Durată</string>
     <string name="MimeType">Tip MIME</string>
     <string name="Datacenter">Centru de date</string>
     <!-- Date Formatting -->
-    <string name="DateFormatOption">Format:</string>
     <string name="DateFormatOptionNone">Niciunul</string>
     <string name="DateFormatOptionRelative">Relativ</string>
     <string name="DateFormatOptionShortTime">Timp scurt</string>
@@ -554,7 +535,6 @@
     <string name="PageBlockedProceed">Continuă</string>
     <!-- Other -->
     <string name="SetAsBadge">Setează ca insignă</string>
-    <string name="AutoLockInstant">Instant</string>
     <string name="TestBackend">Testează backend-ul</string>
     <string name="SearchPhotoInfo">Serviciile pot folosi imagini conform politicilor lor de confidențialitate și termenilor de utilizare.</string>
     <string name="PhotoUploadFailed">Încărcarea fotografiei a eșuat.</string>

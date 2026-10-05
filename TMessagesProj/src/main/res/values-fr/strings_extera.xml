@@ -45,7 +45,6 @@
     <string name="PillStackInfiniteScrolling">Défilement infini</string>
     <string name="CryptoPillTargetCurrency">Devise cible</string>
     <string name="CryptoCurrencyUsd">Dollar américain</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Rouble russe</string>
     <string name="CryptoCurrencyGbp">Livre sterling</string>
     <string name="CryptoCurrencyKzt">Tenge kazakh</string>
@@ -65,7 +64,6 @@
     <string name="ProxyDisableNever">Jamais</string>
     <string name="ProxyDisableAlways">Toujours</string>
     <string name="ProxyDisableOnMobileData">Données mobiles</string>
-    <string name="ProxyType">Type</string>
     <string name="Unknown">Inconnu</string>
     <string name="ProxyRename">Nom du proxy (facultatif)</string>
     <string name="ProxyPinLimitReached">Vous pouvez épingler jusqu\'à %1$d proxys.</string>
@@ -91,19 +89,12 @@
     <string name="FilterZalgoInfo">Supprime les symboles «%1$s» dans les noms et les messages.</string>
     <string name="RestartRequired">Redémarrez l\'application pour que les changements soient pris en compte.</string>
     <!-- Message Formatting -->
-    <string name="CodeBlock">Code</string>
     <string name="CreateCode">Créer un bloc de code</string>
     <string name="CreateCodeLanguage">Langage</string>
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Augmentation de la vitesse de téléchargement</string>
     <string name="UploadSpeedBoost">Augmentation de la vitesse de chargement</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost peut causer des problèmes lors du téléchargement de fichiers et de la diffusion de vidéos sur des connexions Internet lentes.</string>
-    <!-- Maps -->
-    <string name="Maps">Les cartes</string>
-    <string name="TermsOfUseYandexMaps">En utilisant Yandex Maps, vous acceptez les <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">termes d\'utilisation</a>]]>.</string>
-    <string name="UseYandexMaps">Utilisation de Yandex Maps</string>
-    <string name="InstallYandexMaps">Installez Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Stockage</string>
     <string name="CustomSavePath">Dossier d\'enregistrement personnalisé</string>
@@ -122,7 +113,6 @@
     <string name="DisableUnarchiveSwipe">Désactiver le swipe \"Unarchive\"</string>
     <string name="DisableUnarchiveSwipeInfo">Le fait de glisser vers la gauche ne supprime pas les chats de l\'archive.</string>
     <!-- Appearance -->
-    <string name="Appearance">Appearance</string>
     <!-- Avatars -->
     <string name="AvatarCorners">Coins de l\'avatar</string>
     <string name="AvatarCornersLeft">Carré</string>
@@ -158,7 +148,6 @@
     <string name="NavigationDrawer">Tiroir de navigation</string>
     <string name="NavigationDrawerInfo">Remplace le menu en haut à droite par un tiroir classique à glisser pour ouvrir et un bouton hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Animation immersive</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Éléments du menu</string>
     <string name="MainMenuItemsInfo">Appuyez pour afficher ou masquer les éléments, maintenez pour réorganiser. La disposition est partagée entre le menu et le tiroir.</string>
     <string name="MainMenuHiddenItems">Éléments de menu masqués</string>
@@ -183,7 +172,6 @@
     <string name="PackName">Nom du pack</string>
     <string name="AuthorNameOptional">Nom de l\'auteur (facultatif)</string>
     <string name="NameCannotBeEmpty">Le nom ne peut pas être vide.</string>
-    <string name="Version">Version</string>
     <string name="InstallPack">Installer le pack</string>
     <string name="IconCount_one">%1$d icône</string>
     <string name="IconCount_two">%1$d icônes</string>
@@ -205,10 +193,7 @@
     <!-- App Icons -->
     <string name="IconPack">Pack d\'icônes</string>
     <string name="AppIconSunset">Coucher de soleil</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Améthyste</string>
-    <string name="AppIconInvincible">Invincible</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Espace</string>
     <string name="AppIconIceAge">Âge de glace</string>
     <string name="AppIconEditor">Éditeur</string>
@@ -216,12 +201,10 @@
     <string name="AppIconSus">Imposteur</string>
     <string name="AppIconWinter">Hiver</string>
     <!-- General Appearance -->
-    <string name="Sections">Sections</string>
     <string name="SeparateHeaders">En-têtes séparés</string>
     <string name="DividerStyle">Style de séparateur</string>
     <string name="DividerStyleHidden">Masqué</string>
     <string name="DividerStyleLine">Ligne</string>
-    <string name="DividerStyleSegments">Segments</string>
     <string name="UseSystemFonts">Utiliser la police du système</string>
     <string name="UseSystemEmoji">Utiliser les émojis du système</string>
     <string name="NewLoadingStyle">Style de chargement</string>
@@ -233,7 +216,6 @@
     <string name="CustomChatThemes">Thèmes personnalisés dans les chats</string>
     <string name="CustomChatThemesInfo">Chaque chat affichera le thème qui a été spécifiquement choisi pour lui.</string>
     <string name="PredictiveBackIntensity">Intensité du retour prédictif</string>
-    <string name="PredictiveBackMax">Max</string>
     <string name="PredictiveBackInfo">Ajuste la distance de déplacement de l\'écran lors du glissement vers l\'arrière.</string>
     <!-- Blur & Effects -->
     <string name="BlurOptions">Options de floutage</string>
@@ -250,11 +232,9 @@
     <string name="StickerSize">Taille de l\'étiquette</string>
     <string name="StickerSizeLeft">Petit</string>
     <string name="StickerSizeRight">Grande</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">wouah, trop mignon !</string>
     <string name="StickerShape">Forme du sticker</string>
     <string name="StickerShapeRounded">Arrondi</string>
-    <string name="StickerShapeRoundedMsg">Message</string>
     <string name="ViewEmojiSet">Voir l\'ensemble d\'émojis</string>
     <string name="UnlimitedRecentStickers">Autocollants récents illimités</string>
     <string name="HideReactions">Masquer les réactions</string>
@@ -265,7 +245,6 @@
     <string name="AIChatInfo">Configurer les services, les rôles et l\'historique</string>
     <string name="AIChatInfo2">Générer du texte à partir de messages ou avant l\'envoi.</string>
     <!-- AI Services -->
-    <string name="Services">Services</string>
     <string name="ServicesInfo">Choisissez le service approprié pour interagir avec les modèles de langage.</string>
     <string name="NewService">Nouveau service</string>
     <string name="EditService">Modifier le service</string>
@@ -281,7 +260,6 @@
     <!-- AI Roles -->
     <string name="Roles">Rôles</string>
     <string name="RolesInfo">Créez des rôles pour vos besoins spécifiques !</string>
-    <string name="Suggestions">Suggestions</string>
     <string name="RoleName">Nom</string>
     <string name="RolePrompt">Entrée</string>
     <string name="PromptInfo">Une invite est le texte initial donné au modèle pour commencer à générer une réponse ou poursuivre un dialogue.</string>
@@ -387,7 +365,6 @@
     <string name="AlwaysSendInHD">Toujours envoyer en HD</string>
     <string name="HideCameraTile">Masquer la tuile de la caméra instantanée</string>
     <string name="HideCameraTileInfo">La vignette de l\'appareil photo sera remplacée par un bouton flottant. Appuyer dessus lance l\'appareil photo de Telegram ; le maintenir enfoncé lance l\'appareil photo système.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Temps de saut en double tap</string>
     <string name="PreferOriginalQuality">Privilégier la qualité d\'origine</string>
@@ -452,7 +429,6 @@
     <string name="BoostyInfo2">Merci pour votre soutien !</string>
     <!-- Plugins -->
     <string name="PluginsNotSupported">L\'installation de plugins est disponible uniquement dans la version **Full** de **exteraGram**.</string>
-    <string name="Plugins">Plugins</string>
     <string name="PluginsEngine">Moteur de plugins</string>
     <string name="EnablePluginsEngine">Activer le moteur de plugins</string>
     <string name="PluginsInfo">Vous pouvez trouver des plugins dans @exteraPlugins.</string>
@@ -470,7 +446,6 @@
     <string name="PluginSourceTrustedInfo">Les plugins de cette source sont **vérifiés** et sûrs à utiliser.</string>
     <string name="PluginSourceUnknown">Source inconnue</string>
     <string name="PluginSourceUnknownInfo">Les plugins de cette source sont **non vérifiés** et peuvent présenter un risque de sécurité.</string>
-    <string name="PluginVersion">Version</string>
     <string name="PluginNoDescription">Aucune description fournie.</string>
     <string name="PluginIsNotResponding">Le plugin ne répond pas.</string>
     <string name="PluginIsNotRespondingAlert">%1$s ne répond pas</string>
@@ -487,7 +462,6 @@
     <string name="PluginsSafeModeInfo2">En mode sans échec, tous les plugins sont inactifs. Cela vous permet de trouver et de désactiver en toute sécurité un plugin problématique.</string>
     <string name="PluginsDevMode">Mode développeur</string>
     <string name="PluginsCompactView">Vue compacte des plugins</string>
-    <string name="PluginsDocumentation">Documentation</string>
     <string name="PluginsTrusted">Plugins fiables</string>
     <string name="PluginsDevServerLaunched">Le serveur de développement est démarré.</string>
     <string name="PluginsDevServerStopped">Le serveur de développement est arrêté.</string>
@@ -514,7 +488,6 @@
     <string name="UpdateAvailable">Mise à jour disponible !</string>
     <!-- Message Details -->
     <string name="Details">Détails</string>
-    <string name="Date">Date</string>
     <string name="EditedDate">Date d\'édition</string>
     <string name="ForwardedDate">Date de transmission</string>
     <string name="FileSize">Taille du fichier</string>
@@ -525,7 +498,6 @@
     <string name="Bitrate">Débit binaire</string>
     <string name="Duration">Durée</string>
     <string name="MimeType">Type Mime</string>
-    <string name="Datacenter">Datacenter</string>
     <!-- Date Formatting -->
     <string name="DateFormatOption">Format :</string>
     <string name="DateFormatOptionNone">Aucun</string>

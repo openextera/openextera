@@ -21407,7 +21407,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
     private Matrix m;
 
-    private Path clipFancyShadows;
     private Paint topFancyShadowPaint, bottomFancyShadowPaint;
     private LinearGradient topFancyShadow, bottomFancyShadow;
     private Matrix topFancyShadowMatrix, bottomFancyShadowMatrix;
@@ -21424,8 +21423,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         int top = (int) (AndroidUtilities.statusBarHeight * 1.5f) + ActionBar.getCurrentActionBarHeight();
         int bottom = AndroidUtilities.navigationBarHeight + pickerView.getHeight() + (captionEdit.getVisibility() == View.VISIBLE ? captionEdit.getEditTextHeightClosedKeyboard() / 2 + dp(20) : 0);
 
-        if (clipFancyShadows == null) {
-            clipFancyShadows = new Path();
+        if (topFancyShadowPaint == null) {
             topFancyShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             topFancyShadowPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
             bottomFancyShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -21438,26 +21436,32 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             bottomFancyShadowPaint.setShader(bottomFancyShadow);
         }
 
-        canvas.saveLayerAlpha(0, 0, containerView.getWidth(), containerView.getHeight() + AndroidUtilities.navigationBarHeight, (int) (maxAlpha * (backgroundDrawable.getAlpha() - 127) * (1f / 127f * 255f)), Canvas.ALL_SAVE_FLAG);
-        clipFancyShadows.rewind();
-        clipFancyShadows.addRect(0, 0, containerView.getWidth(), top, Path.Direction.CW);
-        clipFancyShadows.addRect(0, containerView.getHeight() + AndroidUtilities.navigationBarHeight - bottom, containerView.getWidth(), containerView.getHeight() + AndroidUtilities.navigationBarHeight, Path.Direction.CW);
-        canvas.clipPath(clipFancyShadows);
+        final int width = containerView.getWidth();
+        final int height = containerView.getHeight() + AndroidUtilities.navigationBarHeight;
+        final int alpha = (int) (maxAlpha * (backgroundDrawable.getAlpha() - 127) * (1f / 127f * 255f));
+
+        canvas.saveLayerAlpha(0, 0, width, top, alpha, Canvas.ALL_SAVE_FLAG);
+        canvas.clipRect(0, 0, width, top);
         canvas.drawColor(0xff000000);
         drawCaptionBlur(canvas, shadowBlurer, 0, 0, true, true, false);
-        canvas.save();
         topFancyShadowMatrix.reset();
         topFancyShadowMatrix.postScale(1, top / 16f);
         topFancyShadow.setLocalMatrix(topFancyShadowMatrix);
         topFancyShadowPaint.setAlpha(0xd0);
-        canvas.drawRect(0, 0, containerView.getWidth(), top, topFancyShadowPaint);
+        canvas.drawRect(0, 0, width, top, topFancyShadowPaint);
+        canvas.restore();
+
+        final int bottomTop = height - bottom;
+        canvas.saveLayerAlpha(0, bottomTop, width, height, alpha, Canvas.ALL_SAVE_FLAG);
+        canvas.clipRect(0, bottomTop, width, height);
+        canvas.drawColor(0xff000000);
+        drawCaptionBlur(canvas, shadowBlurer, 0, 0, true, true, false);
         bottomFancyShadowMatrix.reset();
         bottomFancyShadowMatrix.postScale(1, bottom / 16f);
-        bottomFancyShadowMatrix.postTranslate(0, containerView.getHeight() - bottom + AndroidUtilities.navigationBarHeight);
+        bottomFancyShadowMatrix.postTranslate(0, bottomTop);
         bottomFancyShadow.setLocalMatrix(bottomFancyShadowMatrix);
         bottomFancyShadowPaint.setAlpha(0xbb);
-        canvas.drawRect(0, containerView.getHeight() + AndroidUtilities.navigationBarHeight - bottom, containerView.getWidth(), containerView.getHeight() + AndroidUtilities.navigationBarHeight, bottomFancyShadowPaint);
-        canvas.restore();
+        canvas.drawRect(0, bottomTop, width, height, bottomFancyShadowPaint);
         canvas.restore();
     }
 
@@ -23158,6 +23162,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (renderNode == null) {
             renderNode = new RenderNode("pv_mat_" + hash + "_" + glass);
             renderNode.setRenderEffect(RenderEffect.createColorFilterEffect(new ColorMatrixColorFilter(colorMatrix)));
+            matrixRenderNodes.put(hash, renderNode);
         }
 
         boolean needUpdateDisplayList = !renderNode.hasDisplayList();

@@ -254,9 +254,6 @@ public class ExportRequestsController {
                     }
                 }
             }
-            if (_selfId == 0) {
-                throw new IllegalStateException("not mine id!");
-            }
             ConnectionsManager.getInstance(selectedAcc).sendRequest(request, (takeout, takeoutError) -> {
                 if (takeoutError != null && takeoutError.text != null) {
                     ExportController.showError(takeoutError);
@@ -1061,9 +1058,7 @@ public class ExportRequestsController {
                 return;
             }
             TLRPC.contacts_TopPeers topPeers = (TLRPC.contacts_TopPeers) response;
-            if (!DataTypesUtils.AppendTopPeers(_contactsProcess.result, topPeers)) {
-                throw new RuntimeException("Unexpected data in requestTopPeersSlice.");
-            }
+            DataTypesUtils.AppendTopPeers(_contactsProcess.result, topPeers);
             int offset = _contactsProcess.topPeersOffset;
             boolean loaded;
             if (topPeers instanceof TLRPC.TL_contacts_topPeersNotModified || topPeers instanceof TLRPC.TL_contacts_topPeersDisabled) {
@@ -1316,8 +1311,6 @@ public class ExportRequestsController {
                 appendSinglePeerDialogs(ParseDialogsInfo(_settings.singlePeer, (Vector<?>) response));
             } else if (response instanceof TLRPC.messages_Chats) {
                 appendSinglePeerDialogs(ParseDialogsInfo(_settings.singlePeer, (TLRPC.messages_Chats) response));
-            } else {
-                throw new IllegalStateException("not implemnted: " + response);
             }
         };
         Utilities.Callback<TLRPC.InputUser> requestUser = user -> {
@@ -1478,11 +1471,8 @@ public class ExportRequestsController {
 
     private ApiWrap.DialogsInfo ParseDialogsInfo(TLRPC.messages_Dialogs dialogs) {
         ApiWrap.DialogsInfo result = new ApiWrap.DialogsInfo();
-        if (dialogs == null) {
+        if (dialogs == null || dialogs instanceof TLRPC.TL_messages_dialogsNotModified) {
             return result;
-        }
-        if (dialogs instanceof TLRPC.TL_messages_dialogsNotModified) {
-            throw new IllegalStateException("unexpected dialogsNotModified in ParseDialogsInfo.");
         }
         HashMap<Long, ApiWrap.Peer> peers = DataTypesUtils.ParsePeersLists(dialogs.users, dialogs.chats);
         HashMap<String, ApiWrap.Message> messages = ParseMessagesList(0, dialogs.messages, "");

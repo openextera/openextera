@@ -39,14 +39,12 @@ import androidx.annotation.NonNull;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.ProxyDisableCondition;
 import com.exteragram.messenger.appicons.AppIconController;
+import com.exteragram.messenger.debug.FreezeMonitor;
 import com.exteragram.messenger.debug.HeapMonitor;
 import com.exteragram.messenger.debug.LoadMonitor;
 import com.exteragram.messenger.icons.IconManager;
-import com.exteragram.messenger.maps.yandex.YandexLocationProvider;
-import com.exteragram.messenger.maps.yandex.YandexMapsProvider;
 import com.exteragram.messenger.plugins.PluginsController;
 import com.exteragram.messenger.plugins.utils.NativeCrashHandler;
-import com.exteragram.messenger.utils.chats.ChatUtils;
 import com.exteragram.messenger.utils.network.RemoteUtils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -110,9 +108,6 @@ public class ApplicationLoader extends Application implements androidx.work.Conf
     }
 
     protected ILocationServiceProvider onCreateLocationServiceProvider() {
-        if (allowToUseYandexMaps() && ExteraConfig.getUseYandexMaps()) {
-            return new YandexLocationProvider();
-        }
         return new GoogleLocationProvider();
     }
 
@@ -123,24 +118,8 @@ public class ApplicationLoader extends Application implements androidx.work.Conf
         return mapsProvider;
     }
 
-    public static void updateMapsProvider() {
-        mapsProvider = applicationLoaderInstance.onCreateMapsProvider();
-        locationServiceProvider = applicationLoaderInstance.onCreateLocationServiceProvider();
-        locationServiceProvider.init(applicationContext);
-    }
-
     protected IMapsProvider onCreateMapsProvider() {
-        if (allowToUseYandexMaps() && ExteraConfig.getUseYandexMaps()) {
-            return new YandexMapsProvider();
-        }
         return new GoogleMapsProvider();
-    }
-
-    public boolean allowToUseYandexMaps() {
-        if (!YandexMapsProvider.isSupported() || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return false;
-        }
-        return !RemoteUtils.getBooleanConfigValue("yandex_maps_only_ru", false) || ChatUtils.getInstance().isRussianUser() || ChatUtils.getInstance().isFragmentUser();
     }
 
     public static PushListenerController.IPushListenerServiceProvider getPushProvider() {
@@ -432,6 +411,7 @@ public class ApplicationLoader extends Application implements androidx.work.Conf
         ProxyPingController.init();
         HeapMonitor.init();
         LoadMonitor.init();
+        FreezeMonitor.init();
 
         //if (BuildConfig.DEBUG_PRIVATE_VERSION) {
         //    Choreographer60FpsContent.getInstance().addFrameCallback(debugEverySecondChecks, 1);
@@ -446,14 +426,6 @@ public class ApplicationLoader extends Application implements androidx.work.Conf
     @Override
     public androidx.work.Configuration getWorkManagerConfiguration() {
         return new androidx.work.Configuration.Builder().build();
-    }
-
-    @Override
-    public void onTerminate() {
-        if (ExteraConfig.getUseYandexMaps()) {
-            YandexMapsProvider.terminate();
-        }
-        super.onTerminate();
     }
 
     public static void startPushService() {

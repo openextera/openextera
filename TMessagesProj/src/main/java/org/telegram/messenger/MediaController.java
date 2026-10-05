@@ -2637,6 +2637,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             if (stopService) {
                 Intent intent = new Intent(ApplicationLoader.applicationContext, MusicPlayerService.class);
                 ApplicationLoader.applicationContext.stopService(intent);
+                TelegramMediaSession telegramMediaSession;
+                if (!playingNext && (telegramMediaSession = TelegramMediaSession.peekInstance()) != null) {
+                    telegramMediaSession.clearPlaybackState();
+                }
             }
         }
         if (!playingNext && byVoiceEnd && !SharedConfig.enabledRaiseTo(true)) {

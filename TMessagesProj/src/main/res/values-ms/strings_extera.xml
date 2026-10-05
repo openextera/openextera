@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Tatal Tanpa Had</string>
     <string name="CryptoPillTargetCurrency">Mata wang sasaran</string>
     <string name="CryptoCurrencyUsd">Dolar AS</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Ruble Rusia</string>
     <string name="CryptoCurrencyGbp">Paun British</string>
     <string name="CryptoCurrencyKzt">Tenge Kazakhstan</string>
@@ -75,9 +74,7 @@
     <string name="IpInfoCountry">Negara</string>
     <string name="IpInfoRegion">Wilayah</string>
     <string name="IpInfoCity">Bandar</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organisasi</string>
-    <string name="IpInfoDomain">Domain</string>
     <string name="IpInfoTimezone">Zon waktu</string>
     <!-- Translator -->
     <string name="TranslationProvider">Penyedia Terjemahan</string>
@@ -98,13 +95,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Tingkatkan Kelajuan Muat Turun</string>
     <string name="UploadSpeedBoost">Tingkatkan Kelajuan Muat Naik</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost boleh menyebabkan masalah memuat turun fail dan menstrim video pada sambungan Internet yang perlahan.</string>
-    <!-- Maps -->
-    <string name="Maps">Peta</string>
-    <string name="TermsOfUseYandexMaps">Dengan menggunakan Yandex Maps anda bersetuju dengan <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">syarat penggunaan</a>]]>.</string>
-    <string name="UseYandexMaps">Guna Yandex Maps</string>
-    <string name="InstallYandexMaps">Pasang Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Penyimpanan</string>
     <string name="CustomSavePath">Folder Simpan Tersuai</string>
@@ -161,7 +152,6 @@
     <string name="NavigationDrawer">Laci Navigasi</string>
     <string name="NavigationDrawerInfo">Menggantikan menu kanan atas dengan laci buka-leret klasik dan butang hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Animasi Imersif</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Item Menu</string>
     <string name="MainMenuItemsInfo">Ketik untuk tunjuk atau sembunyi item, tahan untuk susun semula. Susun atur dikongsi antara menu dan laci.</string>
     <string name="MainMenuHiddenItems">Item Menu Tersembunyi</string>
@@ -180,7 +170,6 @@
     <string name="BaseIconPackInfo">Pek ikon asas digunakan sebagai sandaran untuk ikon yang tidak diganti oleh pek lain.</string>
     <string name="IconPacksHint">Ketik untuk dayakan atau matikan pek. Tahan untuk edit atau padam.</string>
     <string name="NewIconPack">Cipta Pek Ikon baharu</string>
-    <string name="EditIconPackInfo">Edit Info</string>
     <string name="EnabledPacks">Pek Didayakan</string>
     <string name="AllPacks">Semua Pek</string>
     <string name="PackName">Nama Pek</string>
@@ -208,14 +197,9 @@
     <!-- App Icons -->
     <string name="IconPack">Pek Ikon</string>
     <string name="AppIconSunset">Matahari Terbenam</string>
-    <string name="AppIconAurora">Aurora</string>
-    <string name="AppIconAmethyst">Amethyst</string>
     <string name="AppIconInvincible">Tidak Terkalahkan</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Angkasa</string>
     <string name="AppIconIceAge">Zaman Ais</string>
-    <string name="AppIconEditor">Editor</string>
-    <string name="AppIconOrbit">Orbit</string>
     <string name="AppIconSus">Peniru</string>
     <string name="AppIconWinter">Musim Sejuk</string>
     <!-- General Appearance -->
@@ -253,7 +237,6 @@
     <string name="StickerSize">Saiz Stiker</string>
     <string name="StickerSizeLeft">Kecil</string>
     <string name="StickerSizeRight">Besar</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">woah, sangat comel!</string>
     <string name="StickerShape">Bentuk Stiker</string>
     <string name="StickerShapeRounded">Bundar</string>
@@ -272,7 +255,6 @@
     <string name="ServicesInfo">Pilih perkhidmatan yang sesuai untuk berinteraksi dengan model bahasa.</string>
     <string name="NewService">Perkhidmatan Baharu</string>
     <string name="EditService">Sunting Perkhidmatan</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">Kunci API</string>
     <string name="ServiceInfo">Maklumat Perkhidmatan</string>
     <string name="ServiceProvider">Penyedia</string>
@@ -390,12 +372,10 @@
     <string name="AlwaysSendInHD">Sentiasa Hantar dalam HD</string>
     <string name="HideCameraTile">Sembunyi Jubin Kamera Segera</string>
     <string name="HideCameraTileInfo">Jubin kamera akan digantikan dengan butang terapung. Menekannya melancarkan kamera Telegram; menahannya melancarkan kamera sistem.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Masa Lompat Ketik Dua Kali</string>
     <string name="PreferOriginalQuality">Utamakan Kualiti Asal</string>
     <string name="PauseOnMinimize">Jeda Automatik</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Suara</string>
     <string name="PauseOnMinimizeRound">Bulat</string>
     <string name="PauseOnMinimizeInfo">Menjeda main balik media apabila peranti dikunci atau exteraGram diminimumkan.</string>
@@ -523,14 +503,12 @@
     <string name="FileSize">Saiz Fail</string>
     <string name="FileName">Nama Fail</string>
     <string name="FilePath">Laluan Fail</string>
-    <string name="Platform">Platform</string>
     <string name="Resolution">Resolusi</string>
     <string name="Bitrate">Kadar Bit</string>
     <string name="Duration">Tempoh</string>
     <string name="MimeType">Jenis Mime</string>
     <string name="Datacenter">Pusat Data</string>
     <!-- Date Formatting -->
-    <string name="DateFormatOption">Format:</string>
     <string name="DateFormatOptionNone">Tiada</string>
     <string name="DateFormatOptionRelative">Relatif</string>
     <string name="DateFormatOptionShortTime">Masa Pendek</string>

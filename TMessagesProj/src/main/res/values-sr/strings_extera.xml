@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Beskonačno skrolovanje</string>
     <string name="CryptoPillTargetCurrency">Ciljna valuta</string>
     <string name="CryptoCurrencyUsd">Američki dolar</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Ruski rublja</string>
     <string name="CryptoCurrencyGbp">Britanska funta</string>
     <string name="CryptoCurrencyKzt">Kazahstanski tenge</string>
@@ -73,9 +72,7 @@
     <string name="CopyIpAddress">Kopiraj IP adresu</string>
     <string name="IpInfoUnavailable">Nije moguće učitati informacije o IP adresi.</string>
     <string name="IpInfoCountry">Država</string>
-    <string name="IpInfoRegion">Region</string>
     <string name="IpInfoCity">Grad</string>
-    <string name="IpInfoIsp">ISP</string>
     <string name="IpInfoOrganization">Organizacija</string>
     <string name="IpInfoDomain">Domen</string>
     <string name="IpInfoTimezone">Vremenska zona</string>
@@ -98,13 +95,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Ubrzanje preuzimanja</string>
     <string name="UploadSpeedBoost">Ubrzanje otpremanja</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ултра Боост може да изазове проблеме са преузимањем датотека и стримовањем видео записа на спорој интернет вези.</string>
-    <!-- Maps -->
-    <string name="Maps">Карте</string>
-    <string name="TermsOfUseYandexMaps">Korišćenjem Yandex Maps slažete se sa <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">uslovima korišćenja</a>]]>.</string>
-    <string name="UseYandexMaps">Koristi Yandex Maps</string>
-    <string name="InstallYandexMaps">Instalirati Yandex Maps?</string>
     <!-- Storage -->
     <string name="StorageSettings">Skladište</string>
     <string name="CustomSavePath">Prilagođena fascikla za čuvanje</string>
@@ -160,7 +151,6 @@
     <string name="NavigationDrawer">Navigaciona fioka</string>
     <string name="NavigationDrawerInfo">Zamenjuje meni u gornjem desnom uglu klasičnom fiokom koja se otvara prevlačenjem i dugmetom za hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Imersivna animacija</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Stavke menija</string>
     <string name="MainMenuItemsInfo">Dodirnite da prikažete ili sakrijete stavke, držite da promenite redosled. Raspored je zajednički za meni i fioku.</string>
     <string name="MainMenuHiddenItems">Skrivene stavke menija</string>
@@ -170,7 +160,6 @@
     <!-- Icon Packs -->
     <string name="IconPacks">Paketi ikona</string>
     <string name="IconPacksInfo">Prilagodite ikone širom aplikacije</string>
-    <string name="IconPickerFilter">Filter</string>
     <string name="IconPickerAllIcons">Sve ikone</string>
     <string name="IconPickerReplacedIcons">Zamenjene ikone</string>
     <string name="IconPickerNotReplacedIcons">Nezamenjene ikone</string>
@@ -213,7 +202,6 @@
     <string name="AppIconSpace">Простор</string>
     <string name="AppIconIceAge">Ledeno doba</string>
     <string name="AppIconEditor">Urednik</string>
-    <string name="AppIconOrbit">Orbit</string>
     <string name="AppIconSus">Импостор</string>
     <string name="AppIconWinter">Зима</string>
     <!-- General Appearance -->
@@ -267,7 +255,6 @@
     <string name="ServicesInfo">Izaberite odgovarajuću uslugu za interakciju sa jezičkim modelima.</string>
     <string name="NewService">Nova usluga</string>
     <string name="EditService">Izmeni uslugu</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">API ključ</string>
     <string name="ServiceInfo">Informacije o usluzi</string>
     <string name="ServiceProvider">Provajder</string>
@@ -281,7 +268,6 @@
     <string name="RolesInfo">Kreirajte uloge za vaše specifične potrebe!</string>
     <string name="Suggestions">Predlozi</string>
     <string name="RoleName">Ime</string>
-    <string name="RolePrompt">Prompt</string>
     <string name="PromptInfo">Prompt je početni tekst dat modelu da započne generisanje odgovora ili nastavi dijalog.</string>
     <string name="NewRole">Nova uloga</string>
     <string name="EditRole">Izmeni ulogu</string>
@@ -385,12 +371,10 @@
     <string name="AlwaysSendInHD">Uvek šalji u HD</string>
     <string name="HideCameraTile">Sakrij pločicu za trenutnu kameru</string>
     <string name="HideCameraTileInfo">Pločica kamere biće zamenjena plutajućim dugmetom. Pritisak pokreće Telegram kameru; držanje pokreće sistemsku kameru.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Vreme preskakanja dvostrukim dodirom</string>
     <string name="PreferOriginalQuality">Preferiraj originalni kvalitet</string>
     <string name="PauseOnMinimize">Automatska pauza</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Glas</string>
     <string name="PauseOnMinimizeRound">Kružno</string>
     <string name="PauseOnMinimizeInfo">Pauzira reprodukciju medija kada je uređaj zaključan ili je exteraGram minimizovan.</string>
@@ -520,12 +504,10 @@
     <string name="FilePath">Putanja datoteke</string>
     <string name="Platform">Platforma</string>
     <string name="Resolution">Rezolucija</string>
-    <string name="Bitrate">Bitrate</string>
     <string name="Duration">Trajanje</string>
     <string name="MimeType">MIME tip</string>
     <string name="Datacenter">Podatkovni centar</string>
     <!-- Date Formatting -->
-    <string name="DateFormatOption">Format:</string>
     <string name="DateFormatOptionNone">Nijedan</string>
     <string name="DateFormatOptionRelative">Relativan</string>
     <string name="DateFormatOptionShortTime">Kratko vreme</string>

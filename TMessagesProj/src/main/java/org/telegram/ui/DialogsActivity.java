@@ -7173,9 +7173,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             blurredView.setVisibility(View.GONE);
             blurredView.setBackground(null);
         }
+        if (filterTabsView != null && viewPages != null && viewPages[0] != null && viewPages[0].dialogsAdapter != null) {
+            int dialogsType = viewPages[0].dialogsAdapter.getDialogsType();
+            if (dialogsType == DIALOGS_TYPE_FOLDER1 || dialogsType == DIALOGS_TYPE_FOLDER2) {
+                int stableId = filterTabsView.getCurrentTabStableId();
+                ArrayList<MessagesController.DialogFilter> dialogFilters = getMessagesController().getDialogFilters();
+                for (int i = 0; i < dialogFilters.size(); i++) {
+                    MessagesController.DialogFilter dialogFilter = dialogFilters.get(i);
+                    if (dialogFilter.localId == stableId) {
+                        viewPages[0].selectedType = i;
+                        getMessagesController().selectDialogFilter(dialogFilter, dialogsType == DIALOGS_TYPE_FOLDER1 ? 0 : 1);
+                        break;
+                    }
+                }
+            }
+        }
         if (viewPages != null) {
-            for (int a = 0; a < viewPages.length; a++) {
-                viewPages[a].dialogsAdapter.notifyDataSetChanged();
+            for (ViewPage viewPage : viewPages) {
+                viewPage.listView.cancelClickRunnables(true);
+                viewPage.listView.post(() -> {
+                    if (isPaused || viewPages == null || viewPage.getParent() == null || viewPage.getVisibility() != View.VISIBLE) {
+                        return;
+                    }
+                    viewPage.updateList(false);
+                });
             }
         }
         if (commentView != null) {
@@ -10895,6 +10916,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
         } else if (id == NotificationCenter.notificationsSettingsUpdated) {
             updateVisibleRows(0);
+            FolderCounters.getInstance(currentAccount).scheduleRecount();
         } else if (id == NotificationCenter.messageReceivedByAck || id == NotificationCenter.messageReceivedByServer || id == NotificationCenter.messageSendError) {
             updateVisibleRows(MessagesController.UPDATE_MASK_SEND_STATE);
         } else if (id == NotificationCenter.didSetPasscode) {

@@ -29,7 +29,6 @@
     <string name="LiteBatteryFollowSystemState">Rendszer</string>
     <string name="LiteBatteryFollowSystemInfo">A rendszer akkumulátor-kímélője vezérli.</string>
     <!-- Pill Stack -->
-    <string name="PillStackPills">Pill Stack</string>
     <string name="PillStackPillsInfo">Interaktív tabletták megjelenítése a keresőmezőben</string>
     <string name="PillStackPillsSettingsInfo">Állítsd be, mely tabletták legyenek láthatók. Koppints a megjelenítéshez vagy elrejtéshez, tartsd lenyomva és húzd a sorrend módosításához.</string>
     <string name="PillStackActivePills">Aktív tabletták</string>
@@ -98,13 +97,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Letöltési sebesség fokozása</string>
     <string name="UploadSpeedBoost">Feltöltési sebesség fokozása</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Az Ultra Boost problémákat okozhat fájlok letöltésekor és videók streamelésekor lassú internetkapcsolaton.</string>
-    <!-- Maps -->
-    <string name="Maps">Térképek</string>
-    <string name="TermsOfUseYandexMaps">A Yandex Térképek használatával elfogadod a <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">felhasználási feltételeket</a>]]>.</string>
-    <string name="UseYandexMaps">Yandex Térképek használata</string>
-    <string name="InstallYandexMaps">Yandex Térképek telepítése?</string>
     <!-- Storage -->
     <string name="StorageSettings">Tárhely</string>
     <string name="CustomSavePath">Egyéni mentési mappa</string>
@@ -161,7 +154,6 @@
     <string name="NavigationDrawer">Navigációs fiók</string>
     <string name="NavigationDrawerInfo">A jobb felső menüt egy klasszikus, csúsztatható fiókra és hamburger gombra cseréli.</string>
     <string name="NavigationDrawerImmersiveAnimation">Immerzív animáció</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Menüelemek</string>
     <string name="MainMenuItemsInfo">Koppints az elemek megjelenítéséhez vagy elrejtéséhez, tartsd lenyomva az átrendezéshez. Az elrendezés megosztott a menü és a fiók között.</string>
     <string name="MainMenuHiddenItems">Rejtett menüelemek</string>
@@ -211,7 +203,6 @@
     <string name="AppIconAurora">Auróra</string>
     <string name="AppIconAmethyst">Ametiszt</string>
     <string name="AppIconInvincible">Legyőzhetetlen</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Űr</string>
     <string name="AppIconIceAge">Jégkorszak</string>
     <string name="AppIconEditor">Szerkesztő</string>
@@ -253,7 +244,6 @@
     <string name="StickerSize">Matrica méret</string>
     <string name="StickerSizeLeft">Kicsi</string>
     <string name="StickerSizeRight">Nagy</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">hűha, milyen aranyos!</string>
     <string name="StickerShape">Matrica alak</string>
     <string name="StickerShapeRounded">Lekerekített</string>
@@ -286,7 +276,6 @@
     <string name="RolesInfo">Hozz létre szerepeket az egyedi igényeidhez!</string>
     <string name="Suggestions">Javaslatok</string>
     <string name="RoleName">Név</string>
-    <string name="RolePrompt">Prompt</string>
     <string name="PromptInfo">A prompt a modellnek adott kezdeti szöveg a válasz generálásának elindításához vagy a párbeszéd folytatásához.</string>
     <string name="NewRole">Új szerep</string>
     <string name="EditRole">Szerep szerkesztése</string>
@@ -390,7 +379,6 @@
     <string name="AlwaysSendInHD">Mindig HD-ben küldés</string>
     <string name="HideCameraTile">Azonnali kamera csempe elrejtése</string>
     <string name="HideCameraTileInfo">A kamera csempe helyét egy lebegő gomb veszi át. Megnyomása elindítja a Telegram kamerát; lenyomva tartva a rendszerkamerát.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Dupla koppintás ugrási idő</string>
     <string name="PreferOriginalQuality">Eredeti minőség preferálása</string>
@@ -523,7 +511,6 @@
     <string name="FileSize">Fájlméret</string>
     <string name="FileName">Fájlnév</string>
     <string name="FilePath">Fájl elérési út</string>
-    <string name="Platform">Platform</string>
     <string name="Resolution">Felbontás</string>
     <string name="Bitrate">Bitráta</string>
     <string name="Duration">Időtartam</string>

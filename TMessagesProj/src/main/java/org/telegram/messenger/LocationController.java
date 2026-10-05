@@ -25,7 +25,6 @@ import android.util.SparseIntArray;
 
 import androidx.collection.LongSparseArray;
 
-import com.exteragram.messenger.ExteraConfig;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -524,16 +523,8 @@ public class LocationController extends BaseController implements NotificationCe
     }
 
     private void setLastKnownLocation(Location location) {
-        if (location != null) {
-            long locationAge;
-            if (ExteraConfig.canUseYandexMaps()) {
-                locationAge = (System.currentTimeMillis() - location.getElapsedRealtimeNanos()) / 1000;
-            } else {
-                locationAge = (SystemClock.elapsedRealtimeNanos() - location.getElapsedRealtimeNanos()) / 1000000000;
-            }
-            if (locationAge > 60 * 5) {
-                return;
-            }
+        if (location != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && (SystemClock.elapsedRealtimeNanos() - location.getElapsedRealtimeNanos()) / 1000000000 > 60 * 5) {
+            return;
         }
         lastKnownLocation = location;
         if (lastKnownLocation != null) {

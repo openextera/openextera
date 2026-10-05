@@ -3,8 +3,10 @@ package com.exteragram.messenger.utils.chats
 import androidx.collection.LongSparseArray
 import com.exteragram.messenger.ExteraConfig
 import com.exteragram.messenger.TabCounterMode
+import org.telegram.SQLite.SQLiteCursor
 import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.ChatObject
+import org.telegram.messenger.FileLog
 import org.telegram.messenger.MessagesController
 import org.telegram.messenger.MessagesStorage
 import org.telegram.messenger.UserConfig
@@ -15,6 +17,7 @@ class FolderCounters private constructor(private val account: Int) {
 
     private var filterCounts = HashMap<Int, Int>()
     private var mainCount = 0
+    @Volatile
     private var recountScheduled = false
 
     class UnreadDialog(
@@ -47,10 +50,11 @@ class FolderCounters private constructor(private val account: Int) {
         if (!isUnmutedOnly()) {
             return
         }
+        val forumMutes = loadForumMutes()
         val dialogs = ArrayList<UnreadDialog>()
         for (i in 0 until users.size()) {
             val user = users.valueAt(i)
-            if (mutedDialogs.containsKey(user.id)) {
+            if (forumMutes[user.id] ?: mutedDialogs.containsKey(user.id)) {
                 continue
             }
             val flags = when {
@@ -80,7 +84,7 @@ class FolderCounters private constructor(private val account: Int) {
                 continue
             }
             val dialogId = -chat.id
-            if (mutedDialogs.containsKey(dialogId) && !mentionedDialogs.containsKey(dialogId)) {
+            if (forumMutes[dialogId] ?: (mutedDialogs.containsKey(dialogId) && !mentionedDialogs.containsKey(dialogId))) {
                 continue
             }
             val flags = when {
@@ -99,6 +103,28 @@ class FolderCounters private constructor(private val account: Int) {
             mainCount = newMainCount
             filterCounts = newFilterCounts
         }
+    }
+
+    private fun loadForumMutes(): HashMap<Long, Boolean> {
+        val storage = MessagesStorage.getInstance(account)
+        val controller = MessagesController.getInstance(account)
+        val result = HashMap<Long, Boolean>()
+        var cursor: SQLiteCursor? = null
+        try {
+            cursor = storage.database.queryFinalized("SELECT did, topic_id, unread_mentions FROM topics WHERE unread_count > 0 OR unread_mentions > 0")
+            while (cursor.next()) {
+                val dialogId = cursor.longValue(0)
+                if (result[dialogId] == false || !storage.isForum(dialogId, MessagesStorage.FORUM_TYPE_CHAT or MessagesStorage.FORUM_TYPE_DIRECT or MessagesStorage.FORUM_TYPE_BOT)) {
+                    continue
+                }
+                result[dialogId] = cursor.intValue(2) == 0 && controller.isDialogMuted(dialogId, cursor.longValue(1))
+            }
+        } catch (e: Exception) {
+            FileLog.e(e)
+        } finally {
+            cursor?.dispose()
+        }
+        return result
     }
 
     fun scheduleRecount() {

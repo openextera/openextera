@@ -46,7 +46,6 @@
     <string name="PillStackInfiniteScrolling">Nekonečné posúvanie</string>
     <string name="CryptoPillTargetCurrency">Cieľová mena</string>
     <string name="CryptoCurrencyUsd">Americký dolár</string>
-    <string name="CryptoCurrencyEur">Euro</string>
     <string name="CryptoCurrencyRub">Ruský rubeľ</string>
     <string name="CryptoCurrencyGbp">Britská libra</string>
     <string name="CryptoCurrencyKzt">Kazachstanský tenge</string>
@@ -98,13 +97,7 @@
     <!-- Speed -->
     <string name="DownloadSpeedBoost">Zrýchlenie sťahovania</string>
     <string name="UploadSpeedBoost">Zvýšenie rýchlosti odosielania</string>
-    <string name="Ultra">Ultra</string>
     <string name="SpeedBoostInfo">Ultra Boost môže spôsobiť problémy so sťahovaním súborov a streamovaním videí pri pomalom pripojení k internetu.</string>
-    <!-- Maps -->
-    <string name="Maps">Mapy</string>
-    <string name="TermsOfUseYandexMaps">Používaním Yandex Mapy súhlasíte s <![CDATA[<a href="https://yandex.ru/legal/maps_termsofuse/">terms of use</a>]]>.</string>
-    <string name="UseYandexMaps">Použite mapy Yandex</string>
-    <string name="InstallYandexMaps">Inštalovať Yandex Mapy?</string>
     <!-- Storage -->
     <string name="StorageSettings">Úložisko</string>
     <string name="CustomSavePath">Vlastný priečinok na ukladanie</string>
@@ -161,7 +154,6 @@
     <string name="NavigationDrawer">Navigačná zásuvka</string>
     <string name="NavigationDrawerInfo">Nahrádza ponuku vpravo hore klasickou zásuvkou, ktorá sa otvára potiahnutím, a tlačidlom hamburger.</string>
     <string name="NavigationDrawerImmersiveAnimation">Imersívna animácia</string>
-    <string name="NavigationDrawerProxyPingShort">%1$d ms</string>
     <string name="MainMenuItems">Položky ponuky</string>
     <string name="MainMenuItemsInfo">Ťuknutím zobrazíte alebo skryjete položky, podržaním zmeníte poradie. Rozloženie je zdieľané medzi ponukou a zásuvkou.</string>
     <string name="MainMenuHiddenItems">Skryté položky ponuky</string>
@@ -171,7 +163,6 @@
     <!-- Icon Packs -->
     <string name="IconPacks">Sady ikon</string>
     <string name="IconPacksInfo">Prispôsobiť ikony v celej aplikácii</string>
-    <string name="IconPickerFilter">Filter</string>
     <string name="IconPickerAllIcons">Všetky ikony</string>
     <string name="IconPickerReplacedIcons">Nahradené ikony</string>
     <string name="IconPickerNotReplacedIcons">Nenahradené ikony</string>
@@ -208,14 +199,10 @@
     <!-- App Icons -->
     <string name="IconPack">Balík ikon</string>
     <string name="AppIconSunset">Západ slnka</string>
-    <string name="AppIconAurora">Aurora</string>
     <string name="AppIconAmethyst">Ametyst</string>
     <string name="AppIconInvincible">Nezraniteľný</string>
-    <string name="AppIconCyberpunk">Cyberpunk</string>
     <string name="AppIconSpace">Vesmír</string>
     <string name="AppIconIceAge">Ľadová doba</string>
-    <string name="AppIconEditor">Editor</string>
-    <string name="AppIconOrbit">Orbit</string>
     <string name="AppIconSus">Podvodník</string>
     <string name="AppIconWinter">Zima</string>
     <!-- General Appearance -->
@@ -253,7 +240,6 @@
     <string name="StickerSize">Veľkosť nálepky</string>
     <string name="StickerSizeLeft">Malý</string>
     <string name="StickerSizeRight">Veľký</string>
-    <string name="StickerSizeDialogMessageReplyTo">wow</string>
     <string name="StickerSizeDialogMessage">Wow, to je roztomilé!</string>
     <string name="StickerShape">Tvar nálepky</string>
     <string name="StickerShapeRounded">Zaoblené</string>
@@ -272,7 +258,6 @@
     <string name="ServicesInfo">Vyberte vhodnú službu pre interakciu s jazykovými modelmi.</string>
     <string name="NewService">Nová služba</string>
     <string name="EditService">Upraviť službu</string>
-    <string name="ServiceModel">Model</string>
     <string name="ServiceKey">API kľúč</string>
     <string name="ServiceInfo">Informácie o službe</string>
     <string name="ServiceProvider">Poskytovateľ</string>
@@ -390,12 +375,10 @@
     <string name="AlwaysSendInHD">Vždy odosielať v HD</string>
     <string name="HideCameraTile">Skryť dlaždicu okamžitého fotoaparátu</string>
     <string name="HideCameraTileInfo">Dlaždica fotoaparátu bude nahradená plávajúcim tlačidlom. Stlačením sa spustí fotoaparát Telegramu, podržaním sa spustí systémový fotoaparát.</string>
-    <string name="ShortStandardQuality">SD</string>
     <!-- Playback -->
     <string name="DoubleTapSeekDuration">Čas preskoku dvojitým ťuknutím</string>
     <string name="PreferOriginalQuality">Uprednostniť pôvodnú kvalitu</string>
     <string name="PauseOnMinimize">Automatická pauza</string>
-    <string name="PauseOnMinimizeVideo">Video</string>
     <string name="PauseOnMinimizeVoice">Hlas</string>
     <string name="PauseOnMinimizeRound">Kruhové</string>
     <string name="PauseOnMinimizeInfo">Pozastaví prehrávanie médií, keď je zariadenie uzamknuté alebo je exteraGram minimalizovaný.</string>
@@ -623,7 +606,6 @@
     <string name="StickerCornerRadiusSmall">Malé</string>
     <string name="StickerCornerRadiusNone">Žiadne</string>
     <!-- Feed -->
-    <string name="Feed">Feed</string>
     <string name="FeedShownChannels">Zobrazené v feede</string>
     <string name="FeedHiddenChannels">Skryté</string>
     <string name="FeedChannels">Kanály</string>

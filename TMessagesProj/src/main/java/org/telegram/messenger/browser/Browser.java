@@ -33,6 +33,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.ShareBroadcastReceiver;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.customtabs.CustomTabsCallback;
 import org.telegram.messenger.support.customtabs.CustomTabsClient;
 import org.telegram.messenger.support.customtabs.CustomTabsIntent;
@@ -106,15 +107,16 @@ public class Browser {
                 @Override
                 public void onServiceConnected(CustomTabsClient client) {
                     customTabsClient = client;
-                    if (MessagesController.getInstance(UserConfig.selectedAccount).isWebBrowserUseCustomTabs()) {
-                        if (customTabsClient != null) {
-                            try {
-                                customTabsClient.warmup(0);
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                        }
+                    if (!MessagesController.getInstance(UserConfig.selectedAccount).isWebBrowserUseCustomTabs() || client == null) {
+                        return;
                     }
+                    Utilities.externalNetworkQueue.postRunnable(() -> {
+                        try {
+                            client.warmup(0);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
                 }
 
                 @Override

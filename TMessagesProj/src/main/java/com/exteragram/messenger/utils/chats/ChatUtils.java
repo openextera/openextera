@@ -894,22 +894,6 @@ public class ChatUtils {
         ExteraConfig.getEditor().putLong("channelToSave" + selectedAccount, dialogId).apply();
     }
 
-    private boolean isPhoneStartsWith(String prefix) {
-        TLRPC.User user = UserConfig.getInstance(selectedAccount).getCurrentUser();
-        if (user == null || TextUtils.isEmpty(user.phone)) {
-            return false;
-        }
-        return user.phone.startsWith(prefix);
-    }
-
-    public boolean isRussianUser() {
-        return isPhoneStartsWith("7");
-    }
-
-    public boolean isFragmentUser() {
-        return isPhoneStartsWith("888");
-    }
-
     public boolean shouldAddTimestamp(MessageObject messageObject, CharSequence text) {
         if (messageObject.messageOwner == null) {
             return false;
