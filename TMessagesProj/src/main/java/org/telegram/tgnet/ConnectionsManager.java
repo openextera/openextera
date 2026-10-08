@@ -17,6 +17,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.OptIn;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter;
+import com.exteragram.messenger.feed.FeedRequestNormalizer;
 import com.google.android.gms.tasks.Task;
 import com.google.android.play.core.integrity.IntegrityManager;
 import com.google.android.play.core.integrity.IntegrityManagerFactory;
@@ -437,11 +438,12 @@ public class ConnectionsManager extends BaseController {
         return requestToken;
     }
 
-    private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
+    private void sendRequestInternal(TLObject requestObject, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("send request " + object + " with token = " + requestToken);
+            FileLog.d("send request " + requestObject + " with token = " + requestToken);
         }
         try {
+            final TLObject object = FeedRequestNormalizer.normalize(currentAccount, requestObject);
             NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
             object.serializeToStream(buffer);
             object.freeResources();
